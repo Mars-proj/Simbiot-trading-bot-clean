@@ -1,0 +1,102 @@
+# Project Map for Trading Bot
+
+## Key Values
+- **BASE_MAX_SYMBOLS**: 100 (defined in `symbol_filter.py`)
+- **BATCH_SIZE**: 50 (defined in `symbol_filter.py`)
+- **MAX_SPREAD_PERCENT**: 0.01 (defined in `symbol_filter.py`)
+- **max_recent_trades**: 10000 (defined in `trade_pool.py`)
+- **ttl_seconds**: 604800 (defined in `trade_pool.py`)
+- **max_concurrent_requests**: 10 (defined in `async_balance_fetcher.py`)
+- **min_concurrent_requests**: 1 (defined in `async_balance_fetcher.py`)
+- **max_users_concurrent**: 10 (defined in `trading_cycle.py`)
+- **max_consecutive_errors**: 5 (defined in `trading_cycle.py`)
+- **MAX_CACHE_SIZE**: 1000 (defined in `ohlcv_fetcher.py`)
+
+## Dependencies
+- **`global_trade_pool`**:
+  - Defined in: `global_objects.py`
+  - Initialized in: `trading_part1.py` (after `initialize_loggers`)
+  - Used in: `trading_cycle.py`, `symbol_filter.py`, `market_rentgen_core.py`, `retraining_engine.py`
+- **`logger_main`**:
+  - Defined in: `logging_setup.py`
+  - Initialized in: `trading_part1.py` (via `initialize_loggers`)
+  - Used in: Almost all modules
+- **`logger_trade_pool`**:
+  - Defined in: `logging_setup.py`
+  - Initialized in: `trading_part1.py` (via `initialize_loggers`)
+  - Used in: `trade_pool_redis.py`, `trade_pool_file.py`
+- **`redis_client`**:
+  - Defined in: `global_objects.py`
+  - Initialized in: `trading_part1.py` (after `initialize_loggers`)
+  - Used in: `symbol_filter.py` (imported inside `filter_symbols` to avoid circular imports), `async_ohlcv_fetcher.py` (imported inside methods to avoid circular imports)
+- **`trading_part1.py`**:
+  - Imports: `trading_cycle.py` (`main`), `trade_pool.py` (`TradePool`), `redis_client.py` (`RedisClient`), `global_objects.py` (to initialize `global_trade_pool` and `redis_client`)
+- **`trading_cycle.py`**:
+  - Imports: `symbol_handler.py` (`process_symbols`), `global_objects.py` (`global_trade_pool`)
+- **`symbol_handler.py`**:
+  - Imports: `utils.py` (`logger_main`, `log_exception`), `symbol_filter.py` (`filter_symbols`), `ohlcv_fetcher.py` (`fetch_ohlcv_with_cache`, `symbol_data_cache`), `symbol_trade_processor.py` (`process_symbol`)
+- **`symbol_filter.py`**:
+  - Imports: `global_objects.py` (`global_trade_pool`, `redis_client`)
+- **`trade_pool.py`**:
+  - Imports: `trade_pool_redis.py`, `trade_pool_file.py`, `trade_pool_tokens.py`, `logging_setup.py` (`logger_main`), `utils.py` (`log_exception`), `config.py` (`LOGGING_SETTINGS`)
+- **`trade_pool_redis.py`**:
+  - Imports: `logging_setup.py` (`logger_main`, `logger_trade_pool`), `utils.py` (`log_exception`), `json_handler.py` (`dumps`, `loads`)
+- **`trade_pool_file.py`**:
+  - Imports: `logging_setup.py` (`logger_main`, `logger_trade_pool`), `utils.py` (`log_exception`), `json_handler.py` (`dumps`)
+- **`trade_pool_tokens.py`**:
+  - Imports: `logging_setup.py` (`logger_main`), `utils.py` (`log_exception`), `json_handler.py` (`dumps`, `loads`)
+- **`trade_pool_global.py`**:
+  - Imports: `trade_pool.py` (`TradePool`)
+  - Used in: None (replaced by `global_objects.py`)
+- **`json_handler.py`**:
+  - Imports: `json`, `pandas`, `numpy`
+  - Used in: `trade_pool_redis.py` (`dumps`, `loads`), `trade_pool_file.py` (`dumps`), `trade_pool_tokens.py` (`dumps`, `loads`)
+- **`ohlcv_fetcher.py`**:
+  - Imports: `utils.py` (`logger_main`), `async_ohlcv_fetcher.py` (`AsyncOHLCVFetcher`)
+  - Used in: `symbol_handler.py`
+- **`async_ohlcv_fetcher.py`**:
+  - Imports: `utils.py` (`logger_main`), `global_objects.py` (`redis_client`)
+- **`symbol_trade_processor.py`**:
+  - Imports: `market_rentgen_core.py` (`market_rentgen`)
+- **`market_rentgen_core.py`**:
+  - Imports: `global_objects.py` (`global_trade_pool`), `ml_predictor.py` (`ml_predictor`, `initialize_ml_predictor`)
+- **`ml_predictor.py`**:
+  - Imports: `retraining_engine.py` (`RetrainEngine`)
+- **`retraining_engine.py`**:
+  - Imports: `global_objects.py` (`global_trade_pool`), `retraining_data_preprocessor.py` (`RetrainDataPreprocessor`)
+- **`retraining_data_preprocessor.py`**:
+  - Imports: `utils.py` (`logger_main`)
+
+## Modules
+- Total modules: 99 (added `global_objects.py`)
+- Modules to check for size (>200 lines): To be determined via `wc -l`
+
+## Known Issues
+- **AttributeError: 'NoneType' object has no attribute 'debug' in `redis_client.py`**:
+  - Occurred: 2025-03-25
+  - Cause: `logger_main` was `None` when `redis_client` was created at module level, because `initialize_loggers` in `trading_part1.py` had not yet been called.
+  - Solution: Removed global `redis_client` creation at module level in `redis_client.py` and moved it to `trading_part1.py` after `initialize_loggers`.
+- **ImportError: cannot import name 'redis_client' from 'redis_client' in `symbol_filter.py`**:
+  - Occurred: 2025-03-25
+  - Cause: `symbol_filter.py` tried to import `redis_client` from `redis_client.py`, but `redis_client` was removed from `redis_client.py` and moved to `trading_part1.py`.
+  - Solution: Removed the import of `redis_client` from `redis_client.py` in `symbol_filter.py` and imported it from `trading_part1.py` inside the `filter_symbols` function to avoid circular imports.
+- **ImportError: cannot import name 'redis_client' from 'redis_client' in `async_ohlcv_fetcher.py`**:
+  - Occurred: 2025-03-25
+  - Cause: `async_ohlcv_fetcher.py` tried to import `redis_client` from `redis_client.py`, but `redis_client` was removed from `redis_client.py` and moved to `trading_part1.py`.
+  - Solution: Removed the import of `redis_client` from `redis_client.py` in `async_ohlcv_fetcher.py` and imported it from `trading_part1.py` inside methods to avoid circular imports.
+- **ImportError: cannot import name 'global_trade_pool' from 'trade_pool' in `market_rentgen_core.py`**:
+  - Occurred: 2025-03-25
+  - Cause: `market_rentgen_core.py` tried to import `global_trade_pool` from `trade_pool.py`, but `global_trade_pool` was moved to `trade_pool_global.py` and later to `global_objects.py`.
+  - Solution: Updated `market_rentgen_core.py` to import `global_trade_pool` from `global_objects.py`.
+- **ImportError: cannot import name 'global_trade_pool' from 'trade_pool' in `retraining_engine.py`**:
+  - Occurred: 2025-03-25
+  - Cause: `retraining_engine.py` tried to import `global_trade_pool` from `trade_pool.py`, but `global_trade_pool` was moved to `global_objects.py`.
+  - Solution: Updated `retraining_engine.py` to import `global_trade_pool` from `global_objects.py`.
+- **AttributeError: 'NoneType' object has no attribute 'info' in `ml_predictor.py`**:
+  - Occurred: 2025-03-25
+  - Cause: `logger_main` was `None` when `ml_predictor.py` tried to use it at module level, because `initialize_loggers` in `trading_part1.py` had not yet been called.
+  - Solution: Removed logging at module level in `ml_predictor.py` and moved it to methods that are called after logger initialization.
+- **AttributeError: 'NoneType' object has no attribute 'info' in `retraining_data_preprocessor.py`**:
+  - Occurred: 2025-03-25
+  - Cause: `logger_main` was `None` when `retraining_data_preprocessor.py` tried to use it in `__init__`, because `initialize_loggers` in `trading_part1.py` had not yet been called.
+  - Solution: Removed logging in `__init__` in `retraining_data_preprocessor.py` and moved it to a method that is called after logger initialization.

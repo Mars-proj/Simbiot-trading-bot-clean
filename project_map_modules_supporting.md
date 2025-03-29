@@ -1,0 +1,147 @@
+# Project Map: Supporting Modules
+
+## Overview
+This file contains the list of Supporting Modules, which provide essential support functions for the trading bot.
+
+## Modules
+
+- **symbol_filter.py**
+  - **Purpose**: Filters trading symbols based on spot market, activity, USDT pair, trading volume, and spread. Categorizes symbols into groups ("Top", "Memes", "Risky") and caches problematic/tradable symbols in Redis.
+  - **Dependencies**:
+    - `asyncio`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+    - `global_objects.global_trade_pool`
+    - `redis_initializer.redis_client`
+    - `backtest_cycle.run_backtest`
+    - `tenacity`
+  - **Size**: 149 lines
+  - **Notes**: Updated on 2025-03-27 to fix `AttributeError: 'list' object has no attribute 'update'` by converting `problematic_tokens` from list to set after loading from Redis. Added logging for debugging symbol filtering. Updated on 2025-03-27 to add caching of unsupported pairs in Redis.
+- **async_exchange_fetcher.py**
+  - **Purpose**: Handles asynchronous data fetching from exchanges (OHLCV, tickers, balances).
+  - **Dependencies**:
+    - `asyncio`
+    - `ccxt.async_support`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+    - `tenacity`
+  - **Size**: 128 lines
+  - **Notes**: Updated on 2025-03-26 to add retry logic with `tenacity` and increase timeout to 60 seconds.
+- **redis_client.py**
+  - **Purpose**: Manages Redis client for caching trades and other data.
+  - **Dependencies**:
+    - `redis.asyncio`
+    - `json`
+    - `time`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+  - **Size**: 128 lines
+- **config_settings.py**
+  - **Purpose**: Provides configuration settings for the trading system, such as backtest parameters.
+  - **Dependencies**:
+    - `logging_setup.logger_main`
+  - **Size**: 24 lines
+- **config_keys.py**
+  - **Purpose**: Stores API keys and preferred exchanges for users.
+  - **Dependencies**:
+    - None
+  - **Size**: Unknown (not provided)
+  - **Notes**: Contains `API_KEYS` and `PREFERRED_EXCHANGES` dictionaries for user authentication and exchange selection.
+- **config_notifications.py**
+  - **Purpose**: Manages notification settings for the system (e.g., Telegram notifications).
+  - **Dependencies**:
+    - Unknown (not provided)
+  - **Size**: Unknown (not provided)
+  - **Notes**: Needs to be reviewed for integration with error reporting and trade success notifications.
+- **logging_setup.py**
+  - **Purpose**: Configures logging for the system, including main and exception logs.
+  - **Dependencies**:
+    - `logging`
+    - `logging.handlers`
+  - **Size**: Unknown (not provided)
+  - **Notes**: Defines `logger_main` and `logger_exceptions` for system-wide logging.
+- **redis_initializer.py**
+  - **Purpose**: Initializes Redis connection and provides utility functions for Redis operations.
+  - **Dependencies**:
+    - `redis.asyncio`
+    - `logging_setup.logger_main`
+  - **Size**: Unknown (not provided)
+  - **Notes**: Updated on 2025-03-27 to add `get_json` and `set_json` methods for easier JSON handling.
+- **trade_pool_core.py**
+  - **Purpose**: Manages the global trade pool, storing trades in Redis and files.
+  - **Dependencies**:
+    - `redis.asyncio`
+    - `uuid`
+    - `json`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+    - `trade_pool_redis.add_trade_to_redis`
+    - `trade_pool_redis.update_trade_pnl_in_redis`
+    - `trade_pool_file.add_trade_to_files`
+    - `trade_pool_file.update_trade_pnl_in_files`
+    - `user_trade_cache.UserTradeCache`
+  - **Size**: 178 lines
+  - **Notes**: Updated on 2025-03-27 to fix `object NoneType can't be used in 'await' expression` error by removing unnecessary `await` in `add_trade`.
+- **trade_pool_redis.py**
+  - **Purpose**: Handles Redis operations for the trade pool.
+  - **Dependencies**:
+    - `redis.asyncio`
+    - `json`
+    - `time`
+    - `logging_setup.logger_main`
+  - **Size**: Unknown (not provided)
+- **trade_pool_file.py**
+  - **Purpose**: Handles file operations for the trade pool (e.g., saving to `trades.json`).
+  - **Dependencies**:
+    - `json`
+    - `logging_setup.logger_main`
+  - **Size**: Unknown (not provided)
+- **user_trade_cache.py**
+  - **Purpose**: Caches user trades in memory and Redis for quick access.
+  - **Dependencies**:
+    - `redis.asyncio`
+    - `json`
+    - `logging_setup.logger_main`
+  - **Size**: Unknown (not provided)
+- **trade_pool_queries.py**
+  - **Purpose**: Provides query functions for the trade pool (e.g., `get_all_trades`).
+  - **Dependencies**:
+    - `redis.asyncio`
+    - `json`
+    - `logging_setup.logger_main`
+  - **Size**: Unknown (not provided)
+- **backtest_cycle.py**
+  - **Purpose**: Runs backtesting for strategies on filtered symbols.
+  - **Dependencies**:
+    - `asyncio`
+    - `pandas`
+    - `numpy`
+    - `logging_setup.logger_main`
+    - `strategies.MovingAverageStrategy`, `strategies.RSIDivergenceStrategy`, `strategies.BollingerBandsBreakoutStrategy`, `strategies.MACDTrendFollowingStrategy`
+  - **Size**: Unknown (not provided)
+- **global_objects.py**
+  - **Purpose**: Defines global objects like `global_trade_pool` for system-wide access.
+  - **Dependencies**:
+    - `trade_pool_core.TradePool`
+  - **Size**: Unknown (not provided)
+- **balance_manager.py**
+  - **Purpose**: Manages user balances and updates them after trades.
+  - **Dependencies**:
+    - `logging_setup.logger_main`
+  - **Size**: Unknown (not provided)
+- **json_handler.py**
+  - **Purpose**: Provides utility functions for JSON serialization/deserialization.
+  - **Dependencies**:
+    - `json`
+  - **Size**: Unknown (not provided)
+- **utils.py**
+  - **Purpose**: Contains utility functions, including `log_exception`.
+  - **Dependencies**:
+    - `logging_setup.logger_main`
+  - **Size**: Unknown (not provided)
+- **partial_close_calculator.py**
+  - **Purpose**: Calculates the amount for partial position closing based on profit percentage.
+  - **Dependencies**:
+    - `utils.logger_main`
+  - **Size**: 15 lines
+  - **Notes**: Provides `calculate_partial_close_amount` function for managing position exits.

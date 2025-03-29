@@ -1,0 +1,186 @@
+# Project Map: Core Trading Logic Modules
+
+## Overview
+This file contains the list of Core Trading Logic modules, which are critical for the trading operations of the bot.
+
+## Modules
+
+- **bot_trading.py**
+  - **Purpose**: Manages trading logic for users, including symbol processing and trade execution.
+  - **Dependencies**:
+    - `asyncio`
+    - `ccxt.async_support`
+    - `trade_executor_core.TradeExecutor`
+    - `trade_executor_signals.execute_trade`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+    - `signal_generator_core.generate_signals`
+    - `strategies.MovingAverageStrategy`, `strategies.RSIDivergenceStrategy`, `strategies.BollingerBandsBreakoutStrategy`, `strategies.MACDTrendFollowingStrategy`
+    - `trade_pool_queries.get_all_trades`
+    - `global_objects.global_trade_pool`
+    - `symbol_filter.filter_symbols`
+    - `config_keys.API_KEYS`
+    - `config_keys.PREFERRED_EXCHANGES`
+    - `bot_user_data.user_data`
+    - `bot_user_data.get_user_deposit`
+    - `bot_user_data.get_user_assets`
+    - `bot_user_data.add_user_trade`
+    - `async_exchange_fetcher.async_exchange_fetcher`
+    - `redis_client.redis_client`
+    - `retraining_manager.retraining_manager`
+  - **Size**: 178 lines
+  - **Notes**: Updated on 2025-03-27 to remove preliminary deposit check, as it is now handled in `trade_executor_signals.py`. Added logging for trade execution and signal generation.
+- **bot_user_data.py**
+  - **Purpose**: Manages user data, including deposits, assets, and daily trades.
+  - **Dependencies**:
+    - `logging_setup.logger_main`
+  - **Size**: 128 lines
+  - **Notes**: Updated on 2025-03-27 to add logging for `get_user_deposit` and `get_user_assets` to debug deposit issues. Added test users with deposits for testing.
+- **bot_commands_balance.py**
+  - **Purpose**: Fetches user balance and PNL from exchanges.
+  - **Dependencies**:
+    - `asyncio`
+    - `ccxt.async_support`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+    - `bot_user_data.user_data`
+    - `bot_user_data.update_user_data`
+    - `trade_pool_queries.get_all_trades`
+    - `config_keys.API_KEYS`
+    - `config_keys.PREFERRED_EXCHANGES`
+    - `async_exchange_fetcher.async_exchange_fetcher`
+    - `tenacity`
+  - **Size**: 178 lines
+  - **Notes**: Updated on 2025-03-26 to add retry logic with `tenacity` and increase timeout to 60 seconds.
+- **start_trading_all.py**
+  - **Purpose**: Script to start trading for all users asynchronously with periodic deposit checks.
+  - **Dependencies**:
+    - `asyncio`
+    - `ccxt.async_support`
+    - `bot_trading.start_trading`
+    - `config_keys.API_KEYS`
+    - `config_keys.PREFERRED_EXCHANGES`
+    - `logging_setup.logger_main`
+    - `redis_initializer.redis_client`
+  - **Size**: 24 lines
+  - **Notes**: Updated on 2025-03-27 to add a periodic check loop (every 5 minutes) for user deposits and to remove `fetch_balance` call, as deposit checks are now handled in `trade_executor_signals.py`. Running with `nohup` to ensure continuous operation.
+- **trade_executor_core.py**
+  - **Purpose**: Core logic for trade execution, including risk management and deposit initialization.
+  - **Dependencies**:
+    - `asyncio`
+    - `time`
+    - `balance_manager.BalanceManager`
+    - `deposit_calculator.DepositCalculator`
+    - `signal_blacklist.SignalBlacklist`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+    - `json_handler.loads`
+  - **Size**: 178 lines
+  - **Notes**: Updated on 2025-03-27 to add `risk_calculator` as `deposit_calculator` to fix missing attribute error. Updated to support `user_id` in `initialize_deposit`. Updated on 2025-03-27 to add minimum trade volume check for sales (10.03 USDT).
+- **trade_executor_signals.py**
+  - **Purpose**: Generates trading signals and executes trades, including deposit checks before execution.
+  - **Dependencies**:
+    - `asyncio`
+    - `pandas`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+    - `signal_generator_core.generate_signals`
+    - `signal_generator_indicators.calculate_indicators_and_signal`
+    - `global_objects.global_trade_pool`
+    - `config_settings.get_backtest_settings`
+    - `redis_initializer.redis_client`
+    - `bot_user_data.get_user_deposit`
+    - `bot_user_data.get_user_assets`
+    - `bot_user_data.add_user_trade`
+  - **Size**: 128 lines
+  - **Notes**: Updated on 2025-03-27 to add deposit check before trade execution and cache balance in Redis for 5 minutes. Updated on 2025-03-27 to add fallback to `bot_user_data.py` deposit if exchange fetch fails, and added logging for debugging.
+- **signal_generator_core.py**
+  - **Purpose**: Core signal generation logic, preparing parameters for indicators.
+  - **Dependencies**:
+    - `pandas`
+    - `numpy`
+    - `logging_setup.logger_main`
+    - `utils.log_exception`
+  - **Size**: Unknown (not provided)
+  - **Notes**: Needs optimization for GPU acceleration.
+- **signal_generator_indicators.py**
+  - **Purpose**: Calculates trading indicators (ATR, RSI, MACD) and generates final signals.
+  - **Dependencies**:
+    - `pandas`
+    - `numpy`
+    - `cupy`
+    - `logging_setup.logger_main`
+    - `redis_initializer.redis_client`
+  - **Size**: 149 lines
+  - **Notes**: Optimized with `cupy` for GPU acceleration.
+- **strategies.py**
+  - **Purpose**: Defines trading strategies (Moving Average, RSI Divergence, Bollinger Bands, MACD).
+  - **Dependencies**:
+    - `logging_setup.logger_main`
+    - `numpy`
+  - **Size**: 108 lines
+  - **Notes**: Updated on 2025-03-27 to add dynamic parameter calculation based on volatility using `numpy`. Can be further optimized with GPU acceleration for indicator calculations.
+- **deposit_calculator.py**
+  - **Purpose**: Calculates the initial deposit for a user based on their balance.
+  - **Dependencies**:
+    - `ccxt.async_support`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+  - **Size**: 37 lines
+  - **Notes**: Updated on 2025-03-27 to support `user_id` in `__init__` and fix logging by replacing `utils.log_exception` with `logging_setup.logger_exceptions`. Updated on 2025-03-27 to add support for `max_drawdown` parameter in `__init__` to fix `DepositCalculator.__init__() got an unexpected keyword argument 'max_drawdown'` error.
+- **signal_blacklist.py**
+  - **Purpose**: Manages a blacklist for trading signals.
+  - **Dependencies**:
+    - `trade_blacklist.global_trade_blacklist`
+    - `logging_setup.logger_main`
+  - **Size**: 15 lines
+  - **Notes**: Needs optimization for Redis storage.
+- **trade_blacklist.py**
+  - **Purpose**: Manages a global trade blacklist for symbols.
+  - **Dependencies**:
+    - `logging_setup.logger_main`
+    - `utils.log_exception`
+  - **Size**: 37 lines
+- **monetization.py**
+  - **Purpose**: Manages the monetization system, calculating commissions based on user deposits.
+  - **Dependencies**:
+    - `logging_setup.logger_main`
+  - **Size**: 24 lines
+  - **Notes**: Implements a tiered commission system (30% for deposits < $1000, 25% for $1000-$5000, 20% for > $5000).
+- **trade_analyzer.py**
+  - **Purpose**: Analyzes trade performance (e.g., PNL, win rate) and calculates commissions using `monetization.py`.
+  - **Dependencies**:
+    - `pandas`
+    - `numpy`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+    - `trade_pool.global_trade_pool`
+    - `redis_client.redis_client`
+    - `monetization.monetization`
+    - `bot_user_data.get_user_deposit`
+  - **Size**: 178 lines
+- **trade_pool_transfer.py**
+  - **Purpose**: Transfers trades from user caches to the global trade pool every 24 hours.
+  - **Dependencies**:
+    - `asyncio`
+    - `time`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+    - `redis_client.redis_client`
+    - `global_objects.global_trade_pool`
+    - `bot_user_data.user_data`
+  - **Size**: 62 lines
+- **retraining_manager.py**
+  - **Purpose**: Manages system retraining using 50% backtest trades and 50% real trades, generating ML-based signals with an LSTM model.
+  - **Dependencies**:
+    - `asyncio`
+    - `numpy`
+    - `pandas`
+    - `sklearn.preprocessing.MinMaxScaler`
+    - `tensorflow`
+    - `logging_setup.logger_main`
+    - `logging_setup.logger_exceptions`
+    - `global_objects.global_trade_pool`
+    - `random`
+  - **Size**: 128 lines
+  - **Notes**: Updated on 2025-03-26 to fix `AttributeError` by initializing `sequence_length` before calling `_build_model`.

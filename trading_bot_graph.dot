@@ -1,0 +1,72 @@
+digraph trading_bot {
+    // Core Trading Logic
+    trade_executor_core -> logging_setup;
+    trade_executor_core -> json_handler;
+    trade_executor_core -> trade_executor_signals;
+    trade_executor_core -> bot_trading;
+    trade_executor_core -> global_objects;
+    trade_executor_core -> symbol_filter;
+    trade_executor_core -> balance_manager;
+    trade_executor_core -> deposit_calculator;
+    trade_executor_core -> signal_blacklist;
+    trade_executor_core -> limits;  // Added 2025-03-29
+    trade_executor_signals -> logging_setup;
+    trade_executor_signals -> signal_generator_core;
+    trade_executor_signals -> signal_generator_indicators;
+    trade_executor_signals -> strategies;
+    bot_trading -> logging_setup;
+    bot_trading -> trade_executor_core;
+    bot_trading -> trade_executor_signals;  // Added 2025-03-29
+    bot_trading -> trade_pool_core;
+    bot_trading -> global_objects;
+    bot_trading -> limits;  // Added 2025-03-29
+    start_trading_all -> logging_setup;
+    start_trading_all -> bot_trading;
+    start_trading_all -> config_keys;
+    start_trading_all -> bot_user_data;
+    start_trading_all -> limits;  // Added 2025-03-29
+    signal_generator_core -> logging_setup;
+    signal_generator_core -> global_objects;
+    signal_generator_indicators -> logging_setup;
+    signal_generator_indicators -> global_objects;
+    strategies -> logging_setup;
+    trade_pool_core -> logging_setup;
+    trade_pool_core -> trade_pool_queries;
+    trade_pool_queries -> logging_setup;
+    trade_pool_queries -> redis_client;
+    global_objects -> logging_setup;
+    symbol_filter -> logging_setup;
+    symbol_filter -> global_objects;
+    balance_manager -> logging_setup;
+    balance_manager -> global_objects;
+    deposit_calculator -> logging_setup;
+    deposit_calculator -> global_objects;
+    signal_blacklist -> logging_setup;
+    signal_blacklist -> global_objects;
+    retraining_manager -> logging_setup;
+    retraining_manager -> global_objects;
+    local_model_api -> logging_setup;
+    local_model_api -> global_objects;
+
+    // Supporting Modules
+    logging_setup -> global_objects;
+    config_keys -> logging_setup;
+    redis_initializer -> logging_setup;
+    redis_client -> logging_setup;
+    json_handler -> global_objects;
+    config_settings -> logging_setup;
+    backtest_cycle -> logging_setup;
+    backtest_cycle -> bot_trading;
+    bot_user_data -> logging_setup;
+    api_server -> logging_setup;
+
+    // Additional Modules
+    check_all_trades -> logging_setup;
+    check_all_trades -> config_keys;  // Added 2025-03-29
+    check_trades -> logging_setup;
+    check_trades -> config_keys;  // Added 2025-03-29
+    deposit_manager -> logging_setup;
+    deposit_manager -> config_keys;  // Added 2025-03-29
+    exchange_factory -> logging_setup;
+    exchange_factory -> config_keys;  // Added 2025-03-29
+}

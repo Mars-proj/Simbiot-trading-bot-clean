@@ -1,0 +1,300 @@
+# Project Map: Additional Modules
+
+## Overview
+This file contains the list of Additional Modules, which provide extended functionality for the trading bot.
+
+## Modules
+
+- **analytics.py**
+  - **Purpose**: Provides analytics for trading performance.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **async_balance_fetcher.py**
+  - **Purpose**: Asynchronously fetches user balances.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **async_exchange_manager.py**
+  - **Purpose**: Manages asynchronous exchange operations.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **async_ohlcv_fetcher.py**
+  - **Purpose**: Asynchronously fetches OHLCV data.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **async_order_fetcher.py**
+  - **Purpose**: Asynchronously fetches order data.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **async_ticker_fetcher.py**
+  - **Purpose**: Asynchronously fetches ticker data.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **async_utils.py**
+  - **Purpose**: Provides asynchronous utility functions.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **backtest_analyzer.py**
+  - **Purpose**: Analyzes backtest results.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **backtester.py**
+  - **Purpose**: Runs backtesting for trading strategies.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **balance_utils.py**
+  - **Purpose**: Provides utility functions for balance management.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **bot_commands_core.py**
+  - **Purpose**: Core commands for bot operations.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **bot_commands_status.py**
+  - **Purpose**: Manages status commands for the bot.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **bot_translations.py**
+  - **Purpose**: Manages translations for bot messages.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **cache_utils.py**
+  - **Purpose**: Provides utility functions for caching.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **check_all_trades.py**
+  - **Purpose**: Checks all trades in the system.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **check_trades.py**
+  - **Purpose**: Checks specific trades.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **data_fetcher.py**
+  - **Purpose**: Fetches data for the system.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **data_utils.py**
+  - **Purpose**: Provides utility functions for data handling.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **deposit_manager.py**
+  - **Purpose**: Manages user deposits.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **exchange_factory.py**
+  - **Purpose**: Creates exchange instances.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **exchange_setup.py**
+  - **Purpose**: Sets up exchange connections.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **exchange_utils.py**
+  - **Purpose**: Provides utility functions for exchange operations.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **exit_points_calculator.py**
+  - **Purpose**: Calculates exit points for trades.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **features.py**
+  - **Purpose**: Manages feature engineering for ML models.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **holdings_manager.py**
+  - **Purpose**: Manages user holdings.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **indicators.py**
+  - **Purpose**: Provides trading indicators.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **limits.py**
+  - **Purpose**: Manages trading limits.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **local_model_api.py**
+  - **Purpose**: Provides API for local ML models (e.g., GPT-2).
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+  - **Notes**: Runs on CPU due to outdated CUDA driver (version 11.8). Needs update to CUDA 12.x for GPU support.
+- **manual_trade.py**
+  - **Purpose**: Handles manual trades.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **market_analyzer.py**
+  - **Purpose**: Analyzes market conditions.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **market_data_fetcher.py**
+  - **Purpose**: Fetches market data.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **market_rentgen_core.py**
+  - **Purpose**: Core logic for market X-ray system.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **market_trend_checker.py**
+  - **Purpose**: Checks market trends.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **ml_data_preparer.py**
+  - **Purpose**: Prepares data for ML models.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **ml_data_preparer_utils.py**
+  - **Purpose**: Utility functions for ML data preparation.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **ml_feature_engineer.py**
+  - **Purpose**: Performs feature engineering for ML models.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **ml_model_trainer.py**
+  - **Purpose**: Trains ML models.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **ml_predictor.py**
+  - **Purpose**: Makes predictions using ML models.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **model_utils.py**
+  - **Purpose**: Utility functions for ML models.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **momentum_indicators.py**
+  - **Purpose**: Provides momentum-based trading indicators.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **notification_utils.py**
+  - **Purpose**: Utility functions for notifications.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **ohlcv_analyzer.py**
+  - **Purpose**: Analyzes OHLCV data.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **ohlcv_fetcher.py**
+  - **Purpose**: Fetches OHLCV data.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **order_utils.py**
+  - **Purpose**: Utility functions for order management.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **position_monitor.py**
+  - **Purpose**: Monitors open positions.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **price_volatility_indicators.py**
+  - **Purpose**: Provides price volatility indicators.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **price_volume_indicators.py**
+  - **Purpose**: Provides price and volume indicators.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **retraining_data_preprocessor.py**
+  - **Purpose**: Preprocesses data for retraining.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **retraining_engine.py**
+  - **Purpose**: Manages retraining engine for ML models.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **risk_manager.py**
+  - **Purpose**: Manages trading risks.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **signal_aggregator.py**
+  - **Purpose**: Aggregates trading signals.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **strategy_recommender.py**
+  - **Purpose**: Recommends trading strategies.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **strategies_momentum.py**
+  - **Purpose**: Provides momentum-based strategies.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **strategies_support_resistance.py**
+  - **Purpose**: Provides support and resistance strategies.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **strategies_trend.py**
+  - **Purpose**: Provides trend-based strategies.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **strategies_volume.py**
+  - **Purpose**: Provides volume-based strategies.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **symbol_data_fetcher.py**
+  - **Purpose**: Fetches symbol data.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **symbol_filtering.py**
+  - **Purpose**: Filters symbols for trading.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **symbol_handler.py**
+  - **Purpose**: Handles symbol operations.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **symbol_processor.py**
+  - **Purpose**: Processes symbols for trading.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **symbol_trade_processor.py**
+  - **Purpose**: Processes trades for specific symbols.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **symbol_utils.py**
+  - **Purpose**: Utility functions for symbol management.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **test_symbols.py**
+  - **Purpose**: Test module for symbols.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **token_potential_evaluator.py**
+  - **Purpose**: Evaluates token potential.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **trade_pool_global.py**
+  - **Purpose**: Manages global trade pool.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **trade_pool_tokens.py**
+  - **Purpose**: Manages tokens in the trade pool.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **trade_result_analyzer.py**
+  - **Purpose**: Analyzes trade results.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **trade_risk_calculator.py**
+  - **Purpose**: Calculates trade risks.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **trading_cycle.py**
+  - **Purpose**: Manages the main trading cycle.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **trend_indicators.py**
+  - **Purpose**: Provides trend indicators.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **user_exchange_setup.py**
+  - **Purpose**: Sets up user exchanges.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **websocket_manager.py**
+  - **Purpose**: Manages WebSocket connections.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
+- **worker.py**
+  - **Purpose**: Worker for background tasks.
+  - **Dependencies**: Unknown (not provided)
+  - **Size**: Unknown (not provided)
