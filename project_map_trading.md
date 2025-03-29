@@ -95,8 +95,9 @@ This file serves as the central hub for the trading bot project, providing a com
       - `user_trade_cache.py`: User trade cache.
       - `worker.py`: Worker for background tasks.
       - `utils.py`: General utilities.
-    - **Removed** (28 modules):
+    - **Removed** (28 modules, physically present but marked as non-working):
       - `trade_blacklist.py`, `async_exchange_fetcher.py`, `market_analyzer.py`, `data_fetcher.py`, `symbol_utils.py`, `signal_aggregator.py`, `strategies_volume.py`, `holdings_manager.py`, `analytics.py`, `async_exchange_manager.py`, `async_order_fetcher.py`, `async_ticker_fetcher.py`, `async_utils.py`, `backtest_analyzer.py`, `backtester.py`, `balance_utils.py`, `bot_commands_balance.py`, `bot_commands_status.py`, `bot_commands_core.py`, `bot_translations.py`, `config_notifications.py`, `ml_data_preprocessor.py`, `notification_utils.py`, `async_ohlcv_fetcher.py`, `strategies_momentum.py`, `strategies_trend.py`, `strategies_volatility.py`, `state.py`.
+      - **Note (2025-03-29)**: The following modules are physically present in the repository but are marked as non-working and should not be used: `trade_blacklist.py`, `async_exchange_fetcher.py`, `market_analyzer.py`, `data_fetcher.py`, `symbol_utils.py`, `signal_aggregator.py`, `holdings_manager.py`, `analytics.py`, `async_exchange_manager.py`, `async_order_fetcher.py`, `async_ticker_fetcher.py`, `async_utils.py`, `backtest_analyzer.py`, `backtester.py`, `balance_utils.py`, `bot_commands_balance.py`, `bot_commands_status.py`, `async_ohlcv_fetcher.py`.
   - **Unchecked**: 0 modules (all modules audited).
 
 ## Dependencies Graph

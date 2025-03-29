@@ -69,4 +69,24 @@ digraph trading_bot {
     deposit_manager -> config_keys;  // Added 2025-03-29
     exchange_factory -> logging_setup;
     exchange_factory -> config_keys;  // Added 2025-03-29
+
+    // Non-working modules (physically present but should not be used, 2025-03-29)
+    // async_exchange_fetcher [label="async_exchange_fetcher (non-working)"];
+    // async_exchange_manager [label="async_exchange_manager (non-working)"];
+    // async_ohlcv_fetcher [label="async_ohlcv_fetcher (non-working)"];
+    // async_order_fetcher [label="async_order_fetcher (non-working)"];
+    // async_ticker_fetcher [label="async_ticker_fetcher (non-working)"];
+    // async_utils [label="async_utils (non-working)"];
+    // backtest_analyzer [label="backtest_analyzer (non-working)"];
+    // backtester [label="backtester (non-working)"];
+    // balance_utils [label="balance_utils (non-working)"];
+    // bot_commands_balance [label="bot_commands_balance (non-working)"];
+    // bot_commands_status [label="bot_commands_status (non-working)"];
+    // data_fetcher [label="data_fetcher (non-working)"];
+    // holdings_manager [label="holdings_manager (non-working)"];
+    // market_analyzer [label="market_analyzer (non-working)"];
+    // signal_aggregator [label="signal_aggregator (non-working)"];
+    // symbol_utils [label="symbol_utils (non-working)"];
+    // trade_blacklist [label="trade_blacklist (non-working)"];
+    // analytics [label="analytics (non-working)"];
 }
