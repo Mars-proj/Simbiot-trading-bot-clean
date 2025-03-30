@@ -12,10 +12,10 @@ This file serves as the central hub for the trading bot project, providing a com
   - `signal_generator_core.py`: Core signal generation logic.
   - `signal_generator_indicators.py`: Generates signals using indicators.
   - `strategies.py`: Defines trading strategies.
-  - `trade_pool_core.py`: Manages the trade pool.
-  - `trade_pool_queries.py`: Queries trade pool data.
+  - `trade_pool_core.py`: Manages the trade pool (updated 2025-03-29: consolidated trade pool management).
+  - `trade_pool_queries.py`: Queries trade pool data (updated 2025-03-29: added trade saving functionality).
   - `global_objects.py`: Global objects and configurations.
-  - `symbol_filter.py`: Filters symbols for trading.
+  - `symbol_filter.py`: Filters symbols for trading (updated 2025-03-29: consolidated symbol filtering).
   - `balance_manager.py`: Manages user balances.
   - `deposit_calculator.py`: Calculates deposit requirements.
   - `signal_blacklist.py`: Manages blacklisted signals.
@@ -40,57 +40,41 @@ This file serves as the central hub for the trading bot project, providing a com
   - **Checked**:
     - **Kept** (35 modules):
       - `cache_utils.py`: Caching utilities (updated 2025-03-29: added default TTL and error handling).
-      - `check_all_trades.py`: Checks all trades (updated 2025-03-29: added exchange validation and improved logging).
-      - `check_trades.py`: Checks individual trades (updated 2025-03-29: added exchange validation and improved logging).
+      - `check_all_trades.py`: Checks all trades (updated 2025-03-29: added exchange validation, improved logging, merged check_trades functionality).
       - `data_utils.py`: Data utilities (updated 2025-03-29: added input validation and improved logging).
       - `deposit_manager.py`: Manages deposits (updated 2025-03-29: added exchange validation and improved logging).
-      - `exchange_factory.py`: Exchange factory for creating exchange instances (updated 2025-03-29: added user validation and improved logging).
-      - `exchange_setup.py`: Exchange setup utilities (updated 2025-03-29: improved logging).
+      - `exchange_factory.py`: Exchange factory for creating exchange instances (updated 2025-03-29: added user validation, improved logging, merged exchange_setup functionality).
       - `exchange_utils.py`: Exchange utilities (updated 2025-03-29: added symbol validation and improved logging).
       - `exit_points_calculator.py`: Calculates exit points for trades (updated 2025-03-29: added input validation and improved logging).
-      - `features.py`: Feature engineering for ML models (updated 2025-03-29: added input validation, fixed RSI calculation, improved logging).
-      - `indicators.py`: Technical indicators (updated 2025-03-29: added input validation and improved logging).
+      - `features.py`: Feature engineering for ML models (updated 2025-03-29: added input validation, fixed RSI calculation, improved logging, merged ml_feature_engineer functionality).
+      - `indicators.py`: Technical indicators (updated 2025-03-29: added input validation, improved logging, merged momentum_indicators, price_volatility_indicators, price_volume_indicators, trend_indicators).
       - `limits.py`: Trading limits (updated 2025-03-29: added input validation and improved logging).
       - `market_rentgen_core.py`: Core market analysis logic (updated 2025-03-29: added data validation and improved logging).
       - `market_trend_checker.py`: Checks market trends (updated 2025-03-29: added input validation and improved logging).
-      - `ml_data_preparer.py`: Prepares data for ML models (updated 2025-03-29: added input validation and improved logging).
+      - `ml_data_preparer.py`: Prepares data for ML models (updated 2025-03-29: added input validation, improved logging, merged retraining_data_preprocessor functionality).
       - `ml_data_preparer_utils.py`: Utilities for ML data preparation (updated 2025-03-29: added input validation and improved logging).
-      - `ml_feature_engineer.py`: Feature engineering for ML (updated 2025-03-29: added input validation and improved logging).
       - `ml_model_trainer.py`: Trains ML models (updated 2025-03-29: added input validation and improved logging).
       - `ml_predictor.py`: Makes predictions using ML models (updated 2025-03-29: added input validation and improved logging).
       - `model_utils.py`: Model utilities (updated 2025-03-29: added file validation and improved logging).
-      - `momentum_indicators.py`: Momentum indicators (updated 2025-03-29: added input validation and improved logging).
       - `monetization.py`: Monetization logic (updated 2025-03-29: added input validation and improved logging).
       - `ohlcv_analyzer.py`: OHLCV data analyzer (updated 2025-03-29: added input validation and improved logging).
       - `ohlcv_fetcher.py`: Fetches OHLCV data (updated 2025-03-29: added symbol validation and improved logging).
       - `order_utils.py`: Order utilities (updated 2025-03-29: added input validation and improved logging).
       - `partial_close_calculator.py`: Calculates partial closes (updated 2025-03-29: added input validation and improved logging).
       - `position_monitor.py`: Monitors positions.
-      - `price_volatility_indicators.py`: Price volatility indicators.
-      - `price_volume_indicators.py`: Price volume indicators.
-      - `retraining_data_preprocessor.py`: Preprocesses data for retraining.
       - `retraining_engine.py`: Retraining engine.
       - `risk_manager.py`: Risk management.
       - `strategies_support_resistance.py`: Support and resistance strategies.
       - `strategy_recommender.py`: Recommends strategies.
       - `symbol_data_fetcher.py`: Fetches symbol data.
-      - `symbol_filtering.py`: Symbol filtering utilities.
-      - `symbol_handler.py`: Handles symbols.
-      - `symbol_processor.py`: Processes symbols.
+      - `symbol_handler.py`: Handles symbols (updated 2025-03-29: merged symbol_processor functionality).
       - `symbol_trade_processor.py`: Processes trades for symbols.
       - `test_symbols.py`: Test symbols.
       - `token_potential_evaluator.py`: Evaluates token potential.
-      - `trade_analyzer.py`: Analyzes trades.
-      - `trade_pool_file.py`: File-based trade pool.
-      - `trade_pool_global.py`: Global trade pool.
-      - `trade_pool_redis.py`: Redis-based trade pool.
-      - `trade_pool_tokens.py`: Token-based trade pool.
-      - `trade_pool_transfer.py`: Transfers in trade pool.
-      - `trade_result_analyzer.py`: Analyzes trade results.
+      - `trade_analyzer.py`: Analyzes trades (updated 2025-03-29: merged trade_result_analyzer functionality).
       - `trade_risk_calculator.py`: Calculates trade risks.
       - `trading_cycle.py`: Trading cycle logic.
       - `trading_part1.py`: Part 1 of trading logic.
-      - `trend_indicators.py`: Trend indicators.
       - `user_exchange_setup.py`: User exchange setup.
       - `user_trade_cache.py`: User trade cache.
       - `worker.py`: Worker for background tasks.
@@ -126,9 +110,9 @@ This file serves as the central hub for the trading bot project, providing a com
   - Optimize `trade_executor_core.py`: Add input validation, risk management, and support for market orders.
   - Optimize `bot_trading.py`: Integrate real signal generation and risk management.
   - Optimize `start_trading_all.py`: Add input validation, risk management, and better error handling.
-  - Optimize `check_all_trades.py` and `check_trades.py`: Add API key validation and detailed logging.
+  - Optimize `check_all_trades.py`: Add API key validation and detailed logging.
   - Optimize `deposit_manager.py`: Add API key validation and symbol validation.
-  - Optimize `exchange_factory.py` and `exchange_setup.py`: Add support for additional configuration parameters.
+  - Optimize `exchange_factory.py`: Add support for additional configuration parameters.
   - Optimize `exchange_utils.py`: Add input validation for exchange object.
   - Optimize `order_utils.py`: Add support for market orders.
 - **Medium-term**:
