@@ -1,28 +1,67 @@
 import ccxt.async_support as ccxt
-from utils import logger_main, log_exception
+from logging_setup import logger_main
+from config_keys import API_KEYS, SUPPORTED_EXCHANGES, validate_api_keys
+from bot_user_data import user_data
 
-async def create_exchange(preferred_exchange, exchange_data, loop=None):
-    """Creates an exchange object with the specified parameters"""
+def create_exchange(exchange_id, user_id=None, **kwargs):
+    """Creates an exchange instance for a user (with API keys) or for public requests (without API keys)."""
     try:
-        exchange = getattr(ccxt, preferred_exchange)({
-            'apiKey': exchange_data['api_key'],
-            'secret': exchange_data['api_secret'],
-            'enableRateLimit': exchange_data.get('enableRateLimit', True),
-            'adjustForTimeDifference': True,
-            'recvWindow': 20000,
-            'defaultType': 'spot',
-        })
-        exchange.set_sandbox_mode(False)
-        api_url = exchange.urls.get('api', {}).get('public', 'Unknown endpoint')
-        test_url = exchange.urls.get('test', {}).get('public', 'Unknown test endpoint')
-        logger_main.debug(f"API endpoint for {preferred_exchange}: {api_url}")
-        logger_main.debug(f"Test endpoint for {preferred_exchange}: {test_url}")
-        if 'test' in api_url.lower() or 'sandbox' in api_url.lower():
-            raise Exception(f"Detected test endpoint: {api_url}. Expected real endpoint.")
+        if exchange_id not in SUPPORTED_EXCHANGES:
+            logger_main.error(f"Exchange {exchange_id} not supported")
+            return None
+
+        # Base configuration
+        config = {
+            'enableRateLimit': True,
+            **kwargs  # Additional parameters
+        }
+
+        # Add optional configuration parameters
+        if 'timeout' in kwargs:
+            config['timeout'] = kwargs['timeout']
+        if 'rate_limit' in kwargs:
+            config['rateLimit'] = kwargs['rate_limit']
+        if 'defaultTimeInForce' in kwargs:
+            config['defaultTimeInForce'] = kwargs['defaultTimeInForce']
+
+        if user_id:
+            # Create exchange with API keys
+            if user_id not in user_data:
+                logger_main.error(f"User {user_id} not found in user_data")
+                return None
+
+            api_key = API_KEYS.get(user_id, {}).get(exchange_id, {}).get("api_key")
+            api_secret = API_KEYS.get(user_id, {}).get(exchange_id, {}).get("api_secret")
+            if not validate_api_keys(api_key, api_secret):
+                logger_main.error(f"API keys for {exchange_id} failed validation for user {user_id}")
+                return None
+
+            config.update({
+                'apiKey': api_key,
+                'secret': api_secret,
+            })
+            log_message = f"Exchange instance {exchange_id} (CCXT v.{ccxt.__version__}) created for user {user_id}"
+        else:
+            # Create exchange for public requests
+            log_message = f"Exchange {exchange_id} (CCXT v.{ccxt.__version__}) configured for public requests"
+
+        exchange_class = getattr(ccxt, exchange_id)
+        exchange = exchange_class(config)
+
+        # Additional user-specific setup
+        if user_id:
+            if 'enable_futures' in kwargs and kwargs['enable_futures']:
+                exchange.options['defaultType'] = 'future'
+                log_message += " with futures enabled"
+            if 'enable_margin' in kwargs and kwargs['enable_margin']:
+                exchange.options['defaultType'] = 'margin'
+                log_message += " with margin enabled"
+
+        # Log the full configuration
+        logger_main.info(f"{log_message} with config: {config}")
         return exchange
     except Exception as e:
-        logger_main.error(f"Error creating exchange object for {preferred_exchange}: {str(e)}")
-        log_exception(f"Error creating exchange object: {str(e)}", e)
+        logger_main.error(f"Error creating exchange instance {exchange_id}" + (f" for {user_id}" if user_id else "") + f": {e}")
         return None
 
 __all__ = ['create_exchange']

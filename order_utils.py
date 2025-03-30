@@ -1,46 +1,40 @@
-from utils import logger_main, log_exception
+import ccxt.async_support as ccxt
+from logging_setup import logger_main
 
-async def check_can_buy(trade_executor, balance, min_trade_amount_usdt=5.015):
-    """Проверка, достаточно ли баланса для покупки"""
-    if 'USDT' not in balance or 'free' not in balance['USDT']:
-        logger_main.error("Не удалось получить свободный баланс USDT")
-        trade_executor.can_buy = False
-        return False
-    usdt_balance = float(balance['USDT']['free'])
-    required_balance = min_trade_amount_usdt * 1.1  # Запас 10%
-    if usdt_balance < required_balance:
-        logger_main.warning(f"Недостаточно средств для покупки: доступно {usdt_balance} USDT, требуется минимум {required_balance} USDT")
-        trade_executor.can_buy = False
-    else:
-        logger_main.debug(f"Достаточно средств для покупки: доступно {usdt_balance} USDT")
-        trade_executor.can_buy = True
-    return trade_executor.can_buy
-
-async def update_order_status(exchange, order, trade_data):
-    """Проверка статуса ордера и обновление trade_data в пуле"""
+async def create_order(exchange, symbol, side, amount, price=None, order_type='limit'):
+    """Creates an order on the exchange."""
     try:
-        # Получаем статус ордера через API биржи
-        order_status = await exchange.fetch_order(order['id'], trade_data['symbol'])
-        logger_main.debug(f"Статус ордера для {trade_data['symbol']}: {order_status['status']}")
+        # Validate exchange
+        if not isinstance(exchange, ccxt.async_support.BaseExchange):
+            logger_main.error(f"Invalid exchange object: must be a ccxt.async_support.BaseExchange instance")
+            return None
 
-        # Обновляем статус в trade_data
-        if order_status['status'] == 'closed' and order_status['filled'] == order_status['amount']:
-            trade_data['status'] = 'successful'
-            logger_main.info(f"Ордер для {trade_data['symbol']} полностью выполнен, статус обновлён на 'successful'")
-        elif order_status['status'] in ['canceled', 'expired', 'rejected']:
-            trade_data['status'] = 'failed'
-            logger_main.info(f"Ордер для {trade_data['symbol']} отменён или не выполнен, статус обновлён на 'failed'")
+        # Validate parameters
+        if side not in ['buy', 'sell']:
+            logger_main.error(f"Invalid side {side}: must be 'buy' or 'sell'")
+            return None
+        if amount <= 0:
+            logger_main.error(f"Invalid amount {amount}: must be positive")
+            return None
+        if order_type == 'limit' and (price is None or price <= 0):
+            logger_main.error(f"Invalid price {price} for limit order: must be positive")
+            return None
+
+        # Create the order
+        if order_type == 'market':
+            order = await exchange.create_market_order(symbol, side, amount)
         else:
-            logger_main.debug(f"Ордер для {trade_data['symbol']} всё ещё в обработке, статус остаётся 'pending'")
-            return  # Оставляем статус pending, если ордер ещё не завершён
+            order = await exchange.create_limit_order(symbol, side, amount, price)
 
-        # Обновляем trade_data в пуле
-        from trade_pool import global_trade_pool
-        await global_trade_pool.update_trade(trade_data)
-        logger_main.debug(f"Статус сделки для {trade_data['symbol']} обновлён в пуле: {trade_data['status']}")
+        if not order:
+            logger_main.error(f"Failed to create {order_type} {side} order for {symbol} on {exchange.id}")
+            return None
 
+        order_id = order.get('id', 'N/A')
+        logger_main.info(f"Created {order_type} {side} order for {symbol} on {exchange.id}: order_id={order_id}, amount={amount}, price={price if price else 'N/A'}")
+        return order
     except Exception as e:
-        logger_main.error(f"Ошибка при проверке статуса ордера для {trade_data['symbol']}: {str(e)}")
-        log_exception(f"Ошибка при проверке статуса ордера для {trade_data['symbol']}", e)
+        logger_main.error(f"Error creating order for {symbol} on {exchange.id}: {e}")
+        return None
 
-__all__ = ['check_can_buy', 'update_order_status']
+__all__ = ['create_order']

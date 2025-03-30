@@ -1,56 +1,46 @@
-import asyncio
-import pandas as pd
+import ccxt.async_support as ccxt
 from logging_setup import logger_main
-from utils import log_exception
-from symbol_filter import filter_symbols
-from ohlcv_fetcher import fetch_ohlcv_with_cache, symbol_data_cache
-from trade_executor_signals import execute_trade
 
-async def process_symbols(exchange, user_id, ex_name, trade_executor, symbols=None):
-    logger_main.info(f"Processing symbols for {user_id} on {ex_name}")
+def normalize_symbol(symbol):
+    """Normalizes the symbol format (e.g., converts to uppercase, removes invalid characters)."""
     try:
-        # If symbols are not provided, filter them dynamically
-        if not symbols:
-            symbols = await filter_symbols(exchange, user_id=user_id)
-        logger_main.info(f"Found {len(symbols)} symbols after filtering for {user_id} on {ex_name}: {symbols[:10]}...")
-        # Fetch OHLCV data for all symbols in parallel
-        ohlcv_tasks = []
-        for symbol in symbols:
-            cache_key = f"{ex_name}:{symbol}:4h:500"
-            if cache_key in symbol_data_cache:
-                logger_main.debug(f"Using cached OHLCV data for {symbol}")
-                ohlcv_tasks.append(asyncio.ensure_future(asyncio.sleep(0, result=(symbol, symbol_data_cache[cache_key]))))
-            else:
-                ohlcv_tasks.append(asyncio.ensure_future(fetch_ohlcv_with_cache(exchange, symbol, '4h', 500, cache_key)))
-        ohlcv_results = await asyncio.gather(*ohlcv_tasks, return_exceptions=True)
-        symbol_data = {}
-        for result in ohlcv_results:
-            if isinstance(result, (Exception, asyncio.CancelledError)):
-                logger_main.warning(f"Error fetching OHLCV: {str(result)}")
-                continue
-            symbol, ohlcv = result
-            if ohlcv is None:
-                logger_main.warning(f"Failed to fetch OHLCV for {symbol}")
-                continue
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            symbol_data[symbol] = df
-        # Process symbols in parallel
-        trade_tasks = []
-        total_symbols = len(symbol_data)
-        processed_symbols = 0
-        for symbol in symbol_data:
-            trade_tasks.append(asyncio.ensure_future(execute_trade(trade_executor, exchange, symbol, user_id)))
-            processed_symbols += 1
-            progress = (processed_symbols / total_symbols) * 100
-            logger_main.debug(f"Scheduled processing of {symbol} ({processed_symbols}/{total_symbols} symbols, progress: {progress:.2f}%)")
-        trade_results = await asyncio.gather(*trade_tasks, return_exceptions=True)
-        for symbol, result in zip(symbol_data.keys(), trade_results):
-            if isinstance(result, Exception):
-                logger_main.error(f"Error processing symbol {symbol} for {user_id}: {str(result)}")
-                log_exception(f"Error processing symbol {symbol}: {str(result)}", result)
+        if not isinstance(symbol, str):
+            raise ValueError("Symbol must be a string")
+        normalized = symbol.upper().replace(" ", "")
+        logger_main.info(f"Normalized symbol: {symbol} -> {normalized}")
+        return normalized
     except Exception as e:
-        logger_main.error(f"Error processing symbols for {user_id} on {ex_name}: {str(e)}")
-        log_exception(f"Error processing symbols: {str(e)}", e)
+        logger_main.error(f"Error normalizing symbol {symbol}: {e}")
+        return None
 
-__all__ = ['process_symbols']
+def validate_symbol(symbol):
+    """Validates the symbol format."""
+    try:
+        if not isinstance(symbol, str) or not symbol:
+            raise ValueError("Symbol must be a non-empty string")
+        if '/' not in symbol:
+            raise ValueError("Symbol must contain '/' (e.g., BTC/USDT)")
+        logger_main.info(f"Validated symbol: {symbol}")
+        return True
+    except Exception as e:
+        logger_main.error(f"Error validating symbol {symbol}: {e}")
+        return False
+
+async def validate_symbol_with_markets(exchange, symbol):
+    """Validates the symbol using exchange.load_markets()."""
+    try:
+        if not isinstance(exchange, ccxt.async_support.BaseExchange):
+            raise ValueError("Exchange must be a ccxt.async_support.BaseExchange instance")
+        if not validate_symbol(symbol):
+            return False
+        markets = await exchange.load_markets()
+        if symbol not in markets:
+            logger_main.error(f"Symbol {symbol} not supported on exchange {exchange.id}")
+            return False
+        logger_main.info(f"Symbol {symbol} validated successfully on exchange {exchange.id}")
+        return True
+    except Exception as e:
+        logger_main.error(f"Error validating symbol {symbol} on exchange {exchange.id}: {e}")
+        return False
+
+__all__ = ['normalize_symbol', 'validate_symbol', 'validate_symbol_with_markets']
