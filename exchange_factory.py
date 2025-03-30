@@ -3,7 +3,7 @@ from logging_setup import logger_main
 from config_keys import API_KEYS, SUPPORTED_EXCHANGES, validate_api_keys
 from bot_user_data import user_data
 
-def create_exchange(exchange_id, user_id=None, **kwargs):
+def create_exchange(exchange_id, user_id=None, testnet=False, **kwargs):
     """Creates an exchange instance for a user (with API keys) or for public requests (without API keys)."""
     try:
         if exchange_id not in SUPPORTED_EXCHANGES:
@@ -56,6 +56,21 @@ def create_exchange(exchange_id, user_id=None, **kwargs):
             if 'enable_margin' in kwargs and kwargs['enable_margin']:
                 exchange.options['defaultType'] = 'margin'
                 log_message += " with margin enabled"
+
+        # Enable testnet if specified
+        if testnet:
+            exchange.set_sandbox_mode(True)
+            log_message += " in testnet mode"
+
+        # Add rate limit monitoring for MEXC
+        if exchange_id == 'mexc':
+            exchange.rate_limit_monitor = {
+                'requests': 0,
+                'limit': 1200,  # MEXC API limit per minute (example)
+                'window': 60,  # 60 seconds
+                'start_time': 0
+            }
+            logger_main.info(f"Enabled rate limit monitoring for MEXC: {exchange.rate_limit_monitor}")
 
         # Log the full configuration
         logger_main.info(f"{log_message} with config: {config}")

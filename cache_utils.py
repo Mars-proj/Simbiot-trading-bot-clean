@@ -1,85 +1,35 @@
-import asyncio
-import json
-import time
-from redis_initializer import redis_client
 from logging_setup import logger_main
-from utils import log_exception
+from redis_client import redis_client
 
-CACHE_TTL = 300
-MAX_CACHE_SIZE = 10000
-
-local_ticker_cache = {}
-local_cache_timestamp = {}
-
-async def clear_expired_cache():
-    if redis_client is None:
-        logger_main.error("redis_client is not initialized")
-        raise ValueError("redis_client is not initialized")
+async def cache_symbol_data(symbol: str, data: dict, ttl: int = 3600) -> bool:
+    """Caches symbol data in Redis if the symbol is not problematic."""
     try:
-        keys = await redis_client.client.keys("ohlcv:*")
-        current_time = time.time()
-        for key in keys:
-            ttl = await redis_client.client.ttl(key)
-            if ttl <= 0:
-                await redis_client.client.delete(key)
+        # Check if the symbol is problematic (e.g., low volume)
+        volume = data.get('volume', 0)
+        if volume < 1000:  # Arbitrary threshold for low volume
+            logger_main.warning(f"Symbol {symbol} has low volume ({volume}), not caching")
+            return False
+
+        key = f"symbol_data:{symbol}"
+        await redis_client.set(key, data, ex=ttl)
+        logger_main.info(f"Cached data for symbol {symbol} with TTL {ttl}")
+        return True
     except Exception as e:
-        logger_main.error(f"Error clearing cache: {str(e)}")
-        log_exception(f"Error clearing cache: {str(e)}", e)
+        logger_main.error(f"Error caching data for symbol {symbol}: {e}")
+        return False
 
-async def start_cache_cleanup():
-    while True:
-        await clear_expired_cache()
-        await asyncio.sleep(300)
-
-def clean_ticker_for_serialization(ticker):
-    if not isinstance(ticker, dict):
-        return ticker
-    cleaned_ticker = {}
+async def get_symbol_data(symbol: str) -> dict:
+    """Fetches symbol data from Redis."""
     try:
-        for key, value in ticker.items():
-            if value is None:
-                cleaned_ticker[key] = 0
-            elif isinstance(value, (dict, list)):
-                cleaned_ticker[key] = clean_ticker_for_serialization(value)
-            elif isinstance(value, (int, float, str, bool)):
-                cleaned_ticker[key] = value
-            else:
-                cleaned_ticker[key] = str(value)
-        return cleaned_ticker
+        key = f"symbol_data:{symbol}"
+        data = await redis_client.get(key)
+        if data is None:
+            logger_main.info(f"No cached data for symbol {symbol}")
+            return None
+        logger_main.info(f"Fetched cached data for symbol {symbol}")
+        return data
     except Exception as e:
-        logger_main.error(f"Error cleaning ticker for serialization: {str(e)}")
-        log_exception(f"Error cleaning ticker: {str(e)}", e)
-        return {}
+        logger_main.error(f"Error fetching cached data for symbol {symbol}: {e}")
+        return None
 
-async def get_cached_data(cache_key, retries=3, base_delay=2):
-    if redis_client is None:
-        logger_main.error("redis_client is not initialized")
-        raise ValueError("redis_client is not initialized")
-    cached_data = None
-    for attempt in range(retries):
-        try:
-            cached_data = await redis_client.get(cache_key)
-            break
-        except Exception as e:
-            logger_main.error(f"Error fetching cached data (attempt {attempt + 1}/{retries}): {str(e)}")
-            log_exception(f"Error fetching cached data: {str(e)}", e)
-            if attempt < retries - 1:
-                await asyncio.sleep(base_delay * (attempt + 1))
-            else:
-                cached_data = None
-    return cached_data
-
-async def cache_data(cache_key, data, ttl=CACHE_TTL):
-    if redis_client is None:
-        logger_main.error("redis_client is not initialized")
-        raise ValueError("redis_client is not initialized")
-    try:
-        cache_size = await redis_client.dbsize()
-        if cache_size > MAX_CACHE_SIZE:
-            await clear_expired_cache()
-        await redis_client.set(cache_key, json.dumps(data), ex=ttl)
-    except Exception as e:
-        logger_main.error(f"Error caching data: {str(e)}")
-        log_exception(f"Error caching data: {str(e)}", e)
-
-__all__ = ['clear_expired_cache', 'start_cache_cleanup', 'clean_ticker_for_serialization', 'get_cached_data', 'cache_data']
+__all__ = ['cache_symbol_data', 'get_symbol_data']

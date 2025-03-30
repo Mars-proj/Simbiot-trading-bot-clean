@@ -6,8 +6,8 @@ from order_utils import create_order
 from trade_executor_signals import process_signals
 from limits import check_limits
 
-async def execute_trade(exchange_id, user_id, symbol, signal):
-    """Executes a trade based on the signal."""
+async def execute_trade(exchange_id, user_id, symbol, signal, test_mode=False):
+    """Executes a trade based on the signal, with optional test mode."""
     try:
         # Validate input parameters
         if signal not in ['buy', 'sell']:
@@ -23,7 +23,7 @@ async def execute_trade(exchange_id, user_id, symbol, signal):
             return None
 
         # Create exchange instance
-        exchange = create_exchange(exchange_id, user_id)
+        exchange = create_exchange(exchange_id, user_id, testnet=test_mode)
         if not exchange:
             logger_main.error(f"Failed to create exchange instance for {exchange_id}")
             return None
@@ -42,9 +42,14 @@ async def execute_trade(exchange_id, user_id, symbol, signal):
         price = ticker['last']
 
         # Determine order type (placeholder logic)
-        order_type = 'market' if signal == 'buy' else 'limit'  # Example logic
-        order = await create_order(exchange, symbol, signal, amount, price if order_type == 'limit' else None, order_type)
+        order_type = 'market' if signal == 'buy' else 'limit'
 
+        # Execute trade (in test mode, just log the action)
+        if test_mode:
+            logger_main.info(f"[Test Mode] Would execute {order_type} {signal} trade for user {user_id} on {exchange_id}: symbol={symbol}, amount={amount}, price={price}")
+            return {"id": "test_order", "symbol": symbol, "amount": amount, "price": price}
+
+        order = await create_order(exchange, symbol, signal, amount, price if order_type == 'limit' else None, order_type)
         if not order:
             logger_main.error(f"Failed to execute {signal} trade for {symbol} on {exchange_id}")
             return None

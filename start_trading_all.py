@@ -6,8 +6,8 @@ from config_keys import SUPPORTED_EXCHANGES
 from symbol_handler import validate_symbol
 from limits import check_limits
 
-async def start_trading_all(exchange_id, user_id, symbols):
-    """Starts trading for all symbols in parallel."""
+async def start_trading_all(exchange_id, user_id, symbols, test_mode=False):
+    """Starts trading for all symbols in parallel, with optional test mode."""
     try:
         # Validate inputs
         if exchange_id not in SUPPORTED_EXCHANGES:
@@ -32,7 +32,7 @@ async def start_trading_all(exchange_id, user_id, symbols):
             return False
 
         # Run trading for all symbols in parallel
-        tasks = [run_trading_bot(exchange_id, user_id, symbol) for symbol in symbols]
+        tasks = [run_trading_bot(exchange_id, user_id, symbol, test_mode) for symbol in symbols]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Log results for each symbol
@@ -41,10 +41,10 @@ async def start_trading_all(exchange_id, user_id, symbols):
                 logger_main.error(f"Failed trading for {symbol} on {exchange_id}: {result}")
             else:
                 status = "success" if result else "failed"
-                logger_main.info(f"Trading result for {symbol} on {exchange_id}: {status}")
+                logger_main.info(f"Trading result for {symbol} on {exchange_id} ({'test mode' if test_mode else 'live'}): {status}")
 
         successful = sum(1 for r in results if r is True)
-        logger_main.info(f"Completed trading for {successful}/{len(symbols)} symbols for user {user_id} on {exchange_id}")
+        logger_main.info(f"Completed trading for {successful}/{len(symbols)} symbols for user {user_id} on {exchange_id} ({'test mode' if test_mode else 'live'})")
         return successful > 0
     except Exception as e:
         logger_main.error(f"Error starting trading for user {user_id} on {exchange_id}: {e}")

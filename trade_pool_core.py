@@ -1,144 +1,75 @@
-import redis.asyncio as redis
-import uuid
-import json
+import asyncio
 from logging_setup import logger_main
-from logging_setup import logger_exceptions
-from trade_pool_redis import add_trade_to_redis, update_trade_pnl_in_redis
-from trade_pool_file import add_trade_to_files, update_trade_pnl_in_files
-from user_trade_cache import UserTradeCache
-
-# Определяем настройки логирования прямо здесь
-LOGGING_SETTINGS = {
-    'trade_pool_log_file': '/root/trading_bot/trade_pool.log'
-}
+from trade_pool_queries import get_all_trades, save_trade
 
 class TradePool:
-    def __init__(self):
-        self._redis_client = None  # Lazy initialization
-        self.trade_key_prefix = "trade:"
-        self.available_tokens_key_prefix = "available_tokens:"
-        self.log_file = LOGGING_SETTINGS['trade_pool_log_file']
-        self.json_file = "/root/trading_bot/trades.json"
-        self.max_recent_trades = 10000
-        self.ttl_seconds = 604800  # 7 days in seconds
-        self.user_caches = {}  # Dictionary to store UserTradeCache instances for each user
+    """Manages a pool of trades with support for different storage methods, filtering, transfers, and caching."""
+    def __init__(self, user_id, exchange_id, storage_method='redis'):
+        self.user_id = user_id
+        self.exchange_id = exchange_id
+        self.storage_method = storage_method  # 'redis' or 'file'
+        self.cache = {}  # In-memory cache for quick access
 
-    async def _ensure_redis_client(self):
-        """Initializes Redis client if not already created"""
-        if self._redis_client is None:
-            logger_main.info("Creating Redis client in trade_pool.py")
-            self._redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-            logger_main.info("Checking Redis connection")
-            try:
-                ping_result = await self._redis_client.ping()
-                logger_main.info(f"Connection check result: {ping_result}")
-                if not ping_result:
-                    raise Exception("Failed to connect to Redis")
-                logger_main.info("Redis client successfully initialized in trade_pool.py")
-            except Exception as e:
-                logger_main.error(f"Error initializing Redis client: {str(e)}")
-                logger_exceptions.error(f"Error initializing Redis: {str(e)}", exc_info=True)
-                raise
-        return self._redis_client
-
-    async def _get_user_cache(self, user_id):
-        """Returns the UserTradeCache instance for the given user"""
-        if user_id not in self.user_caches:
-            self.user_caches[user_id] = UserTradeCache(user_id, max_trades=self.max_recent_trades, ttl_seconds=self.ttl_seconds)
-        return self.user_caches[user_id]
-
-    async def add_trade(self, trade_data):
-        """Adds a trade to the pool and user's cache"""
-        logger_main.info("Starting TradePool add_trade")
-        if not isinstance(trade_data, dict):
-            logger_main.error("trade_data must be a dictionary")
-            return
-
-        # Add additional fields with default values
-        trade_data["user_id"] = trade_data.get("user_id", "")
-        trade_data["signals"] = trade_data.get("signals", {
-            "signal_generator": 0,
-            "strategy_signals": {},
-            "combined_signal": 0
-        })
-        trade_data["signal_metrics"] = trade_data.get("signal_metrics", {})
-        trade_data["market_conditions"] = trade_data.get("market_conditions", {})
-        trade_data["pnl"] = trade_data.get("pnl", 0.0)
-        trade_data["status"] = trade_data.get("status", "pending")
-        trade_data["related_trade_id"] = trade_data.get("related_trade_id", None)
-        trade_data["source"] = trade_data.get("source", "real")
-
-        # Create trade_id using UUID for uniqueness
-        trade_id = f"trade:{uuid.uuid4()}"
-        trade_data["trade_id"] = trade_id
-
-        # Log added fields at INFO level
-        logger_main.info(f"Added fields to trade_data: user_id={trade_data['user_id']}, "
-                         f"signals={trade_data['signals']}, "
-                         f"signal_metrics={trade_data['signal_metrics']}, "
-                         f"market_conditions={trade_data['market_conditions']}, "
-                         f"pnl={trade_data['pnl']}, "
-                         f"status={trade_data['status']}, "
-                         f"related_trade_id={trade_data['related_trade_id']}, "
-                         f"trade_id={trade_data['trade_id']}, "
-                         f"source={trade_data['source']}")
-
+    async def add_trade(self, trade, token=None):
+        """Adds a trade to the pool, optionally filtering by token."""
         try:
-            redis_client = await self._ensure_redis_client()
-            # Add to Redis (global pool)
-            add_trade_to_redis(redis_client, trade_data, trade_id, self.ttl_seconds, self.max_recent_trades)
-            # Add to files
-            add_trade_to_files(trade_data, trade_id, self.log_file, self.json_file)
-            # Add to user's cache
-            if trade_data["user_id"]:
-                user_cache = await self._get_user_cache(trade_data["user_id"])
-                await user_cache.add_trade(trade_data)
-        except Exception as e:
-            logger_main.error(f"Error adding trade to pool: {str(e)}")
-            logger_exceptions.error(f"Error adding trade: {str(e)}", exc_info=True)
+            # Check if the symbol is problematic (e.g., low volume)
+            symbol = trade.get('symbol')
+            if symbol:
+                # Placeholder for volume check (should be fetched from exchange or cache)
+                volume = 500  # Example: Assume low volume
+                if volume < 1000:
+                    logger_main.warning(f"Symbol {symbol} has low volume ({volume}), not caching")
+                    return False
 
-    async def get_all_trades(self):
-        """Retrieves all trades from Redis"""
-        try:
-            redis_client = await self._ensure_redis_client()
-            keys = await redis_client.keys(f"{self.trade_key_prefix}*")
-            trades = []
-            for key in keys:
-                trade_data = await redis_client.get(key)
-                if trade_data:
-                    trade = json.loads(trade_data)
-                    trades.append(trade)
-            return trades
-        except Exception as e:
-            logger_main.error(f"Error retrieving trades: {str(e)}")
-            logger_exceptions.error(f"Error retrieving trades: {str(e)}", exc_info=True)
-            return []
-
-    async def update_trade_pnl(self, trade_id, pnl, status="completed"):
-        """Updates PNL and status of a trade"""
-        logger_main.info(f"Updating PNL for trade {trade_id}: PNL={pnl}, status={status}")
-        try:
-            redis_client = await self._ensure_redis_client()
-            # Update in Redis (global pool)
-            success = await update_trade_pnl_in_redis(redis_client, trade_id, pnl, status, self.ttl_seconds, self.max_recent_trades)
-            if not success:
+            if token and trade.get('symbol') != token:
+                logger_main.info(f"Trade for {trade.get('symbol')} does not match token {token}, skipping")
                 return False
-            # Update in files
-            update_trade_pnl_in_files(trade_id, pnl, status, self.log_file, self.json_file)
-            # Update in user's cache (if applicable)
-            trade_data = await redis_client.get(trade_id)
-            if trade_data:
-                trade = json.loads(trade_data)
-                user_id = trade.get("user_id")
-                if user_id:
-                    user_cache = await self._get_user_cache(user_id)
-                    trade["pnl"] = float(pnl)
-                    trade["status"] = status
-                    await user_cache.update_summary(trade)
+            await save_trade(self.user_id, self.exchange_id, trade)
+            # Update cache
+            key = f"{self.user_id}:{self.exchange_id}"
+            if key not in self.cache:
+                self.cache[key] = []
+            self.cache[key].append(trade)
+            logger_main.info(f"Added trade for user {self.user_id} on {self.exchange_id} and cached")
             return True
         except Exception as e:
-            logger_main.error(f"Error updating PNL for trade {trade_id}: {str(e)}")
-            logger_exceptions.error(f"Error updating PNL: {str(e)}", exc_info=True)
+            logger_main.error(f"Error adding trade for user {self.user_id} on {self.exchange_id}: {e}")
+            return False
+
+    async def get_trades(self, exchange, token=None):
+        """Fetches trades from the pool, optionally filtering by token."""
+        try:
+            # Check cache first
+            key = f"{self.user_id}:{self.exchange_id}"
+            if key in self.cache:
+                trades = self.cache[key]
+                logger_main.info(f"Fetched {len(trades)} trades from cache for user {self.user_id} on {self.exchange_id}")
+            else:
+                trades = await get_all_trades(exchange, self.user_id)
+                self.cache[key] = trades
+
+            if token:
+                trades = [trade for trade in trades if trade.get('symbol') == token]
+            logger_main.info(f"Fetched {len(trades)} trades for user {self.user_id} on {self.exchange_id}" + (f" for token {token}" if token else ""))
+            return trades
+        except Exception as e:
+            logger_main.error(f"Error fetching trades for user {self.user_id} on {self.exchange_id}: {e}")
+            return []
+
+    async def transfer_trade(self, trade, target_user_id):
+        """Transfers a trade to another user's pool."""
+        try:
+            await save_trade(target_user_id, self.exchange_id, trade)
+            # Update cache for target user
+            target_key = f"{target_user_id}:{self.exchange_id}"
+            if target_key not in self.cache:
+                self.cache[target_key] = []
+            self.cache[target_key].append(trade)
+            logger_main.info(f"Transferred trade from user {self.user_id} to {target_user_id} on {self.exchange_id}")
+            return True
+        except Exception as e:
+            logger_main.error(f"Error transferring trade from user {self.user_id} to {target_user_id} on {self.exchange_id}: {e}")
             return False
 
 __all__ = ['TradePool']

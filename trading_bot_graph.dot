@@ -59,6 +59,8 @@ digraph trading_bot {
     api_server -> logging_setup;
 
     // Additional Modules
+    cache_utils -> logging_setup;
+    cache_utils -> redis_client;
     check_all_trades -> logging_setup;
     check_all_trades -> config_keys;  // Added 2025-03-29
     check_all_trades -> symbol_handler;  // Added 2025-03-30

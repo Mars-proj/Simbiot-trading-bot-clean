@@ -1,131 +1,48 @@
-import logging
-import sys
-import os
-from fastapi import FastAPI, HTTPException, Header, Request
-from pydantic import BaseModel
-import subprocess
-from typing import Optional
-
-# Настройка логирования
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-logger.info("Starting api_server.py")
-logger.info(f"Python version: {sys.version}")
-logger.info(f"Current working directory: {os.getcwd()}")
+from fastapi import FastAPI, HTTPException, Header
+from logging_setup import logger_main
+from typing import Dict
+import time
 
 app = FastAPI()
 
-# Токен для аутентификации (в реальной системе это должен быть секретный ключ)
-API_TOKEN = "grok_access_token_2025"
+# In-memory storage for API keys and rate limiting
+API_KEYS: Dict[str, str] = {
+    "test_key": "user1"
+}
+RATE_LIMITS: Dict[str, list] = {}  # {api_key: [timestamps]}
+RATE_LIMIT_WINDOW = 60  # 60 seconds
+RATE_LIMIT_MAX_REQUESTS = 100  # Max 100 requests per minute
 
-def verify_token(authorization: str = Header(...)):
-    """Проверяет токен в заголовке Authorization"""
-    if authorization != f"Bearer {API_TOKEN}":
-        logger.error(f"Invalid token: {authorization}")
-        raise HTTPException(status_code=401, detail="Invalid token")
-    logger.info("Token verified successfully")
+def validate_api_key(api_key: str = Header(...)):
+    """Validates the API key provided in the request header."""
+    if api_key not in API_KEYS:
+        logger_main.error(f"Invalid API key: {api_key}")
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return API_KEYS[api_key]
 
-class CommandRequest(BaseModel):
-    command: str
-    working_dir: Optional[str] = "/root/trading_bot"
+def rate_limit(api_key: str):
+    """Enforces rate limiting for the API key."""
+    current_time = time.time()
+    if api_key not in RATE_LIMITS:
+        RATE_LIMITS[api_key] = []
 
-class WriteFileRequest(BaseModel):
-    filename: str
-    content: str
+    # Remove timestamps older than the window
+    RATE_LIMITS[api_key] = [ts for ts in RATE_LIMITS[api_key] if current_time - ts < RATE_LIMIT_WINDOW]
 
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Starting API server...")
+    # Check rate limit
+    if len(RATE_LIMITS[api_key]) >= RATE_LIMIT_MAX_REQUESTS:
+        logger_main.warning(f"Rate limit exceeded for API key {api_key}: {len(RATE_LIMITS[api_key])} requests")
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.info(f"Incoming request: {request.method} {request.url} from {request.client.host}")
-    response = await call_next(request)
-    logger.info(f"Response status: {response.status_code} for {request.method} {request.url}")
-    return response
+    # Add current timestamp
+    RATE_LIMITS[api_key].append(current_time)
 
-@app.post("/execute")
-def execute_command(request: CommandRequest, authorization: str = Header(...)):
-    verify_token(authorization)
-    try:
-        logger.info(f"Received command: {request.command}, working_dir: {request.working_dir}")
-        # Устанавливаем рабочую директорию
-        os.chdir(request.working_dir)
-        # Выполняем команду
-        result = subprocess.run(request.command, shell=True, capture_output=True, text=True)
-        logger.info(f"Command executed with return code: {result.returncode}")
-        return {
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "returncode": result.returncode
-        }
-    except Exception as e:
-        logger.error(f"Error executing command: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/status")
+async def get_status(user_id: str = Header(...)):
+    """Returns the status for the user."""
+    user = validate_api_key(user_id)
+    rate_limit(user_id)
+    logger_main.info(f"Fetched status for user {user}")
+    return {"status": "active", "user_id": user}
 
-@app.post("/write_file")
-def write_file(request: WriteFileRequest, authorization: str = Header(...)):
-    verify_token(authorization)
-    try:
-        filename = request.filename
-        content = request.content
-        logger.info(f"Attempting to write file: {filename}")
-        # Проверяем, существует ли директория
-        directory = os.path.dirname(filename)
-        logger.info(f"Directory path: {directory}")
-        if directory and not os.path.exists(directory):
-            logger.info(f"Directory {directory} does not exist, creating it")
-            os.makedirs(directory, exist_ok=True)
-        else:
-            logger.info(f"Directory {directory} exists")
-        # Проверяем права доступа к директории
-        if not os.access(directory, os.W_OK):
-            logger.error(f"No write permission for directory {directory}")
-            raise HTTPException(status_code=500, detail=f"No write permission for directory {directory}")
-        logger.info(f"Directory {directory} is writable")
-        # Проверяем, существует ли файл
-        if os.path.exists(filename):
-            logger.info(f"File {filename} exists, checking permissions")
-            if not os.access(filename, os.W_OK):
-                logger.error(f"No write permission for file {filename}")
-                raise HTTPException(status_code=500, detail=f"No write permission for file {filename}")
-            logger.info(f"File {filename} is writable")
-        else:
-            logger.info(f"File {filename} does not exist, will create it")
-        # Записываем файл
-        logger.info(f"Opening file {filename} for writing")
-        with open(filename, "w") as f:
-            logger.info(f"Writing content to {filename}")
-            f.write(content)
-            logger.info(f"Content written to {filename}")
-        logger.info(f"File {filename} written successfully")
-        # Проверяем, что файл действительно создан
-        if not os.path.exists(filename):
-            logger.error(f"File {filename} was not created after writing")
-            raise HTTPException(status_code=500, detail=f"File {filename} was not created after writing")
-        logger.info(f"File {filename} exists after writing")
-        return {"message": f"File {filename} written successfully"}
-    except Exception as e:
-        logger.error(f"Error writing file: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/read_file")
-def read_file(filename: str, authorization: str = Header(...)):
-    verify_token(authorization)
-    try:
-        logger.info(f"Reading file: {filename}")
-        # Проверяем права доступа
-        if not os.path.exists(filename):
-            logger.error(f"File {filename} does not exist")
-            raise HTTPException(status_code=404, detail=f"File {filename} does not exist")
-        if not os.access(filename, os.R_OK):
-            logger.error(f"No read permission for file {filename}")
-            raise HTTPException(status_code=500, detail=f"No read permission for file {filename}")
-        with open(filename, "r") as f:
-            content = f.read()
-        logger.info(f"File {filename} read successfully")
-        return {"content": content}
-    except Exception as e:
-        logger.error(f"Error reading file: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+__all__ = ['app']

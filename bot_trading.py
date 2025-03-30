@@ -6,8 +6,8 @@ from bot_user_data import user_data
 from symbol_handler import validate_symbol
 from limits import check_limits
 
-async def run_trading_bot(exchange_id, user_id, symbol):
-    """Runs the trading bot for a specific symbol."""
+async def run_trading_bot(exchange_id, user_id, symbol, test_mode=False):
+    """Runs the trading bot for a specific symbol, with optional test mode."""
     try:
         # Validate inputs
         if user_id not in user_data:
@@ -25,12 +25,16 @@ async def run_trading_bot(exchange_id, user_id, symbol):
             return False
 
         # Get signal from trade_executor_signals
-        signal = await process_signals(exchange_id, user_id, symbol)
+        signal = await process_signals(exchange_id, user_children_id, symbol)
         if not signal:
             logger_main.error(f"Failed to process signal for {symbol} on {exchange_id}")
             return False
 
-        # Execute trade
+        # Execute trade (in test mode, just log the action)
+        if test_mode:
+            logger_main.info(f"[Test Mode] Would execute {signal} trade for user {user_id} on {exchange_id}: symbol={symbol}, amount={amount}")
+            return True
+
         order = await execute_trade(exchange_id, user_id, symbol, signal)
         if not order:
             logger_main.error(f"Failed to execute trade for {symbol} on {exchange_id}")
