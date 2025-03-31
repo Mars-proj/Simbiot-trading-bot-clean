@@ -9,9 +9,9 @@ This file contains the results of the audit of the trading bot system's modules,
 - **2025-03-29**: Module `bot_translations.py` removed as Telegram bot is not integrated into the current system. Useful settings (translations) preserved below. Recommendation: Restore module upon Telegram bot integration.
 - **2025-03-29**: Module `config_notifications.py` removed as notifications are not used in the current system. Useful settings preserved below. Recommendation: Restore module upon notification integration.
 - **2025-03-29**: Module `trade_blacklist.py` removed as its functionality is duplicated by `signal_blacklist.py`. Useful settings preserved below. Recommendation: Use `signal_blacklist.py` for symbol filtering.
-- **2025-03-29**: Module `trade_executor_core.py` is used in the system (dependency from `bot_trading.py`). Recommended to keep. Recommendations: 1) Add input validation (`signal`, `amount`, `leverage`) [Done: 2025-03-30]; 2) Improve logging (add `amount`, `price`) [Done: 2025-03-30]; 3) Add error handling for `fetch_ticker` [Done: 2025-03-30]; 4) Add support for other order types (market orders) [Done: 2025-03-30]; 5) Add test mode for real trading [Done: 2025-03-30].
-- **2025-03-29**: Module `bot_trading.py` is used in the system (dependency from `start_trading_all.py`). Recommended to keep. Recommendations: 1) Integrate `trade_executor_signals.py` for real signal generation [Done: 2025-03-30]; 2) Add input validation (`user_id`, `symbol`) [Done: 2025-03-30]; 3) Improve logging (add signal and trade parameters) [Done: 2025-03-30]; 4) Add test mode for real trading [Done: 2025-03-30].
-- **2025-03-29**: Module `start_trading_all.py` is used in the system. Recommended to keep. Recommendations: 1) Add input validation (`user_id`, `symbols`) [Done: 2025-03-30]; 2) Improve logging (add results per symbol) [Done: 2025-03-30]; 3) Improve error handling in `asyncio.gather` [Done: 2025-03-30]; 4) Add test mode for real trading [Done: 2025-03-30].
+- **2025-03-29**: Module `trade_executor_core.py` is used in the system (dependency from `bot_trading.py`). Recommended to keep. Recommendations: 1) Add input validation (`signal`, `amount`, `leverage`) [Done: 2025-03-30]; 2) Improve logging (add `amount`, `price`) [Done: 2025-03-30]; 3) Add error handling for `fetch_ticker` [Done: 2025-03-30]; 4) Add support for other order types (market orders) [Done: 2025-03-30]; 5) Add test mode for real trading [Done: 2025-03-30]; 6) Remove placeholders for `amount`, `leverage`, `order_type` [Done: 2025-03-30].
+- **2025-03-29**: Module `bot_trading.py` is used in the system (dependency from `start_trading_all.py`). Recommended to keep. Recommendations: 1) Integrate `trade_executor_signals.py` for real signal generation [Done: 2025-03-30]; 2) Add input validation (`user_id`, `symbol`) [Done: 2025-03-30]; 3) Improve logging (add signal and trade parameters) [Done: 2025-03-30]; 4) Add test mode for real trading [Done: 2025-03-30]; 5) Remove `leverage` placeholder, add configurable trade percentage and RSI thresholds [Done: 2025-03-30].
+- **2025-03-29**: Module `start_trading_all.py` is used in the system. Recommended to keep. Recommendations: 1) Add input validation (`user_id`, `symbols`) [Done: 2025-03-30]; 2) Improve logging (add results per symbol) [Done: 2025-03-30]; 3) Improve error handling in `asyncio.gather` [Done: 2025-03-30]; 4) Add test mode for real trading [Done: 2025-03-30]; 5) Remove `amount` and `leverage` placeholders, add configurable parameters [Done: 2025-03-30].
 - **2025-03-29**: Module `deposit_manager.py` is not used in the current system but may be useful. Recommended to keep. Recommendations: 1) Improve logging (add currency and total balance info) [Done: 2025-03-30].
 - **2025-03-29**: Module `exchange_utils.py` is used in the system (dependency from `market_rentgen_core.py`). Recommended to keep. Recommendations: 1) Improve logging (add returned data: `bid`, `ask`) [Done: 2025-03-30].
 - **2025-03-29**: Module `order_utils.py` is used in the system. Recommended to keep. Recommendations: 1) Add support for market orders via `order_type` parameter [Done: 2025-03-30]; 2) Improve logging (add `order_id`) [Done: 2025-03-30].
@@ -28,14 +28,16 @@ This file contains the results of the audit of the trading bot system's modules,
 - **2025-03-29**: General improvements for modules `trade_executor_core.py`, `bot_trading.py`, `start_trading_all.py`: 1) Integrate `limits.py` for risk management [Done: 2025-03-30].
 - **2025-03-30**: Module `api_server.py`: Added API key authentication and rate limiting [Done: 2025-03-30].
 - **2025-03-30**: Module `cache_utils.py`: Added check for problematic symbols before caching [Done: 2025-03-30].
-- **2025-03-30**: Module `trade_pool_core.py`: Added check for problematic symbols in cache [Done: 2025-03-30].
-- **2025-03-30**: Module `bot_trading.py`: Added test mode for real trading [Done: 2025-03-30].
-- **2025-03-30**: Module `trade_executor_core.py`: Added test mode for real trading [Done: 2025-03-30].
-- **2025-03-30**: Module `start_trading_all.py`: Added test mode for real trading [Done: 2025-03-30].
-- **2025-03-30**: Module `signal_generator_indicators.py`: Added GPU support with cupy for indicator calculations [Done: 2025-03-30].
+- **2025-03-30**: Module `trade_pool_core.py`: Added check for problematic symbols in cache [Done: 2025-03-30]; Made volume threshold configurable, removed unused `storage_method` [Done: 2025-03-30].
+- **2025-03-30**: Module `bot_trading.py`: Added test mode for real trading [Done: 2025-03-30]; Removed `leverage` placeholder, added configurable trade percentage and RSI thresholds [Done: 2025-03-30].
+- **2025-03-30**: Module `trade_executor_core.py`: Added test mode for real trading [Done: 2025-03-30]; Removed placeholders for `amount`, `leverage`, `order_type` [Done: 2025-03-30].
+- **2025-03-30**: Module `start_trading_all.py`: Added test mode for real trading [Done: 2025-03-30]; Removed `amount` and `leverage` placeholders, added configurable parameters [Done: 2025-03-30].
+- **2025-03-30**: Module `signal_generator_indicators.py`: Added GPU support with cupy for indicator calculations [Done: 2025-03-30]; Added CPU fallback [Done: 2025-03-30].
 - **2025-03-30**: Module `local_model_api.py`: Added GPU support with torch for model inference [Done: 2025-03-30].
 - **2025-03-30**: Module `retraining_manager.py`: Fixed issue with data loading, added error handling [Done: 2025-03-30].
 - **2025-03-30**: Module `exchange_factory.py`: Added rate limit monitoring for MEXC [Done: 2025-03-30].
+- **2025-03-30**: Module `signal_generator_core.py`: Made overbought/oversold thresholds configurable [Done: 2025-03-30].
+- **2025-03-30**: Module `strategies.py`: Improved strategy recommendation with moving averages, made periods configurable [Done: 2025-03-30].
 
 ## Useful Settings from Removed Modules
 - **bot_translations.py** (removed 2025-03-29):

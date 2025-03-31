@@ -5,9 +5,12 @@ from bot_user_data import user_data
 from config_keys import SUPPORTED_EXCHANGES
 from symbol_handler import validate_symbol
 from limits import check_limits
+from trade_pool_core import TradePool
+from exchange_factory import create_exchange
+from balance_manager import BalanceManager
 
-async def start_trading_all(exchange_id, user_id, symbols, test_mode=False):
-    """Starts trading for all symbols in parallel, with optional test mode."""
+async def start_trading_all(exchange_id, user_id, symbols, leverage=1.0, order_type='limit', trade_percentage=0.1, rsi_overbought=70, rsi_oversold=30, test_mode=False):
+    """Starts trading for all symbols in parallel with configurable parameters."""
     try:
         # Validate inputs
         if exchange_id not in SUPPORTED_EXCHANGES:
@@ -23,16 +26,48 @@ async def start_trading_all(exchange_id, user_id, symbols, test_mode=False):
             if not validate_symbol(symbol):
                 return False
 
-        # Fetch open trades (placeholder)
-        open_trades = []  # This should be fetched from trade_pool_core
-        amount = 0.1  # Placeholder per symbol
-        leverage = 1  # Placeholder
-        if not check_limits(amount * len(symbols), leverage, open_trades):
-            logger_main.error(f"Trade limits exceeded for user {user_id} on {exchange_id}")
+        # Create exchange instance
+        exchange = create_exchange(exchange_id, user_id, testnet=test_mode)
+        if not exchange:
+            logger_main.error(f"Failed to create exchange instance for {exchange_id}")
+            return False
+
+        # Fetch balance
+        balance_manager = BalanceManager(user_id)
+        balance = await balance_manager.get_balance(exchange)
+        if not balance:
+            logger_main.error(f"Failed to fetch balance for user {user_id} on {exchange_id}")
+            return False
+
+        # Fetch open trades
+        trade_pool = TradePool(user_id, exchange_id)
+        open_trades = await trade_pool.get_trades(exchange)
+        if open_trades is None:
+            logger_main.error(f"Failed to fetch open trades for user {user_id} on {exchange_id}")
             return False
 
         # Run trading for all symbols in parallel
-        tasks = [run_trading_bot(exchange_id, user_id, symbol, test_mode) for symbol in symbols]
+        tasks = []
+        for symbol in symbols:
+            # Determine currency and calculate amount for each symbol
+            currency = symbol.split('/')[1]  # e.g., USDT in BTC/USDT
+            available_balance = balance.get(currency, {}).get('free', 0)
+            amount = available_balance * trade_percentage  # Use configurable percentage of available balance
+
+            if not check_limits(amount, leverage, open_trades):
+                logger_main.error(f"Trade limits exceeded for user {user_id} on {exchange_id} for symbol {symbol}")
+                continue
+
+            tasks.append(run_trading_bot(
+                exchange_id, user_id, symbol,
+                leverage=leverage,
+                order_type=order_type,
+                trade_percentage=trade_percentage,
+                rsi_overbought=rsi_overbought,
+                rsi_oversold=rsi_oversold,
+                test_mode=test_mode
+            ))
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Log results for each symbol
@@ -49,5 +84,7 @@ async def start_trading_all(exchange_id, user_id, symbols, test_mode=False):
     except Exception as e:
         logger_main.error(f"Error starting trading for user {user_id} on {exchange_id}: {e}")
         return False
+    finally:
+        await exchange.close()
 
 __all__ = ['start_trading_all']

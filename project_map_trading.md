@@ -5,19 +5,19 @@ This file serves as the central hub for the trading bot project, providing a com
 
 ## System Architecture
 - **Core Trading Logic** (16 modules):
-  - `trade_executor_core.py`: Executes trades based on signals (updated 2025-03-30: added input validation, improved logging, error handling, market order support, risk management, test mode support).
-  - `trade_executor_signals.py`: Processes trading signals (updated 2025-03-29: added signal aggregation).
-  - `bot_trading.py`: Main trading bot logic (updated 2025-03-30: integrated real signal generation, added input validation, improved logging, risk management, test mode support).
-  - `start_trading_all.py`: Initiates trading for all symbols (updated 2025-03-30: added input validation, improved logging, error handling, risk management, test mode support).
-  - `signal_generator_core.py`: Core signal generation logic.
-  - `signal_generator_indicators.py`: Generates signals using indicators (updated 2025-03-30: added GPU support with cupy).
-  - `strategies.py`: Defines trading strategies (updated 2025-03-29: merged support/resistance and recommendation logic).
-  - `trade_pool_core.py`: Manages the trade pool (updated 2025-03-30: added in-memory caching, problematic symbol check).
+  - `trade_executor_core.py`: Executes trades based on signals (updated 2025-03-30: added input validation, improved logging, error handling, market order support, risk management, test mode support, removed placeholders for amount/leverage/order_type).
+  - `trade_executor_signals.py`: Processes trading signals (updated 2025-03-30: added signal aggregation with weights, made RSI thresholds configurable).
+  - `bot_trading.py`: Main trading bot logic (updated 2025-03-30: integrated real signal generation, added input validation, improved logging, risk management, test mode support, removed leverage placeholder, added configurable trade percentage and RSI thresholds).
+  - `start_trading_all.py`: Initiates trading for all symbols (updated 2025-03-30: added input validation, improved logging, error handling, risk management, test mode support, removed amount/leverage placeholders, added configurable parameters).
+  - `signal_generator_core.py`: Generates base signals (updated 2025-03-30: made overbought/oversold thresholds configurable).
+  - `signal_generator_indicators.py`: Generates signals using indicators (updated 2025-03-30: added GPU support with cupy, added CPU fallback).
+  - `strategies.py`: Defines trading strategies (updated 2025-03-30: improved strategy recommendation with moving averages, made periods configurable).
+  - `trade_pool_core.py`: Manages the trade pool (updated 2025-03-30: added in-memory caching, problematic symbol check, made volume threshold configurable, removed unused storage_method).
   - `trade_pool_queries.py`: Queries trade pool data (updated 2025-03-29: added trade saving functionality).
   - `global_objects.py`: Global objects and configurations.
   - `symbol_filter.py`: Filters symbols for trading (updated 2025-03-29: consolidated symbol filtering).
   - `balance_manager.py`: Manages user balances (updated 2025-03-29: added holdings functionality).
-  - `deposit_calculator.py`: Calculates deposit requirements.
+  - `deposit_calculator.py`: Calculates deposit requirements (updated 2025-03-30: made margin multiplier configurable).
   - `signal_blacklist.py`: Manages blacklisted signals.
   - `retraining_manager.py`: Manages model retraining (updated 2025-03-30: added error handling for data loading).
   - `local_model_api.py`: Local API for model inference (updated 2025-03-30: added GPU support with torch).
@@ -96,7 +96,7 @@ This file serves as the central hub for the trading bot project, providing a com
   - Use GPU for calculations [Done: 2025-03-30].
   - Fix `retraining_manager.py` issue [Done: 2025-03-30].
   - Add API rate limit monitoring for MEXC [Done: 2025-03-30].
-  - Load testing with 100 users.
+  - Load testing with 100 users [Done: 2025-03-30].
 - **Medium-term**:
   - Scale to 1000+ users.
   - Implement self-learning and self-improving mechanisms.

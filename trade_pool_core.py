@@ -1,25 +1,29 @@
 import asyncio
 from logging_setup import logger_main
 from trade_pool_queries import get_all_trades, save_trade
+from exchange_utils import fetch_ticker
 
 class TradePool:
-    """Manages a pool of trades with support for different storage methods, filtering, transfers, and caching."""
-    def __init__(self, user_id, exchange_id, storage_method='redis'):
+    """Manages a pool of trades with filtering, transfers, and caching."""
+    def __init__(self, user_id, exchange_id, min_volume=1000):
         self.user_id = user_id
         self.exchange_id = exchange_id
-        self.storage_method = storage_method  # 'redis' or 'file'
+        self.min_volume = min_volume  # Minimum volume threshold for caching
         self.cache = {}  # In-memory cache for quick access
 
-    async def add_trade(self, trade, token=None):
+    async def add_trade(self, trade, exchange, token=None):
         """Adds a trade to the pool, optionally filtering by token."""
         try:
             # Check if the symbol is problematic (e.g., low volume)
             symbol = trade.get('symbol')
             if symbol:
-                # Placeholder for volume check (should be fetched from exchange or cache)
-                volume = 500  # Example: Assume low volume
-                if volume < 1000:
-                    logger_main.warning(f"Symbol {symbol} has low volume ({volume}), not caching")
+                ticker = await fetch_ticker(exchange, symbol)
+                if not ticker:
+                    logger_main.error(f"Failed to fetch ticker for {symbol} on {self.exchange_id}")
+                    return False
+                volume = ticker.get('baseVolume', 0)
+                if volume < self.min_volume:
+                    logger_main.warning(f"Symbol {symbol} has low volume ({volume}), below threshold {self.min_volume}, not caching")
                     return False
 
             if token and trade.get('symbol') != token:

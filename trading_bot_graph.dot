@@ -10,6 +10,7 @@ digraph trading_bot {
     trade_executor_core -> deposit_calculator;
     trade_executor_core -> signal_blacklist;
     trade_executor_core -> limits;  // Added 2025-03-30
+    trade_executor_core -> config_keys;  // Added 2025-03-30 for MAX_LEVERAGE
     trade_executor_signals -> logging_setup;
     trade_executor_signals -> signal_generator_core;
     trade_executor_signals -> signal_generator_indicators;
@@ -20,11 +21,15 @@ digraph trading_bot {
     bot_trading -> trade_pool_core;
     bot_trading -> global_objects;
     bot_trading -> limits;  // Added 2025-03-30
+    bot_trading -> balance_manager;
+    bot_trading -> deposit_calculator;  // Added 2025-03-30
     start_trading_all -> logging_setup;
     start_trading_all -> bot_trading;
     start_trading_all -> config_keys;
     start_trading_all -> bot_user_data;
     start_trading_all -> limits;  // Added 2025-03-30
+    start_trading_all -> balance_manager;
+    start_trading_all -> deposit_calculator;  // Added 2025-03-30
     signal_generator_core -> logging_setup;
     signal_generator_core -> global_objects;
     signal_generator_indicators -> logging_setup;
