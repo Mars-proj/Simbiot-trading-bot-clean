@@ -1,0 +1,111 @@
+digraph trading_bot {
+    // Core Trading Logic
+    trade_executor_core -> exchange_factory;
+    trade_executor_core -> order_utils;
+    trade_executor_core -> trade_executor_signals;
+    trade_executor_core -> limits;
+    trade_executor_core -> trade_pool_core;
+    trade_executor_core -> exit_points_calculator;
+    trade_executor_core -> monetization;
+    trade_executor_core -> partial_close_calculator;
+    trade_executor_core -> risk_manager;
+    trade_executor_core -> balance_manager;
+    trade_executor_core -> symbol_handler;
+    trade_executor_core -> notification_manager;  // Added 2025-04-01
+
+    trade_executor_signals -> signal_generator_indicators;
+    trade_executor_signals -> ohlcv_fetcher;
+    trade_executor_signals -> local_model_api;
+    trade_executor_signals -> indicators;
+
+    bot_trading -> trade_executor_core;
+    bot_trading -> trade_executor_signals;
+    bot_trading -> bot_user_data;
+    bot_trading -> limits;
+    bot_trading -> balance_manager;
+    bot_trading -> exchange_factory;
+    bot_trading -> trade_pool_core;
+    bot_trading -> deposit_calculator;
+    bot_trading -> signal_blacklist;
+    bot_trading -> symbol_handler;
+
+    start_trading_all -> bot_trading;
+    start_trading_all -> bot_user_data;
+    start_trading_all -> limits;
+    start_trading_all -> trade_pool_core;
+    start_trading_all -> exchange_factory;
+    start_trading_all -> balance_manager;
+    start_trading_all -> deposit_calculator;
+    start_trading_all -> signal_blacklist;
+    start_trading_all -> symbol_handler;
+
+    // Supporting Modules
+    check_all_trades -> config_keys;
+    check_all_trades -> exchange_factory;
+    check_all_trades -> trade_pool_core;
+    check_all_trades -> symbol_handler;
+
+    deposit_manager -> config_keys;
+    deposit_manager -> exchange_factory;
+    deposit_manager -> balance_manager;
+    deposit_manager -> symbol_handler;
+
+    exchange_factory -> logging_setup;
+    exchange_factory -> config_keys;
+
+    exchange_utils -> symbol_handler;
+
+    limits -> config_keys;
+
+    market_rentgen_core -> exchange_utils;
+    market_rentgen_core -> ohlcv_fetcher;
+    market_rentgen_core -> symbol_handler;
+
+    ml_data_preparer -> features;
+    ml_data_preparer -> ml_data_preparer_utils;
+
+    ohlcv_fetcher -> exchange_factory;
+    ohlcv_fetcher -> symbol_handler;
+
+    order_utils -> symbol_handler;
+
+    partial_close_calculator -> config_keys;
+
+    position_monitor -> exchange_factory;
+    position_monitor -> trade_pool_core;
+    position_monitor -> trade_executor_core;
+    position_monitor -> symbol_handler;
+
+    symbol_data_fetcher -> exchange_factory;
+    symbol_data_fetcher -> symbol_handler;
+
+    symbol_handler -> exchange_factory;
+
+    symbol_trade_processor -> exchange_factory;
+    symbol_trade_processor -> trade_pool_core;
+    symbol_trade_processor -> trade_executor_core;
+    symbol_trade_processor -> symbol_handler;
+
+    test_symbols -> exchange_factory;
+    test_symbols -> symbol_handler;
+
+    token_analyzer -> exchange_factory;
+    token_analyzer -> exchange_utils;
+    token_analyzer -> ohlcv_fetcher;
+    token_analyzer -> symbol_handler;
+
+    trade_pool_core -> redis_client;
+    trade_pool_core -> cache_utils;
+    trade_pool_core -> exchange_utils;
+    trade_pool_core -> symbol_handler;
+
+    trade_pool_manager -> trade_pool_core;
+
+    backtest_cycle -> bot_trading;
+    backtest_cycle -> historical_data_fetcher;  // Added 2025-04-01
+
+    historical_data_fetcher -> exchange_factory;  // Added 2025-04-01
+    historical_data_fetcher -> symbol_handler;  // Added 2025-04-01
+
+    notification_manager -> None;  // Added 2025-04-01
+}
