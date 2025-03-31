@@ -8,15 +8,26 @@ from limits import check_limits
 from balance_manager import BalanceManager
 from exchange_factory import create_exchange
 from trade_pool_core import TradePool
+from deposit_calculator import calculate_deposit
+from signal_blacklist import SignalBlacklist
 
-async def run_trading_bot(exchange_id, user_id, symbol, leverage=1.0, order_type='limit', trade_percentage=0.1, rsi_overbought=70, rsi_oversold=30, test_mode=False):
+async def run_trading_bot(exchange_id, user_id, symbol, leverage=1.0, order_type='limit', trade_percentage=0.1, rsi_overbought=70, rsi_oversold=30, margin_multiplier=2.0, blacklisted_symbols=None, model_path=None, test_mode=False):
     """Runs the trading bot for a specific symbol with configurable parameters."""
     try:
         # Validate inputs
-        if user_id not in user_data:
-            logger_main.error(f"User {user_id} not found in user_data")
+        if not user_data.get_user_status(user_id):
+            logger_main.error(f"User {user_id} not found or inactive")
+            return False
+        if not user_data.has_api_keys(user_id, exchange_id):
+            logger_main.error(f"User {user_id} does not have API keys for {exchange_id}")
             return False
         if not validate_symbol(symbol):
+            return False
+
+        # Check if symbol is blacklisted
+        blacklist = SignalBlacklist(blacklisted_symbols)
+        if blacklist.is_blacklisted(symbol):
+            logger_main.error(f"Symbol {symbol} is blacklisted for user {user_id} on {exchange_id}")
             return False
 
         # Create exchange instance
@@ -37,6 +48,17 @@ async def run_trading_bot(exchange_id, user_id, symbol, leverage=1.0, order_type
         available_balance = balance.get(currency, {}).get('free', 0)
         amount = available_balance * trade_percentage  # Use configurable percentage of available balance
 
+        # Calculate required deposit
+        required_deposit = calculate_deposit(symbol, amount, margin_multiplier)
+        if required_deposit is None:
+            logger_main.error(f"Failed to calculate required deposit for {symbol}")
+            return False
+
+        # Check if available balance is sufficient for the deposit
+        if available_balance < required_deposit:
+            logger_main.error(f"Insufficient balance for user {user_id} on {exchange_id}: available={available_balance}, required={required_deposit}")
+            return False
+
         # Fetch open trades
         trade_pool = TradePool(user_id, exchange_id)
         open_trades = await trade_pool.get_trades(exchange)
@@ -49,7 +71,7 @@ async def run_trading_bot(exchange_id, user_id, symbol, leverage=1.0, order_type
             return False
 
         # Get signal from trade_executor_signals
-        signal = await process_signals(exchange_id, user_id, symbol, rsi_overbought=rsi_overbought, rsi_oversold=rsi_oversold)
+        signal = await process_signals(exchange_id, user_id, symbol, model_path=model_path, rsi_overbought=rsi_overbought, rsi_oversold=rsi_oversold)
         if not signal:
             logger_main.error(f"Failed to process signal for {symbol} on {exchange_id}")
             return False

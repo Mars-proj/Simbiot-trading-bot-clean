@@ -1,64 +1,48 @@
-import ccxt.async_support as ccxt
-import asyncio
 from logging_setup import logger_main
-from config_keys import API_KEYS, SUPPORTED_EXCHANGES, validate_api_keys
-from bot_user_data import user_data
-from trade_pool_queries import get_all_trades
-from symbol_handler import validate_symbol_with_markets
+from config_keys import API_KEYS, validate_api_keys
+from symbol_handler import validate_symbol
+from exchange_factory import create_exchange
+from trade_pool_core import TradePool
 
-async def check_all_trades(exchange_id, user_id, symbol=None):
-    """Checks all trades for a user on the specified exchange, with optional symbol filtering."""
+async def check_all_trades(exchange_id, user_id, symbols):
+    """Checks all trades for a user on a specific exchange."""
     try:
-        # Validate exchange ID
-        if exchange_id not in SUPPORTED_EXCHANGES:
-            logger_main.error(f"Exchange {exchange_id} not supported for user {user_id}")
-            return []
-
-        # Validate user ID
-        if user_id not in user_data:
-            logger_main.error(f"User {user_id} not found in user_data")
-            return []
-
         # Validate API keys
-        api_key = API_KEYS.get(user_id, {}).get(exchange_id, {}).get("api_key")
-        api_secret = API_KEYS.get(user_id, {}).get(exchange_id, {}).get("api_secret")
+        if user_id not in API_KEYS or exchange_id not in API_KEYS[user_id]:
+            logger_main.error(f"No API keys found for user {user_id} on {exchange_id}")
+            return False
+        api_key = API_KEYS[user_id][exchange_id]["api_key"]
+        api_secret = API_KEYS[user_id][exchange_id]["api_secret"]
         if not validate_api_keys(api_key, api_secret):
-            logger_main.error(f"API keys for {exchange_id} failed validation for user {user_id}")
-            return []
+            logger_main.error(f"Invalid API keys for user {user_id} on {exchange_id}")
+            return False
+
+        # Validate symbols
+        for symbol in symbols:
+            if not validate_symbol(symbol):
+                logger_main.error(f"Invalid symbol: {symbol}")
+                return False
 
         # Create exchange instance
-        exchange_class = getattr(ccxt, exchange_id)
-        exchange = exchange_class({
-            'apiKey': api_key,
-            'secret': api_secret,
-            'enableRateLimit': True,
-        })
+        exchange = create_exchange(exchange_id, user_id, testnet=False)
+        if not exchange:
+            logger_main.error(f"Failed to create exchange instance for {exchange_id}")
+            return False
 
-        # Validate symbol if provided
-        if symbol:
-            if not await validate_symbol_with_markets(exchange, symbol):
-                return []
-            trades = await exchange.fetch_my_trades(symbol)
-        else:
-            trades = await get_all_trades(exchange, user_id)
+        # Fetch trades using trade_pool_core
+        trade_pool = TradePool(user_id, exchange_id)
+        trades = await trade_pool.get_trades(exchange)
+        if trades is None:
+            logger_main.error(f"Failed to fetch trades for user {user_id} on {exchange_id}")
+            return False
 
-        # Validate trades data
-        if not isinstance(trades, list):
-            logger_main.error(f"Invalid trades format for {user_id} on {exchange_id}")
-            return []
-
-        # Log trade types
-        if trades:
-            buy_trades = sum(1 for trade in trades if trade.get('side') == 'buy')
-            sell_trades = sum(1 for trade in trades if trade.get('side') == 'sell')
-            logger_main.info(f"Checked {len(trades)} trades for user {user_id} on {exchange_id}" + (f" for symbol {symbol}" if symbol else "") + f": {buy_trades} buy, {sell_trades} sell")
-        else:
-            logger_main.warning(f"No trades found for user {user_id} on {exchange_id}" + (f" for symbol {symbol}" if symbol else ""))
-
-        return trades
+        for trade in trades:
+            logger_main.info(f"Trade for {trade.get('symbol', 'N/A')}: type={trade.get('type', 'N/A')}, amount={trade.get('amount', 'N/A')}")
+        logger_main.info(f"Checked {len(trades)} trades for user {user_id} on {exchange_id}")
+        return True
     except Exception as e:
-        logger_main.error(f"Error checking trades for {user_id} on {exchange_id}" + (f" for symbol {symbol}" if symbol else "") + f": {e}")
-        return []
+        logger_main.error(f"Error checking trades for user {user_id} on {exchange_id}: {e}")
+        return False
     finally:
         await exchange.close()
 

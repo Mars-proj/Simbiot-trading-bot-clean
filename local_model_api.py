@@ -10,6 +10,9 @@ class LocalModelAPI:
             self.model = torch.load(model_path, map_location=self.device)
             self.model.eval()
             logger_main.info(f"Loaded model on {self.device} from {model_path}")
+        except FileNotFoundError as e:
+            logger_main.error(f"Model file not found at {model_path}: {e}")
+            self.model = None
         except Exception as e:
             logger_main.error(f"Error loading model: {e}")
             self.model = None

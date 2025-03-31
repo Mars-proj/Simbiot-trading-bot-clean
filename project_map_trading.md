@@ -6,36 +6,36 @@ This file serves as the central hub for the trading bot project, providing a com
 ## System Architecture
 - **Core Trading Logic** (16 modules):
   - `trade_executor_core.py`: Executes trades based on signals (updated 2025-03-30: added input validation, improved logging, error handling, market order support, risk management, test mode support, removed placeholders for amount/leverage/order_type).
-  - `trade_executor_signals.py`: Processes trading signals (updated 2025-03-30: added signal aggregation with weights, made RSI thresholds configurable).
-  - `bot_trading.py`: Main trading bot logic (updated 2025-03-30: integrated real signal generation, added input validation, improved logging, risk management, test mode support, removed leverage placeholder, added configurable trade percentage and RSI thresholds).
-  - `start_trading_all.py`: Initiates trading for all symbols (updated 2025-03-30: added input validation, improved logging, error handling, risk management, test mode support, removed amount/leverage placeholders, added configurable parameters).
+  - `trade_executor_signals.py`: Processes trading signals (updated 2025-03-31: added signal aggregation with weights, made RSI thresholds configurable, integrated ML predictions via `local_model_api.py`).
+  - `bot_trading.py`: Main trading bot logic (updated 2025-03-31: integrated real signal generation, added input validation, improved logging, risk management, test mode support, removed leverage placeholder, added configurable trade percentage and RSI thresholds, integrated `deposit_calculator.py`, `signal_blacklist.py`, `bot_user_data.py` for API key validation).
+  - `start_trading_all.py`: Initiates trading for all symbols (updated 2025-03-31: added input validation, improved logging, error handling, risk management, test mode support, removed amount/leverage placeholders, added configurable parameters, integrated `deposit_calculator.py`, `signal_blacklist.py`, `bot_user_data.py` for API key validation).
   - `signal_generator_core.py`: Generates base signals (updated 2025-03-30: made overbought/oversold thresholds configurable).
   - `signal_generator_indicators.py`: Generates signals using indicators (updated 2025-03-30: added GPU support with cupy, added CPU fallback).
   - `strategies.py`: Defines trading strategies (updated 2025-03-30: improved strategy recommendation with moving averages, made periods configurable).
   - `trade_pool_core.py`: Manages the trade pool (updated 2025-03-30: added in-memory caching, problematic symbol check, made volume threshold configurable, removed unused storage_method).
-  - `trade_pool_queries.py`: Queries trade pool data (updated 2025-03-29: added trade saving functionality).
+  - `trade_pool_queries.py`: Queries trade pool data (updated 2025-03-30: made cache TTL configurable, added data format validation).
   - `global_objects.py`: Global objects and configurations.
   - `symbol_filter.py`: Filters symbols for trading (updated 2025-03-29: consolidated symbol filtering).
   - `balance_manager.py`: Manages user balances (updated 2025-03-29: added holdings functionality).
-  - `deposit_calculator.py`: Calculates deposit requirements (updated 2025-03-30: made margin multiplier configurable).
-  - `signal_blacklist.py`: Manages blacklisted signals.
+  - `deposit_calculator.py`: Calculates deposit requirements (updated 2025-03-30: made margin multiplier configurable, integrated into `bot_trading.py` and `start_trading_all.py`).
+  - `signal_blacklist.py`: Manages blacklisted signals (updated 2025-03-31: made blacklist configurable, integrated into `bot_trading.py` and `start_trading_all.py`).
   - `retraining_manager.py`: Manages model retraining (updated 2025-03-30: added error handling for data loading).
-  - `local_model_api.py`: Local API for model inference (updated 2025-03-30: added GPU support with torch).
+  - `local_model_api.py`: Local API for model inference (updated 2025-03-31: removed mock model placeholder, integrated into `trade_executor_signals.py` for ML predictions).
 
 - **Supporting Modules** (7 modules):
   - `logging_setup.py`: Logging configuration.
-  - `config_keys.py`: API key management (updated 2025-03-29: merged general settings).
-  - `redis_client.py`: Redis client operations (updated 2025-03-29: merged initialization logic).
+  - `config_keys.py`: API key management (updated 2025-03-31: removed placeholder API keys, improved validation with length and format checks).
+  - `redis_client.py`: Redis client operations (updated 2025-03-31: made Redis URL configurable, added automatic initialization).
   - `json_handler.py`: JSON serialization/deserialization.
-  - `backtest_cycle.py`: Backtesting cycle.
-  - `bot_user_data.py`: User data management (updated 2025-03-29: added status functionality).
-  - `api_server.py`: API server for external access (updated 2025-03-30: added API key authentication and rate limiting).
+  - `backtest_cycle.py`: Backtesting cycle (updated 2025-03-31: added configurable parameters for `run_trading_bot`, still requires historical data fetching).
+  - `bot_user_data.py`: User data management (updated 2025-03-31: made user data configurable, added API key validation, integrated into `bot_trading.py` and `start_trading_all.py`).
+  - `api_server.py`: API server for external access (updated 2025-03-31: made API keys and rate limit configurable, improved rate limiting with time window).
 
 - **Additional Modules** (31 modules):
-  - `cache_utils.py`: Caching utilities (updated 2025-03-30: added problematic symbol check).
-  - `check_all_trades.py`: Checks all trades (updated 2025-03-30: added API key validation, improved logging, symbol validation).
+  - `cache_utils.py`: Caching utilities (updated 2025-03-31: made volume threshold and cache TTL configurable).
+  - `check_all_trades.py`: Checks all trades (updated 2025-03-31: removed placeholder for trade fetching, integrated `trade_pool_core.py` and `exchange_factory.py`).
   - `data_utils.py`: Data utilities (updated 2025-03-29: added input validation and improved logging).
-  - `deposit_manager.py`: Manages deposits (updated 2025-03-30: added API key validation, symbol validation, improved logging).
+  - `deposit_manager.py`: Manages deposits (updated 2025-03-31: added balance check via `balance_manager.py`, integrated `exchange_factory.py`, still requires API call for deposit).
   - `exchange_factory.py`: Exchange factory for creating exchange instances (updated 2025-03-30: improved logging, added support for additional parameters, added rate limit monitoring for MEXC).
   - `exchange_utils.py`: Exchange utilities (updated 2025-03-30: added input validation, improved logging).
   - `exit_points_calculator.py`: Calculates exit points for trades (updated 2025-03-29: added input validation and improved logging).
@@ -64,7 +64,7 @@ This file serves as the central hub for the trading bot project, providing a com
   - `trade_analyzer.py`: Analyzes trades (updated 2025-03-29: merged trade result analyzer).
   - `trading_cycle.py`: Trading cycle logic (updated 2025-03-29: merged trading_part1).
   - `worker.py`: Worker for background tasks.
-  - `utils.py`: General utilities.
+  - `utils.py`: General utilities (updated 2025-03-29: added `log_exception` function).
 
 - **Non-working Modules** (18 modules, physically present but marked as non-working):
   - `trade_blacklist.py`, `async_exchange_fetcher.py`, `market_analyzer.py`, `data_fetcher.py`, `symbol_utils.py`, `signal_aggregator.py`, `strategies_volume.py`, `holdings_manager.py`, `analytics.py`, `async_exchange_manager.py`, `async_order_fetcher.py`, `async_ticker_fetcher.py`, `async_utils.py`, `backtest_analyzer.py`, `backtester.py`, `balance_utils.py`, `bot_commands_balance.py`, `bot_commands_status.py`.
@@ -87,6 +87,13 @@ This file serves as the central hub for the trading bot project, providing a com
   - 2025-03-30: Added dependency `start_trading_all -> limits` for risk management.
   - 2025-03-30: Added dependency `check_all_trades -> symbol_handler`.
   - 2025-03-30: Added dependency `deposit_manager -> symbol_handler`.
+  - 2025-03-31: Added dependency `trade_executor_signals -> local_model_api` for ML predictions.
+  - 2025-03-31: Added dependency `bot_trading -> bot_user_data` for API key validation.
+  - 2025-03-31: Added dependency `start_trading_all -> bot_user_data` for API key validation.
+  - 2025-03-31: Added dependency `check_all_trades -> trade_pool_core` for trade fetching.
+  - 2025-03-31: Added dependency `check_all_trades -> exchange_factory` for exchange creation.
+  - 2025-03-31: Added dependency `deposit_manager -> exchange_factory` for exchange creation.
+  - 2025-03-31: Added dependency `deposit_manager -> balance_manager` for balance checking.
 
 ## Roadmap
 - **Short-term**:
@@ -97,10 +104,14 @@ This file serves as the central hub for the trading bot project, providing a com
   - Fix `retraining_manager.py` issue [Done: 2025-03-30].
   - Add API rate limit monitoring for MEXC [Done: 2025-03-30].
   - Load testing with 100 users [Done: 2025-03-30].
+  - Remove placeholders in core modules [Done: 2025-03-31].
+  - Integrate ML predictions into signal processing [Done: 2025-03-31].
+  - Add API key validation in trading modules [Done: 2025-03-31].
 - **Medium-term**:
   - Scale to 1000+ users.
   - Implement self-learning and self-improving mechanisms.
   - Add support for more exchanges.
+  - Implement historical data fetching for backtesting.
 - **Long-term**:
   - Full market X-ray system.
   - Advanced ML model integration.

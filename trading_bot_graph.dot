@@ -9,27 +9,32 @@ digraph trading_bot {
     trade_executor_core -> balance_manager;
     trade_executor_core -> deposit_calculator;
     trade_executor_core -> signal_blacklist;
-    trade_executor_core -> limits;  // Added 2025-03-30
-    trade_executor_core -> config_keys;  // Added 2025-03-30 for MAX_LEVERAGE
+    trade_executor_core -> limits;
+    trade_executor_core -> config_keys;
     trade_executor_signals -> logging_setup;
     trade_executor_signals -> signal_generator_core;
     trade_executor_signals -> signal_generator_indicators;
     trade_executor_signals -> strategies;
+    trade_executor_signals -> local_model_api;  // Added 2025-03-31
     bot_trading -> logging_setup;
     bot_trading -> trade_executor_core;
-    bot_trading -> trade_executor_signals;  // Added 2025-03-29
+    bot_trading -> trade_executor_signals;
     bot_trading -> trade_pool_core;
     bot_trading -> global_objects;
-    bot_trading -> limits;  // Added 2025-03-30
+    bot_trading -> limits;
     bot_trading -> balance_manager;
-    bot_trading -> deposit_calculator;  // Added 2025-03-30
+    bot_trading -> deposit_calculator;
+    bot_trading -> signal_blacklist;
+    bot_trading -> bot_user_data;  // Added 2025-03-31
     start_trading_all -> logging_setup;
     start_trading_all -> bot_trading;
     start_trading_all -> config_keys;
     start_trading_all -> bot_user_data;
-    start_trading_all -> limits;  // Added 2025-03-30
+    start_trading_all -> limits;
     start_trading_all -> balance_manager;
-    start_trading_all -> deposit_calculator;  // Added 2025-03-30
+    start_trading_all -> deposit_calculator;
+    start_trading_all -> signal_blacklist;
+    start_trading_all -> bot_user_data;  // Added 2025-03-31
     signal_generator_core -> logging_setup;
     signal_generator_core -> global_objects;
     signal_generator_indicators -> logging_setup;
@@ -61,20 +66,25 @@ digraph trading_bot {
     backtest_cycle -> logging_setup;
     backtest_cycle -> bot_trading;
     bot_user_data -> logging_setup;
+    bot_user_data -> config_keys;  // Added 2025-03-31
     api_server -> logging_setup;
 
     // Additional Modules
     cache_utils -> logging_setup;
     cache_utils -> redis_client;
     check_all_trades -> logging_setup;
-    check_all_trades -> config_keys;  // Added 2025-03-29
-    check_all_trades -> symbol_handler;  // Added 2025-03-30
+    check_all_trades -> config_keys;
+    check_all_trades -> symbol_handler;
+    check_all_trades -> trade_pool_core;  // Added 2025-03-31
+    check_all_trades -> exchange_factory;  // Added 2025-03-31
     deposit_manager -> logging_setup;
-    deposit_manager -> config_keys;  // Added 2025-03-29
-    deposit_manager -> symbol_handler;  // Added 2025-03-30
+    deposit_manager -> config_keys;
+    deposit_manager -> symbol_handler;
+    deposit_manager -> exchange_factory;  // Added 2025-03-31
+    deposit_manager -> balance_manager;  // Added 2025-03-31
     exchange_factory -> logging_setup;
-    exchange_factory -> config_keys;  // Added 2025-03-29
-    ohlcv_fetcher -> exchange_factory;  // Updated 2025-03-29: changed from exchange_setup
+    exchange_factory -> config_keys;
+    ohlcv_fetcher -> exchange_factory;
     ml_data_preparer -> ml_data_preparer_utils;
 
     // Non-working modules (physically present but should not be used, 2025-03-29)

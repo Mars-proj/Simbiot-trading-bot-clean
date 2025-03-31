@@ -1,45 +1,40 @@
 from logging_setup import logger_main
+from config_keys import API_KEYS
 
-# Данные пользователей (реальные данные для работы)
-user_data = {
-    "8d99788d-f58f-4fb8-9e4d-c05f177f5405": {
-        "total_deposit_usdt": 100.0,
-        "assets": {
-            "USDT": {"free": 100.0, "locked": 0.0, "total": 100.0}
-        },
-        "trades": []
-    }
-}
+class UserData:
+    """Manages user data and status."""
+    def __init__(self, users=None):
+        self.user_data = users if users is not None else {
+            "user1": {"status": "active"},
+            "user2": {"status": "active"}
+        }
+        logger_main.info(f"Initialized UserData with users: {list(self.user_data.keys())}")
 
-def get_user_deposit(user_id):
-    """Возвращает депозит пользователя"""
-    deposit = user_data.get(user_id, {}).get("total_deposit_usdt", 0.0)
-    logger_main.debug(f"User {user_id} deposit: {deposit} USDT")
-    return deposit
+    def get_user_status(self, user_id):
+        """Gets the status of a user."""
+        try:
+            if user_id not in self.user_data:
+                logger_main.error(f"User {user_id} not found")
+                return None
+            return self.user_data[user_id]["status"]
+        except Exception as e:
+            logger_main.error(f"Error getting status for user {user_id}: {e}")
+            return None
 
-def get_user_assets(user_id):
-    """Возвращает активы пользователя"""
-    assets = user_data.get(user_id, {}).get("assets", {})
-    logger_main.debug(f"User {user_id} assets: {assets}")
-    return assets
+    def has_api_keys(self, user_id, exchange_id):
+        """Checks if the user has API keys for the specified exchange."""
+        try:
+            if user_id not in API_KEYS:
+                logger_main.error(f"User {user_id} not found in API_KEYS")
+                return False
+            if exchange_id not in API_KEYS[user_id]:
+                logger_main.error(f"Exchange {exchange_id} not found for user {user_id}")
+                return False
+            return True
+        except Exception as e:
+            logger_main.error(f"Error checking API keys for user {user_id} on {exchange_id}: {e}")
+            return False
 
-def add_user_trade(user_id, trade_log, signal, strategy_signals):
-    """Добавляет сделку для пользователя"""
-    if user_id in user_data:
-        user_data[user_id]["trades"].append({
-            "trade": trade_log,
-            "signal": signal,
-            "strategy_signals": strategy_signals
-        })
-        logger_main.debug(f"Added trade for user {user_id}: {trade_log}")
-    else:
-        logger_main.warning(f"User {user_id} not found in user_data, cannot add trade")
+user_data = UserData()
 
-def update_user_data(user_id, data):
-    """Обновляет данные пользователя"""
-    if user_id not in user_data:
-        user_data[user_id] = {}
-    user_data[user_id].update(data)
-    logger_main.debug(f"Updated user data for {user_id}: {data}")
-
-__all__ = ['user_data', 'get_user_deposit', 'get_user_assets', 'add_user_trade', 'update_user_data']
+__all__ = ['user_data']
