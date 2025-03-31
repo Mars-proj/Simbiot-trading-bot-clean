@@ -1,28 +1,27 @@
 from logging_setup import logger_main
-from config_keys import MAX_OPEN_TRADES, MIN_TRADE_AMOUNT, MAX_LEVERAGE
+from config_keys import MAX_OPEN_TRADES, MIN_TRADE_AMOUNT
 
-def check_limits(amount, leverage, open_trades):
-    """Checks trading limits for amount, leverage, and number of open trades."""
+def check_limits(amount, leverage, open_trades, max_open_trades=MAX_OPEN_TRADES, min_trade_amount=MIN_TRADE_AMOUNT, max_total_position=10000):
+    """Checks if a trade complies with risk management limits."""
     try:
-        # Check amount
-        if amount < MIN_TRADE_AMOUNT:
-            logger_main.error(f"Amount {amount} is below minimum trade amount {MIN_TRADE_AMOUNT}")
+        if amount < min_trade_amount:
+            logger_main.error(f"Trade amount {amount} is below minimum {min_trade_amount}")
+            return False
+        if len(open_trades) >= max_open_trades:
+            logger_main.error(f"Maximum number of open trades ({max_open_trades}) reached")
             return False
 
-        # Check leverage
-        if leverage > MAX_LEVERAGE:
-            logger_main.error(f"Leverage {leverage} exceeds maximum allowed leverage {MAX_LEVERAGE}")
+        # Check total position size
+        total_position = sum(trade['amount'] * trade['price'] for trade in open_trades if 'amount' in trade and 'price' in trade)
+        new_position = amount * leverage
+        if total_position + new_position > max_total_position:
+            logger_main.error(f"Total position size {total_position + new_position} exceeds maximum {max_total_position}")
             return False
 
-        # Check number of open trades
-        if len(open_trades) >= MAX_OPEN_TRADES:
-            logger_main.error(f"Number of open trades {len(open_trades)} exceeds maximum allowed {MAX_OPEN_TRADES}")
-            return False
-
-        logger_main.info(f"Limits check passed: amount={amount}, leverage={leverage}, open_trades={len(open_trades)}")
+        logger_main.info("Trade limits check passed")
         return True
     except Exception as e:
-        logger_main.error(f"Error checking limits: {e}")
+        logger_main.error(f"Error checking trade limits: {e}")
         return False
 
 __all__ = ['check_limits']

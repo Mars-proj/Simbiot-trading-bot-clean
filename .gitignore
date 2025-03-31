@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+*.egg-info/
+*.egg
+
+# Logs
+logs/
+
+# Temporary files
+*.swp
+*.swo
+*.swn
+nano.*.save
+
+# Other
+main
+load_test.py
+test_retraining_manager.pyconfig_keys.py

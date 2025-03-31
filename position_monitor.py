@@ -1,128 +1,83 @@
-import asyncio
-import pandas as pd
-from utils import logger_main, log_exception
-from trade_pool import global_trade_pool
-from trade_execution import execute_trade
+from logging_setup import logger_main
+from exchange_factory import create_exchange
+from trade_pool_core import TradePool
+from trade_executor_core import close_partial_position
+from symbol_handler import validate_symbol
+from config_keys import SUPPORTED_EXCHANGES
 
-async def monitor_position(exchange, trade_data, order, trade_executor):
-    """
-    Мониторит позицию с динамическими Stop-Loss, Take-Profit и частичным закрытием.
-    Аргументы:
-    - exchange: Объект биржи (ccxt).
-    - trade_data: Словарь с данными сделки.
-    - order: Результат выполнения ордера.
-    - trade_executor: Экземпляр TradeExecutor для доступа к его атрибутам и методам.
-    """
-    symbol = trade_data['symbol']
-    side = trade_data['side']
-    amount = trade_data['amount']
-    entry_price = trade_data['price']
-    user_id = trade_data['user_id']
-    market_conditions = trade_data.get('market_conditions', {})
-    trade_id = trade_data.get('trade_id', order.get('id', 'unknown'))
-    # Вычисляем динамические точки выхода
-    stop_loss_price, take_profit_drop = trade_executor.calculate_dynamic_exit_points(market_conditions, symbol, entry_price)
-    # Инициализируем пик для динамического Take-Profit
-    peak_price = entry_price
-    while True:
-        try:
-            # Получаем текущую цену
-            ticker = await exchange.fetch_ticker(symbol)
-            current_price = ticker['last']
-            logger_main.debug(f"Мониторинг {symbol}: текущая цена = {current_price}")
-            # Проверяем Stop-Loss
-            if side == "buy" and current_price <= stop_loss_price:
-                logger_main.info(f"Stop-Loss сработал для {symbol}: цена {current_price} <= {stop_loss_price}")
-                close_trade = {
-                    'user_id': user_id,
-                    'exchange_id': exchange.id,
-                    'symbol': symbol,
-                    'side': 'sell',
-                    'price': current_price,
-                    'amount': amount,
-                    'timestamp': pd.Timestamp.now(),
-                    'market_conditions': market_conditions,
-                    'symbol_group': trade_data['symbol_group'],
-                    'strategy': trade_data['strategy']
-                }
-                close_order = await execute_trade(exchange, close_trade, trade_executor)
-                if close_order:
-                    # Рассчитываем PNL
-                    pnl = (current_price - entry_price) * amount
-                    trade_executor.trade_stats['total_pnl'] += pnl
-                    if pnl > 0:
-                        trade_executor.trade_stats['successful_trades'] += 1
-                    logger_main.info(f"PNL от Stop-Loss для {symbol}: {pnl:.2f} USDT, общий PNL: {trade_executor.trade_stats['total_pnl']:.2f}")
-                    # Обновляем PNL в trade_pool
-                    await global_trade_pool.update_trade_pnl(trade_id, pnl, status="completed")
-                break
-            # Обновляем пик для Take-Profit
-            if side == "buy" and current_price > peak_price:
-                peak_price = current_price
-                logger_main.debug(f"Новый пик для {symbol}: {peak_price}")
-            # Проверяем динамический Take-Profit
-            if side == "buy" and peak_price > entry_price:
-                drop_from_peak = (peak_price - current_price) / peak_price
-                if drop_from_peak >= take_profit_drop:
-                    logger_main.info(f"Take-Profit сработал для {symbol}: падение от пика {drop_from_peak:.2%} >= {take_profit_drop:.2%}")
-                    close_trade = {
-                        'user_id': user_id,
-                        'exchange_id': exchange.id,
-                        'symbol': symbol,
-                        'side': 'sell',
-                        'price': current_price,
-                        'amount': amount,
-                        'timestamp': pd.Timestamp.now(),
-                        'market_conditions': market_conditions,
-                        'symbol_group': trade_data['symbol_group'],
-                        'strategy': trade_data['strategy']
-                    }
-                    close_order = await execute_trade(exchange, close_trade, trade_executor)
-                    if close_order:
-                        # Рассчитываем PNL
-                        pnl = (current_price - entry_price) * amount
-                        trade_executor.trade_stats['total_pnl'] += pnl
-                        if pnl > 0:
-                            trade_executor.trade_stats['successful_trades'] += 1
-                        logger_main.info(f"PNL от Take-Profit для {symbol}: {pnl:.2f} USDT, общий PNL: {trade_executor.trade_stats['total_pnl']:.2f}")
-                        # Обновляем PNL в trade_pool
-                        await global_trade_pool.update_trade_pnl(trade_id, pnl, status="completed")
-                    break
-            # Проверяем частичное закрытие
-            if side == "buy":
-                profit_pct = ((current_price - entry_price) / entry_price) * 100
-                close_amount = trade_executor.calculate_partial_close_amount(amount, profit_pct)
-                if close_amount > 0:
-                    logger_main.info(f"Частичное закрытие для {symbol}: закрываем {close_amount} из {amount}")
-                    close_trade = {
-                        'user_id': user_id,
-                        'exchange_id': exchange.id,
-                        'symbol': symbol,
-                        'side': 'sell',
-                        'price': current_price,
-                        'amount': close_amount,
-                        'timestamp': pd.Timestamp.now(),
-                        'market_conditions': market_conditions,
-                        'symbol_group': trade_data['symbol_group'],
-                        'strategy': trade_data['strategy']
-                    }
-                    close_order = await execute_trade(exchange, close_trade, trade_executor)
-                    if close_order:
-                        # Рассчитываем PNL для частичного закрытия
-                        pnl = (current_price - entry_price) * close_amount
-                        trade_executor.trade_stats['total_pnl'] += pnl
-                        if pnl > 0:
-                            trade_executor.trade_stats['successful_trades'] += 1
-                        logger_main.info(f"PNL от частичного закрытия для {symbol}: {pnl:.2f} USDT, общий PNL: {trade_executor.trade_stats['total_pnl']:.2f}")
-                        # Обновляем PNL в trade_pool
-                        await global_trade_pool.update_trade_pnl(trade_id, pnl, status="partially_closed")
-                        amount -= close_amount
-                        if amount <= 0:
-                            break
-            await asyncio.sleep(60)  # Проверяем каждые 60 секунд
-        except Exception as e:
-            logger_main.error(f"Ошибка при мониторинге позиции {symbol}: {str(e)}")
-            log_exception(f"Ошибка при мониторинге: {str(e)}", e)
-            break
+async def monitor_positions(exchange_id, user_id, symbol, testnet=False):
+    """Monitors open positions for a user and triggers actions based on stop-loss/take-profit."""
+    try:
+        # Validate inputs
+        if exchange_id not in SUPPORTED_EXCHANGES:
+            logger_main.error(f"Exchange {exchange_id} not supported")
+            return False
+        if not user_id or not isinstance(user_id, str):
+            logger_main.error(f"Invalid user_id: {user_id}")
+            return False
+        if not await validate_symbol(exchange_id, user_id, symbol, testnet=testnet):
+            logger_main.error(f"Invalid symbol: {symbol}")
+            return False
 
-__all__ = ['monitor_position']
+        # Create exchange instance
+        exchange = create_exchange(exchange_id, user_id, testnet=testnet)
+        if not exchange:
+            logger_main.error(f"Failed to create exchange instance for {exchange_id}")
+            return False
+
+        # Fetch open trades
+        trade_pool = TradePool(user_id, exchange_id)
+        open_trades = await trade_pool.get_trades(exchange)
+        if open_trades is None:
+            logger_main.error(f"Failed to fetch open trades for user {user_id} on {exchange_id}")
+            return False
+
+        # Find position for the symbol
+        position = next((trade for trade in open_trades if trade['symbol'] == symbol), None)
+        if not position:
+            logger_main.info(f"No open position found for {symbol} for user {user_id} on {exchange_id}")
+            return True
+
+        # Fetch current price
+        ticker = await exchange.fetch_ticker(symbol)
+        if not ticker:
+            logger_main.error(f"Failed to fetch ticker for {symbol} on {exchange_id}")
+            return False
+        current_price = ticker['last']
+
+        # Check stop-loss and take-profit
+        stop_loss = position.get('stop_loss')
+        take_profit = position.get('take_profit')
+        position_size = position['amount']
+        side = position['side']
+
+        action_taken = False
+        if stop_loss and ((side == 'buy' and current_price <= stop_loss) or (side == 'sell' and current_price >= stop_loss)):
+            logger_main.info(f"Stop-loss triggered for {symbol}: current_price={current_price}, stop_loss={stop_loss}")
+            # Close the entire position
+            order = await close_partial_position(exchange_id, user_id, symbol, position_size, close_percentage=1.0, test_mode=testnet)
+            if not order:
+                logger_main.error(f"Failed to close position at stop-loss for {symbol}")
+                return False
+            action_taken = True
+
+        elif take_profit and ((side == 'buy' and current_price >= take_profit) or (side == 'sell' and current_price <= take_profit)):
+            logger_main.info(f"Take-profit triggered for {symbol}: current_price={current_price}, take_profit={take_profit}")
+            # Close the entire position
+            order = await close_partial_position(exchange_id, user_id, symbol, position_size, close_percentage=1.0, test_mode=testnet)
+            if not order:
+                logger_main.error(f"Failed to close position at take-profit for {symbol}")
+                return False
+            action_taken = True
+
+        if not action_taken:
+            logger_main.info(f"No action taken for {symbol}: current_price={current_price}, stop_loss={stop_loss}, take_profit={take_profit}")
+
+        return True
+    except Exception as e:
+        logger_main.error(f"Error monitoring positions for user {user_id} on {exchange_id}: {e}")
+        return False
+    finally:
+        await exchange.close()
+
+__all__ = ['monitor_positions']

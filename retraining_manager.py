@@ -7,20 +7,25 @@ class RetrainingManager:
     """Manages the retraining of ML models."""
     def __init__(self, model_path):
         self.model_path = model_path
+        logger_main.info(f"Initialized RetrainingManager with model_path={self.model_path}")
 
     async def retrain_model(self, data):
         """Retrains the ML model with new data."""
         try:
+            logger_main.info(f"Starting retraining with data type={type(data)}, len={len(data) if data is not None else 'None'}")
             if data is None or len(data) == 0:
                 raise ValueError("Data for retraining is empty or None")
 
             # Prepare data for retraining
+            logger_main.info("Preparing data for retraining...")
             prepared_data = await prepare_data(data, for_retraining=True)
             if prepared_data is None:
                 logger_main.error("Failed to prepare data for retraining")
                 return False
+            logger_main.info(f"Prepared data shape: {prepared_data.shape}")
 
             # Train the model
+            logger_main.info("Training model...")
             model = await train_model(prepared_data, self.model_path)
             if model is None:
                 logger_main.error("Failed to retrain model")

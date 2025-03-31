@@ -1,49 +1,52 @@
 import pandas as pd
-import pandas_ta as ta
-from utils import logger_main, log_exception
+from logging_setup import logger_main
 
-class OHLCVAnalyzer:
-    def __init__(self):
-        pass
+def analyze_ohlcv(data):
+    """Analyzes OHLCV data for patterns or anomalies."""
+    try:
+        if not isinstance(data, pd.DataFrame):
+            logger_main.error(f"Data must be a pandas DataFrame, got {type(data)}")
+            return None
+        if data.empty:
+            logger_main.error("OHLCV data is empty")
+            return None
+        required_columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+        for col in required_columns:
+            if col not in data.columns:
+                logger_main.error(f"Missing required column: {col}")
+                return None
 
-    def analyze(self, symbol, ohlcv):
-        """Анализирует OHLCV-данные и возвращает рыночные условия"""
-        logger_main.debug(f"Анализ OHLCV для {symbol}")
-        try:
-            if ohlcv is None or ohlcv.empty:
-                logger_main.error(f"OHLCV-данные для {symbol} пусты")
-                return {}
+        # Basic statistics
+        analysis = {
+            'average_price': data['close'].mean(),
+            'max_volume': data['volume'].max(),
+            'price_range': data['high'].max() - data['low'].min(),
+            'patterns': []
+        }
 
-            # Вычисляем индикаторы
-            ohlcv['sma_short'] = ohlcv['close'].rolling(window=20).mean()
-            ohlcv['sma_long'] = ohlcv['close'].rolling(window=50).mean()
-            ohlcv['returns'] = ohlcv['close'].pct_change()
-            ohlcv['volatility'] = ohlcv['returns'].rolling(window=20).std()
+        # Detect candlestick patterns (e.g., Hammer and Bearish Engulfing)
+        for i in range(1, len(data)):
+            prev_candle = data.iloc[i-1]
+            curr_candle = data.iloc[i]
 
-            # Определяем тренд
-            current_sma_short = ohlcv['sma_short'].iloc[-1]
-            current_sma_long = ohlcv['sma_long'].iloc[-1]
-            if current_sma_short > current_sma_long:
-                trend = 'up'
-            elif current_sma_short < current_sma_long:
-                trend = 'down'
-            else:
-                trend = 'neutral'
+            # Hammer pattern (bullish reversal)
+            body = abs(curr_candle['close'] - curr_candle['open'])
+            lower_shadow = curr_candle['low'] - min(curr_candle['open'], curr_candle['close'])
+            upper_shadow = max(curr_candle['open'], curr_candle['close']) - curr_candle['high']
+            if lower_shadow > 2 * body and upper_shadow < body and curr_candle['close'] > curr_candle['open']:
+                analysis['patterns'].append({'type': 'hammer', 'timestamp': curr_candle['timestamp']})
 
-            # Вычисляем волатильность
-            volatility = ohlcv['volatility'].iloc[-1]
+            # Bearish Engulfing pattern
+            if (prev_candle['close'] > prev_candle['open'] and  # Previous candle is bullish
+                curr_candle['open'] > prev_candle['close'] and  # Current candle opens above previous close
+                curr_candle['close'] < prev_candle['open'] and  # Current candle closes below previous open
+                curr_candle['close'] < curr_candle['open']):     # Current candle is bearish
+                analysis['patterns'].append({'type': 'bearish_engulfing', 'timestamp': curr_candle['timestamp']})
 
-            return {
-                symbol: {
-                    'trend': trend,
-                    'volatility': volatility if not pd.isna(volatility) else 0.0,
-                    'sma_short': current_sma_short,
-                    'sma_long': current_sma_long
-                }
-            }
-        except Exception as e:
-            logger_main.error(f"Ошибка при анализе OHLCV для {symbol}: {str(e)}")
-            log_exception(f"Ошибка при анализе OHLCV: {str(e)}", e)
-            return {}
+        logger_main.info(f"OHLCV analysis: {analysis}")
+        return analysis
+    except Exception as e:
+        logger_main.error(f"Error analyzing OHLCV data: {e}")
+        return None
 
-__all__ = ['OHLCVAnalyzer']
+__all__ = ['analyze_ohlcv']

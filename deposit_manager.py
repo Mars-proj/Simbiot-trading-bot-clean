@@ -4,7 +4,7 @@ from symbol_handler import validate_symbol
 from exchange_factory import create_exchange
 from balance_manager import BalanceManager
 
-async def manage_deposit(exchange_id, user_id, symbol, amount):
+async def manage_deposit(exchange_id, user_id, symbol, amount, testnet=False):
     """Manages deposits for a user on a specific exchange."""
     try:
         # Validate API keys
@@ -18,12 +18,12 @@ async def manage_deposit(exchange_id, user_id, symbol, amount):
             return False
 
         # Validate symbol
-        if not validate_symbol(symbol):
+        if not await validate_symbol(exchange_id, user_id, symbol, testnet=testnet):
             logger_main.error(f"Invalid symbol: {symbol}")
             return False
 
         # Create exchange instance
-        exchange = create_exchange(exchange_id, user_id, testnet=False)
+        exchange = create_exchange(exchange_id, user_id, testnet=testnet)
         if not exchange:
             logger_main.error(f"Failed to create exchange instance for {exchange_id}")
             return False

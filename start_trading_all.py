@@ -28,7 +28,7 @@ async def start_trading_all(exchange_id, user_id, symbols, leverage=1.0, order_t
             logger_main.error(f"Symbols must be a list, got {type(symbols)}")
             return False
         for symbol in symbols:
-            if not validate_symbol(symbol):
+            if not await validate_symbol(exchange_id, user_id, symbol, testnet=test_mode):
                 return False
 
         # Check if any symbol is blacklisted

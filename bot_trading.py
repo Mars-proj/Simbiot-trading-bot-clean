@@ -21,7 +21,7 @@ async def run_trading_bot(exchange_id, user_id, symbol, leverage=1.0, order_type
         if not user_data.has_api_keys(user_id, exchange_id):
             logger_main.error(f"User {user_id} does not have API keys for {exchange_id}")
             return False
-        if not validate_symbol(symbol):
+        if not await validate_symbol(exchange_id, user_id, symbol, testnet=test_mode):
             return False
 
         # Check if symbol is blacklisted

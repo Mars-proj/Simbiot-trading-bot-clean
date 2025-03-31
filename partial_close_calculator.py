@@ -1,22 +1,25 @@
-from utils import logger_main
+from logging_setup import logger_main
+from config_keys import MIN_TRADE_AMOUNT
 
-def calculate_partial_close_amount(position_amount, profit_pct, min_profit_threshold=5.0, close_percentage=0.5):
-    """
-    Рассчитывает количество для частичного закрытия позиции.
-    Аргументы:
-    - position_amount: Текущий объём позиции.
-    - profit_pct: Текущая прибыль в процентах.
-    - min_profit_threshold: Минимальный порог прибыли для частичного закрытия (по умолчанию 5%).
-    - close_percentage: Процент позиции для частичного закрытия (по умолчанию 0.5 = 50%).
-    Возвращает:
-    - close_amount: Объём для частичного закрытия (0, если прибыль недостаточна).
-    """
-    if profit_pct >= min_profit_threshold:
-        close_amount = position_amount * close_percentage
-        logger_main.info(f"Рассчитано частичное закрытие: {close_amount} из {position_amount} для прибыли {profit_pct:.2f}%")
+def calculate_partial_close(position_size, close_percentage=0.5, min_close_amount=MIN_TRADE_AMOUNT):
+    """Calculates the amount to close for a partial position close."""
+    try:
+        if position_size <= 0:
+            logger_main.error(f"Position size must be positive, got {position_size}")
+            return None
+        if not 0 < close_percentage <= 1:
+            logger_main.error(f"Close percentage must be between 0 and 1, got {close_percentage}")
+            return None
+
+        close_amount = position_size * close_percentage
+        if close_amount < min_close_amount:
+            logger_main.error(f"Close amount {close_amount} is below minimum {min_close_amount}")
+            return None
+
+        logger_main.info(f"Calculated partial close: position_size={position_size}, close_percentage={close_percentage}, close_amount={close_amount}")
         return close_amount
-    else:
-        logger_main.info(f"Прибыль {profit_pct:.2f}% недостаточна для частичного закрытия (требуется минимум {min_profit_threshold}%)")
-        return 0.0
+    except Exception as e:
+        logger_main.error(f"Error calculating partial close: {e}")
+        return None
 
-__all__ = ['calculate_partial_close_amount']
+__all__ = ['calculate_partial_close']

@@ -1,8 +1,13 @@
-# Global objects for the trading system
-from trade_pool_core import TradePool
-from redis_initializer import redis_client
+from logging_setup import logger_main
 
-# Global trade pool instance
-global_trade_pool = TradePool()
+SUPPORTED_SYMBOLS = [
+    "BTC/USDT",
+    "ETH/USDT",
+    "BNB/USDT",
+    "XRP/USDT",
+    "ADA/USDT"
+]
 
-__all__ = ['global_trade_pool', 'redis_client']
+logger_main.info("Global objects initialized with supported symbols")
+
+__all__ = ['SUPPORTED_SYMBOLS']

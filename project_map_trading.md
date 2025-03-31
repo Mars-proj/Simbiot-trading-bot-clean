@@ -1,163 +1,119 @@
-# Project Map: Trading Logic
+# Project Map: Trading Bot System
 
-## Overview
-This file serves as the central hub for the trading bot project, providing a comprehensive overview of the system, its modules, their dependencies, and the roadmap for development, maintenance, and optimization.
+This file outlines the structure of the trading bot system, including Core Trading Logic, Supporting Modules, and Additional Modules. Each module is described with its purpose, dependencies, and status.
 
-## System Architecture
-- **Core Trading Logic** (16 modules):
-  - `trade_executor_core.py`: Executes trades based on signals (updated 2025-03-30: added input validation, improved logging, error handling, market order support, risk management, test mode support, removed placeholders for amount/leverage/order_type).
-  - `trade_executor_signals.py`: Processes trading signals (updated 2025-03-31: added signal aggregation with weights, made RSI thresholds configurable, integrated ML predictions via `local_model_api.py`).
-  - `bot_trading.py`: Main trading bot logic (updated 2025-03-31: integrated real signal generation, added input validation, improved logging, risk management, test mode support, removed leverage placeholder, added configurable trade percentage and RSI thresholds, integrated `deposit_calculator.py`, `signal_blacklist.py`, `bot_user_data.py` for API key validation).
-  - `start_trading_all.py`: Initiates trading for all symbols (updated 2025-03-31: added input validation, improved logging, error handling, risk management, test mode support, removed amount/leverage placeholders, added configurable parameters, integrated `deposit_calculator.py`, `signal_blacklist.py`, `bot_user_data.py` for API key validation).
-  - `signal_generator_core.py`: Generates base signals (updated 2025-03-30: made overbought/oversold thresholds configurable).
-  - `signal_generator_indicators.py`: Generates signals using indicators (updated 2025-03-30: added GPU support with cupy, added CPU fallback).
-  - `strategies.py`: Defines trading strategies (updated 2025-03-30: improved strategy recommendation with moving averages, made periods configurable).
-  - `trade_pool_core.py`: Manages the trade pool (updated 2025-03-30: added in-memory caching, problematic symbol check, made volume threshold configurable, removed unused storage_method).
-  - `trade_pool_queries.py`: Queries trade pool data (updated 2025-03-30: made cache TTL configurable, added data format validation).
-  - `global_objects.py`: Global objects and configurations.
-  - `symbol_filter.py`: Filters symbols for trading (updated 2025-03-29: consolidated symbol filtering).
-  - `balance_manager.py`: Manages user balances (updated 2025-03-29: added holdings functionality).
-  - `deposit_calculator.py`: Calculates deposit requirements (updated 2025-03-30: made margin multiplier configurable, integrated into `bot_trading.py` and `start_trading_all.py`).
-  - `signal_blacklist.py`: Manages blacklisted signals (updated 2025-03-31: made blacklist configurable, integrated into `bot_trading.py` and `start_trading_all.py`).
-  - `retraining_manager.py`: Manages model retraining (updated 2025-03-30: added error handling for data loading).
-  - `local_model_api.py`: Local API for model inference (updated 2025-03-31: removed mock model placeholder, integrated into `trade_executor_signals.py` for ML predictions).
+## Core Trading Logic
+- `trade_executor_core.py`: Executes trades based on signals (updated 2025-04-01: added input validation, improved logging, error handling, test mode, removed placeholders, integrated `limits.py`, `exit_points_calculator.py`, `monetization.py`, `partial_close_calculator.py`, `risk_manager.py`, `symbol_handler.py`, `notification_manager.py`).
+- `trade_executor_signals.py`: Processes trading signals (updated 2025-03-31: added signal aggregation with weights, made RSI thresholds configurable, integrated ML predictions via `local_model_api.py`, added moving averages and Bollinger Bands via `indicators.py`).
+- `bot_trading.py`: Main trading bot logic (updated 2025-03-31: integrated `trade_executor_signals.py`, added input validation, improved logging, test mode, removed placeholders, added configurable trade percentage and RSI thresholds, integrated `deposit_calculator.py`, `signal_blacklist.py`, `bot_user_data.py`, `symbol_handler.py`).
+- `start_trading_all.py`: Starts trading for multiple symbols (updated 2025-03-31: added input validation, improved logging, error handling in `asyncio.gather`, test mode, removed placeholders, added configurable parameters, integrated `deposit_calculator.py`, `signal_blacklist.py`, `bot_user_data.py`, `symbol_handler.py`).
 
-- **Supporting Modules** (7 modules):
-  - `logging_setup.py`: Logging configuration.
-  - `config_keys.py`: API key management (updated 2025-03-31: removed placeholder API keys, improved validation with length and format checks).
-  - `redis_client.py`: Redis client operations (updated 2025-03-31: made Redis URL configurable, added automatic initialization).
-  - `json_handler.py`: JSON serialization/deserialization.
-  - `backtest_cycle.py`: Backtesting cycle (updated 2025-03-31: added configurable parameters for `run_trading_bot`, still requires historical data fetching).
-  - `bot_user_data.py`: User data management (updated 2025-03-31: made user data configurable, added API key validation, integrated into `bot_trading.py` and `start_trading_all.py`).
-  - `api_server.py`: API server for external access (updated 2025-03-31: made API keys and rate limit configurable, improved rate limiting with time window).
-
-- **Additional Modules** (31 modules):
-  - `cache_utils.py`: Caching utilities (updated 2025-03-31: made volume threshold and cache TTL configurable).
-  - `check_all_trades.py`: Checks all trades (updated 2025-03-31: removed placeholder for trade fetching, integrated `trade_pool_core.py` and `exchange_factory.py`).
-  - `data_utils.py`: Data utilities (updated 2025-03-29: added input validation and improved logging).
-  - `deposit_manager.py`: Manages deposits (updated 2025-03-31: added balance check via `balance_manager.py`, integrated `exchange_factory.py`, still requires API call for deposit).
-  - `exchange_factory.py`: Exchange factory for creating exchange instances (updated 2025-03-30: improved logging, added support for additional parameters, added rate limit monitoring for MEXC).
-  - `exchange_utils.py`: Exchange utilities (updated 2025-03-30: added input validation, improved logging).
-  - `exit_points_calculator.py`: Calculates exit points for trades (updated 2025-03-29: added input validation and improved logging).
-  - `features.py`: Feature engineering for ML models (updated 2025-03-29: added input validation, fixed RSI calculation, improved logging).
-  - `indicators.py`: Technical indicators (updated 2025-03-29: added input validation, improved logging, merged momentum_indicators, price_volatility_indicators, price_volume_indicators, trend_indicators).
-  - `limits.py`: Trading limits (updated 2025-03-30: improved for risk management integration).
-  - `market_rentgen_core.py`: Core market analysis logic (updated 2025-03-29: added data validation and improved logging).
-  - `market_trend_checker.py`: Checks market trends (updated 2025-03-29: added input validation and improved logging).
-  - `ml_data_preparer.py`: Prepares data for ML models (updated 2025-03-29: added input validation, improved logging, merged retraining_data_preprocessor functionality).
-  - `ml_data_preparer_utils.py`: Utilities for ML data preparation (updated 2025-03-29: added input validation and improved logging).
-  - `ml_model_trainer.py`: Trains ML models (updated 2025-03-29: added input validation and improved logging).
-  - `ml_predictor.py`: Makes predictions using ML models (updated 2025-03-29: added input validation and improved logging).
-  - `model_utils.py`: Model utilities (updated 2025-03-29: added file validation and improved logging).
-  - `monetization.py`: Monetization logic (updated 2025-03-29: added input validation and improved logging).
-  - `ohlcv_analyzer.py`: OHLCV data analyzer (updated 2025-03-29: added input validation and improved logging).
-  - `ohlcv_fetcher.py`: Fetches OHLCV data (updated 2025-03-29: added symbol validation and improved logging).
-  - `order_utils.py`: Order utilities (updated 2025-03-30: added input validation, market order support, improved logging).
-  - `partial_close_calculator.py`: Calculates partial closes (updated 2025-03-29: added input validation and improved logging).
-  - `position_monitor.py`: Monitors positions.
-  - `risk_manager.py`: Risk management (updated 2025-03-29: merged trade risk calculator).
-  - `symbol_data_fetcher.py`: Fetches symbol data.
-  - `symbol_handler.py`: Handles symbols (updated 2025-03-30: added symbol validation with load_markets).
-  - `symbol_trade_processor.py`: Processes trades for symbols.
-  - `test_symbols.py`: Test symbols.
-  - `token_potential_evaluator.py`: Evaluates token potential.
-  - `trade_analyzer.py`: Analyzes trades (updated 2025-03-29: merged trade result analyzer).
-  - `trading_cycle.py`: Trading cycle logic (updated 2025-03-29: merged trading_part1).
-  - `worker.py`: Worker for background tasks.
-  - `utils.py`: General utilities (updated 2025-03-29: added `log_exception` function).
-
-- **Non-working Modules** (18 modules, physically present but marked as non-working):
-  - `trade_blacklist.py`, `async_exchange_fetcher.py`, `market_analyzer.py`, `data_fetcher.py`, `symbol_utils.py`, `signal_aggregator.py`, `strategies_volume.py`, `holdings_manager.py`, `analytics.py`, `async_exchange_manager.py`, `async_order_fetcher.py`, `async_ticker_fetcher.py`, `async_utils.py`, `backtest_analyzer.py`, `backtester.py`, `balance_utils.py`, `bot_commands_balance.py`, `bot_commands_status.py`.
-  - **Note (2025-03-29)**: The following modules are physically present in the repository but are marked as non-working and should not be used: `trade_blacklist.py`, `async_exchange_fetcher.py`, `market_analyzer.py`, `data_fetcher.py`, `symbol_utils.py`, `signal_aggregator.py`, `holdings_manager.py`, `analytics.py`, `async_exchange_manager.py`, `async_order_fetcher.py`, `async_ticker_fetcher.py`, `async_utils.py`, `backtest_analyzer.py`, `backtester.py`, `balance_utils.py`, `bot_commands_balance.py`, `bot_commands_status.py`, `async_ohlcv_fetcher.py`.
-
-## Dependencies Graph
-- See `trading_bot_graph.dot` for the dependency graph.
-- Updates:
-  - 2025-03-28: Removed dependency `json_handler -> logging_setup` (not found in code).
-  - 2025-03-28: Added dependency `config_keys -> logging_setup`.
-  - 2025-03-29: Removed dependency `bot_commands_core -> async_exchange_fetcher` (module removed).
-  - 2025-03-29: Removed module `bot_commands_core.py` and its dependencies.
-  - 2025-03-29: Removed module `bot_translations.py` and its dependencies.
-  - 2025-03-29: Removed module `config_notifications.py` (no dependencies in graph).
-  - 2025-03-29: Removed module `ml_data_preprocessor.py` (no dependencies in graph).
-  - 2025-03-29: Removed module `notification_utils.py` (no dependencies in graph).
-  - 2025-03-29: Removed module `trade_blacklist.py` (no dependencies in graph).
-  - 2025-03-30: Added dependency `trade_executor_core -> limits` for risk management.
-  - 2025-03-30: Added dependency `bot_trading -> limits` for risk management.
-  - 2025-03-30: Added dependency `start_trading_all -> limits` for risk management.
-  - 2025-03-30: Added dependency `check_all_trades -> symbol_handler`.
-  - 2025-03-30: Added dependency `deposit_manager -> symbol_handler`.
-  - 2025-03-31: Added dependency `trade_executor_signals -> local_model_api` for ML predictions.
-  - 2025-03-31: Added dependency `bot_trading -> bot_user_data` for API key validation.
-  - 2025-03-31: Added dependency `start_trading_all -> bot_user_data` for API key validation.
-  - 2025-03-31: Added dependency `check_all_trades -> trade_pool_core` for trade fetching.
-  - 2025-03-31: Added dependency `check_all_trades -> exchange_factory` for exchange creation.
-  - 2025-03-31: Added dependency `deposit_manager -> exchange_factory` for exchange creation.
-  - 2025-03-31: Added dependency `deposit_manager -> balance_manager` for balance checking.
+## Supporting Modules
+- `api_server.py`: Provides API endpoints (updated 2025-03-31: added API key authentication, rate limiting, made API keys and rate limit configurable, improved rate limiting with time window).
+- `backtest_cycle.py`: Handles backtesting (updated 2025-04-01: integrated `historical_data_fetcher.py` for historical data fetching).
+- `bot_user_data.py`: Manages user data (updated 2025-03-31: made user data configurable, added API key validation, integrated into `bot_trading.py` and `start_trading_all.py`).
+- `cache_utils.py`: Caches symbol data (updated 2025-03-31: added check for problematic symbols before caching, made volume threshold and cache TTL configurable).
+- `check_all_trades.py`: Checks all trades (updated 2025-03-31: improved logging with trade types, removed placeholder for trade fetching, integrated `trade_pool_core.py`, `symbol_handler.py`).
+- `data_utils.py`: Utility functions for data handling (updated 2025-03-30: added data validation and normalization).
+- `deposit_calculator.py`: Calculates required deposits (updated 2025-03-30: added configurable margin multiplier).
+- `deposit_manager.py`: Manages deposits (updated 2025-03-31: improved logging with currency and balance info, added balance check via `balance_manager.py`, integrated `exchange_factory.py`, `symbol_handler.py`, still requires API call for deposit).
+- `exchange_factory.py`: Creates exchange instances (updated 2025-03-31: made rateLimit and enableRateLimit configurable, added universal rate limit monitoring, added testnet support check, added rate limit monitoring for MEXC, improved logging, added support for additional configuration parameters).
+- `exchange_utils.py`: Utility functions for exchange operations (updated 2025-03-31: improved logging with bid/ask data, added symbol validation via `symbol_handler.py`).
+- `exit_points_calculator.py`: Calculates stop-loss and take-profit levels (updated 2025-03-31: integrated into `trade_executor_core.py`).
+- `features.py`: Extracts features for ML models (updated 2025-03-31: made RSI period configurable, integrated into `ml_data_preparer.py`).
+- `historical_data_fetcher.py`: Fetches historical OHLCV data for backtesting (added 2025-04-01: fetches historical data, converts to DataFrame, integrates with `backtest_cycle.py`).
+- `indicators.py`: Calculates technical indicators (updated 2025-03-31: integrated into `trade_executor_signals.py` for moving averages and Bollinger Bands).
+- `limits.py`: Manages risk limits (updated 2025-03-31: added total position size check, made parameters configurable, integrated into `trade_executor_core.py`).
+- `market_rentgen_core.py`: Analyzes market conditions (updated 2025-03-31: added trend and volatility analysis, added symbol validation via `symbol_handler.py`).
+- `market_trend_checker.py`: Checks market trends (updated 2025-03-31: replaced simple moving averages with EMAs, made periods configurable).
+- `ml_data_preparer.py`: Prepares data for ML models (updated 2025-03-31: added future price-based labels, added input validation, added configurable normalization method).
+- `ml_data_preparer_utils.py`: Utility functions for ML data preparation (updated 2025-03-31: added configurable normalization method).
+- `ml_model_trainer.py`: Trains ML models (updated 2025-03-31: replaced simple model with deep neural network, made training parameters configurable, added train/validation split).
+- `ml_predictor.py`: Makes ML predictions (updated 2025-03-31: added input size validation, added option to return probabilities).
+- `model_utils.py`: Utility functions for ML models (updated 2025-03-31: added validation for PyTorch model format).
+- `monetization.py`: Handles fees and monetization (updated 2025-03-31: integrated into `trade_executor_core.py`).
+- `notification_manager.py`: Manages notifications (added 2025-04-01: supports email notifications, integrated into `trade_executor_core.py`).
+- `ohlcv_analyzer.py`: Analyzes OHLCV data (updated 2025-03-31: added candlestick pattern detection, added input validation).
+- `ohlcv_fetcher.py`: Fetches OHLCV data (updated 2025-03-31: added user_id for authentication, added as_dataframe option, added symbol validation via `symbol_handler.py`).
+- `order_utils.py`: Utility functions for order management (updated 2025-03-31: added support for additional order parameters, added symbol validation via `symbol_handler.py`).
+- `partial_close_calculator.py`: Calculates partial position closes (updated 2025-03-31: added minimum close amount check, integrated into `trade_executor_core.py`).
+- `position_monitor.py`: Monitors open positions (updated 2025-03-31: added stop-loss/take-profit monitoring, integrated `trade_pool_core.py`, added symbol validation via `symbol_handler.py`).
+- `redis_client.py`: Manages Redis connections (updated 2025-03-31: made Redis URL configurable, added automatic initialization).
+- `retraining_manager.py`: Manages model retraining (updated 2025-03-30: fixed data loading issue, added error handling).
+- `risk_manager.py`: Manages trade risk (updated 2025-03-31: added maximum risk check, integrated into `trade_executor_core.py`).
+- `signal_blacklist.py`: Manages blacklisted symbols (updated 2025-03-31: made blacklist configurable, integrated into `bot_trading.py` and `start_trading_all.py`).
+- `signal_generator_core.py`: Generates trading signals (updated 2025-03-30: made overbought/oversold thresholds configurable).
+- `signal_generator_indicators.py`: Calculates indicators for signals (updated 2025-03-30: added GPU support with cupy, added CPU fallback).
+- `strategies.py`: Manages trading strategies (updated 2025-03-30: improved strategy recommendation with moving averages, made periods configurable).
+- `symbol_data_fetcher.py`: Fetches symbol data (updated 2025-03-31: added dynamic symbol data fetching, added symbol validation via `symbol_handler.py`).
+- `symbol_handler.py`: Validates symbols (updated 2025-04-01: replaced static validation with dynamic check via `exchange_factory.py`, added symbol activity check).
+- `symbol_trade_processor.py`: Processes trades for a symbol (updated 2025-04-01: added trade processing with loss threshold, integrated `trade_pool_core.py` and `trade_executor_core.py`, added symbol validation via `symbol_handler.py`).
+- `test_symbols.py`: Provides test symbols (updated 2025-04-01: replaced static list with dynamic fetching from exchange, added symbol validation via `symbol_handler.py`).
+- `token_analyzer.py`: Analyzes token market data (updated 2025-04-01: added volume and volatility analysis, integrated `exchange_utils.py` and `ohlcv_fetcher.py`, added symbol validation via `symbol_handler.py`).
+- `trade_pool_core.py`: Manages trade pool (updated 2025-04-01: added symbol validation via `symbol_handler.py`, replaced direct `fetch_ticker` with `exchange_utils.py`, added `clear_trades` method).
+- `trade_pool_manager.py`: Manages trade pool operations (updated 2025-04-01: added trade pool management with cleanup of outdated trades, integrated `trade_pool_core.py`, added input validation).
 
 ## Roadmap
-- **Short-term**:
-  - Add additional security for API [Done: 2025-03-30].
-  - Check caching of problematic symbols [Done: 2025-03-30].
-  - Test real trading [Done: 2025-03-30].
-  - Use GPU for calculations [Done: 2025-03-30].
-  - Fix `retraining_manager.py` issue [Done: 2025-03-30].
-  - Add API rate limit monitoring for MEXC [Done: 2025-03-30].
-  - Load testing with 100 users [Done: 2025-03-30].
-  - Remove placeholders in core modules [Done: 2025-03-31].
-  - Integrate ML predictions into signal processing [Done: 2025-03-31].
-  - Add API key validation in trading modules [Done: 2025-03-31].
-- **Medium-term**:
-  - Scale to 1000+ users.
-  - Implement self-learning and self-improving mechanisms.
-  - Add support for more exchanges.
-  - Implement historical data fetching for backtesting.
-- **Long-term**:
-  - Full market X-ray system.
-  - Advanced ML model integration.
-  - Cross-exchange arbitrage.
+- Add API key validation in trading modules [Done: 2025-03-31].
+- Integrate ML predictions into trading signals [Done: 2025-03-31].
+- Add test mode for real trading [Done: 2025-03-30].
+- Remove placeholders in core modules [Done: 2025-03-30].
+- Improve logging across all modules [Done: 2025-03-30].
+- Add input validation in all modules [Done: 2025-03-31].
+- Integrate risk management (`limits.py`, `risk_manager.py`) [Done: 2025-03-31].
+- Add support for partial position closing [Done: 2025-03-31].
+- Add dynamic symbol validation [Done: 2025-04-01].
+- Add trade pool management with cleanup [Done: 2025-04-01].
+- Add historical data fetching for backtesting [Done: 2025-04-01].
+- Add notification system [Done: 2025-04-01].
+- Add Telegram bot integration [Pending].
 
-## Server Configuration
-- **CPUs**: 2x Intel Xeon E5-2697A v4 (32 cores, 64 threads, ~2.4 TFLOPS FP32).
-- **RAM**: 384 GB DDR4 (300 GB allocated to Redis, `maxmemory 300gb`).
-- **Storage**:
-  - 2x 480 GB SSD: OS and logs.
-  - 1x 4 TB NVMe: Historical data.
-- **Network**: 10 Gbit/s (optimized: `EXCHANGE_CONNECTION_SETTINGS.rateLimit` = 500 ms).
-- **GPU**: NVIDIA Tesla T4 (16 GB GDDR6, 2560 CUDA cores, 8.1 TFLOPS FP32).
-  - Used in `signal_generator_indicators.py` with `cupy`.
-  - Used in `local_model_api.py` and `retraining_manager.py` with CUDA 12.1, cuDNN 8.9.7, PyTorch 2.5.1+cu121.
-- **IP and Location**: 45.140.147.187 (Netherlands, nl-arenda.10).
-
-## Audit Results
-- See `project_map_audit_results.md` for detailed audit results.
-
-## Code Modification Process
-To ensure consistency and avoid errors during code modifications, the following process must be followed for each module update:
-
-1. **Delete the old file**:
-   - Command: `rm /root/trading_bot/<module_name>.py`
-   - Example: `rm /root/trading_bot/bot_commands_core.py`
-
-2. **Open nano to create the new file**:
-   - Command: `nano /root/trading_bot/<module_name>.py`
-   - Example: `nano /root/trading_bot/bot_commands_core.py`
-
-3. **Insert the new code**:
-   - Copy the updated code provided by Grok and paste it into nano.
-   - Save the file (Ctrl+O, Enter, Ctrl+X).
-
-4. **Add the updated file to Git index**:
-   - Command: `git add <file> ...`
-   - Example: `git add bot_commands_core.py`
-
-5. **Create a commit**:
-   - Command: `git commit -m "Update <module_name>.py by simbiot: <description>"`
-   - Example: `git commit -m "Update bot_commands_core.py by simbiot: remove unused imports and add comment"`
-
-6. **Push changes to GitHub**:
-   - Command: `git push origin main`
-   - This updates the repository directly from the server.
-
-## Security Notes
-- **2025-03-29**: Telegram bot token was compromised in `config_notifications.py` in the repository history. The token has been removed from the code and replaced with `os.getenv("TELEGRAM_BOT_TOKEN", "")`. A new token must be generated via BotFather and added to `.env`:
+## Dependencies
+- `trade_executor_core.py` -> `exchange_factory.py`, `order_utils.py`, `trade_executor_signals.py`, `limits.py`, `trade_pool_core.py`, `exit_points_calculator.py`, `monetization.py`, `partial_close_calculator.py`, `risk_manager.py`, `balance_manager.py`, `symbol_handler.py`, `notification_manager.py`
+- `trade_executor_signals.py` -> `signal_generator_indicators.py`, `ohlcv_fetcher.py`, `local_model_api.py`, `indicators.py`
+- `bot_trading.py` -> `trade_executor_core.py`, `trade_executor_signals.py`, `bot_user_data.py`, `limits.py`, `balance_manager.py`, `exchange_factory.py`, `trade_pool_core.py`, `deposit_calculator.py`, `signal_blacklist.py`, `symbol_handler.py`
+- `start_trading_all.py` -> `bot_trading.py`, `bot_user_data.py`, `limits.py`, `trade_pool_core.py`, `exchange_factory.py`, `balance_manager.py`, `deposit_calculator.py`, `signal_blacklist.py`, `symbol_handler.py`
+- `api_server.py` -> None
+- `backtest_cycle.py` -> `bot_trading.py`, `historical_data_fetcher.py`
+- `bot_user_data.py` -> None
+- `cache_utils.py` -> None
+- `check_all_trades.py` -> `config_keys.py`, `exchange_factory.py`, `trade_pool_core.py`, `symbol_handler.py`
+- `data_utils.py` -> None
+- `deposit_calculator.py` -> None
+- `deposit_manager.py` -> `config_keys.py`, `exchange_factory.py`, `balance_manager.py`, `symbol_handler.py`
+- `exchange_factory.py` -> `logging_setup.py`, `config_keys.py`
+- `exchange_utils.py` -> `symbol_handler.py`
+- `exit_points_calculator.py` -> None
+- `features.py` -> None
+- `historical_data_fetcher.py` -> `exchange_factory.py`, `symbol_handler.py`
+- `indicators.py` -> None
+- `limits.py` -> `config_keys.py`
+- `market_rentgen_core.py` -> `exchange_utils.py`, `ohlcv_fetcher.py`, `symbol_handler.py`
+- `market_trend_checker.py` -> None
+- `ml_data_preparer.py` -> `features.py`, `ml_data_preparer_utils.py`
+- `ml_data_preparer_utils.py` -> None
+- `ml_model_trainer.py` -> None
+- `ml_predictor.py` -> None
+- `model_utils.py` -> None
+- `monetization.py` -> None
+- `notification_manager.py` -> None
+- `ohlcv_analyzer.py` -> None
+- `ohlcv_fetcher.py` -> `exchange_factory.py`, `symbol_handler.py`
+- `order_utils.py` -> `symbol_handler.py`
+- `partial_close_calculator.py` -> `config_keys.py`
+- `position_monitor.py` -> `exchange_factory.py`, `trade_pool_core.py`, `trade_executor_core.py`, `symbol_handler.py`
+- `redis_client.py` -> None
+- `retraining_manager.py` -> None
+- `risk_manager.py` -> None
+- `signal_blacklist.py` -> None
+- `signal_generator_core.py` -> None
+- `signal_generator_indicators.py` -> None
+- `strategies.py` -> None
+- `symbol_data_fetcher.py` -> `exchange_factory.py`, `symbol_handler.py`
+- `symbol_handler.py` -> `exchange_factory.py`
+- `symbol_trade_processor.py` -> `exchange_factory.py`, `trade_pool_core.py`, `trade_executor_core.py`, `symbol_handler.py`
+- `test_symbols.py` -> `exchange_factory.py`, `symbol_handler.py`
+- `token_analyzer.py` -> `exchange_factory.py`, `exchange_utils.py`, `ohlcv_fetcher.py`, `symbol_handler.py`
+- `trade_pool_core.py` -> `redis_client.py`, `cache_utils.py`, `exchange_utils.py`, `symbol_handler.py`
+- `trade_pool_manager.py` -> `trade_pool_core.py`
+EOF
