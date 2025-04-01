@@ -6,41 +6,70 @@ from test_symbols import get_test_symbols
 from trade_pool_manager import schedule_trade_pool_cleanup
 from position_monitor import monitor_positions
 from retraining_manager import RetrainingManager
+from backtest_cycle import run_backtest
+import time
 
 async def main():
     """Main entry point for the trading bot system."""
     try:
         # Configuration
-        exchange_id = "binance"  # Example exchange
-        user_id = "user123"  # Example user
-        testnet = True  # Use testnet for safety
+        exchange_id = "mexc"  # Use MEXC for real trading
+        user_id = "user1"  # Use user1
+        testnet = False  # Use real trading mode
         model_path = "models/trading_model.pth"  # Example model path
-
-        # Add user with API keys (example)
-        api_keys = {
-            exchange_id: {
-                "api_key": "your_api_key",
-                "api_secret": "your_api_secret"
-            }
-        }
-        await user_data.add_user(user_id, api_keys=api_keys)
+        backtest_days = 30  # Number of days for backtest
+        min_profit_threshold = 0.05  # Minimum profit threshold for backtest (5%)
 
         # Fetch test symbols
+        logger_main.info("Fetching test symbols")
         symbols = await get_test_symbols(exchange_id, user_id, testnet=testnet)
         if not symbols:
-            logger_main.error("No valid symbols found for trading")
+            logger_main.error("No valid symbols found for trading, stopping")
             return
+
+        logger_main.info(f"Selected symbols for backtesting: {symbols[:5]}...")
+
+        # Run backtest for each symbol
+        valid_symbols = []
+        for symbol in symbols:
+            logger_main.info(f"Running backtest for {symbol} on {exchange_id}")
+            backtest_result = await run_backtest(
+                exchange_id, user_id, symbol,
+                days=backtest_days,
+                leverage=1.0,
+                trade_percentage=0.1,
+                rsi_overbought=70,
+                rsi_oversold=30,
+                test_mode=testnet
+            )
+            if backtest_result is None:
+                logger_main.warning(f"Backtest failed for {symbol}, skipping")
+                continue
+
+            profit = backtest_result.get('profit', 0)
+            if profit < min_profit_threshold:
+                logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below threshold ({min_profit_threshold:.2%}), skipping")
+                continue
+
+            valid_symbols.append(symbol)
+            logger_main.info(f"Backtest successful for {symbol}: profit={profit:.2%}")
+
+        if not valid_symbols:
+            logger_main.error("No symbols passed backtest, stopping")
+            return
+
+        logger_main.info(f"Starting trading with symbols: {valid_symbols[:5]}...")
 
         # Start trading
         trade_task = asyncio.create_task(start_trading_all(
-            exchange_id, user_id, symbols,
+            exchange_id, user_id, valid_symbols,
             leverage=1.0,
             order_type='limit',
             trade_percentage=0.1,
             rsi_overbought=70,
             rsi_oversold=30,
             margin_multiplier=2.0,
-            blacklisted_symbols=['BTC/USDT'],  # Example blacklist
+            blacklisted_symbols=['BTCUSDT'],  # Example blacklist
             model_path=model_path,
             test_mode=testnet
         ))
@@ -55,18 +84,25 @@ async def main():
             exchange_id, user_id, testnet=testnet
         ))
 
-        # Schedule model retraining (example data loader and trainer)
+        # Schedule model retraining
         retraining_manager = RetrainingManager(retrain_interval=86400)
-        async def dummy_data_loader():
-            # Placeholder: Replace with actual data loading logic
-            import numpy as np
-            X = np.random.rand(1000, 5)
-            y = np.random.randint(0, 2, 1000)
-            return X[:800], y[:800], X[800:], y[800:]
+        async def data_loader():
+            # Load data for retraining (example implementation)
+            from ml_data_preparer import prepare_ml_data
+            from historical_data_fetcher import fetch_historical_data
+            # Use the first valid symbol for retraining
+            if not valid_symbols:
+                logger_main.error("No valid symbols available for retraining")
+                return None, None, None, None
+            data = await fetch_historical_data(exchange_id, user_id, valid_symbols[0], since=int(time.time()) - 30*24*60*60, testnet=testnet)
+            if data is None:
+                logger_main.error("Failed to fetch historical data for retraining")
+                return None, None, None, None
+            return prepare_ml_data(data)
 
         from ml_model_trainer import train_model
         retrain_task = asyncio.create_task(retraining_manager.schedule_retraining(
-            dummy_data_loader, train_model, model_path
+            data_loader, train_model, model_path
         ))
 
         # Wait for tasks to complete

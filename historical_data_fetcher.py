@@ -1,4 +1,5 @@
 import pandas as pd
+import asyncio
 from logging_setup import logger_main
 from exchange_factory import create_exchange
 from symbol_handler import validate_symbol

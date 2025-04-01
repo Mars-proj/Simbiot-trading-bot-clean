@@ -1,46 +1,30 @@
-from logging_setup import logger_main
-import os
-import time
 import asyncio
+from logging_setup import logger_main
 
 class RetrainingManager:
-    def __init__(self, retrain_interval=86400):  # Default: 24 hours
-        self.retrain_interval = int(os.getenv("RETRAIN_INTERVAL", retrain_interval))
-        self.last_retrain = 0
+    def __init__(self, retrain_interval=86400):
+        self.retrain_interval = retrain_interval  # Default: 24 hours
 
-    async def retrain_model(self, data_loader, trainer, model_path):
-        """Retrain the model with new data."""
-        try:
-            # Load data
-            X_train, y_train, X_val, y_val = data_loader()
-            if X_train is None or y_train is None or X_val is None or y_val is None:
-                logger_main.error("Failed to load data for retraining")
-                return False
-
-            # Train the model
-            success = trainer(X_train, y_train, X_val, y_val, input_size=X_train.shape[1], model_path=model_path)
-            if not success:
-                logger_main.error("Model retraining failed")
-                return False
-
-            self.last_retrain = int(time.time())
-            logger_main.info(f"Model retrained successfully, saved to {model_path}")
-            return True
-        except Exception as e:
-            logger_main.error(f"Error retraining model: {e}")
-            return False
-
-    async def schedule_retraining(self, data_loader, trainer, model_path):
-        """Schedules periodic retraining of the model."""
+    async def schedule_retraining(self, data_loader, train_function, model_path):
+        """Schedules periodic retraining of the ML model."""
         try:
             while True:
-                current_time = int(time.time())
-                if current_time - self.last_retrain >= self.retrain_interval:
-                    logger_main.info("Starting scheduled model retraining")
-                    await self.retrain_model(data_loader, trainer, model_path)
-                await asyncio.sleep(3600)  # Check every hour
+                logger_main.info("Starting model retraining")
+                X_train, y_train, X_test, y_test = await data_loader()
+                if X_train is None or y_train is None:
+                    logger_main.error("Failed to load data for retraining")
+                    await asyncio.sleep(self.retrain_interval)
+                    continue
+
+                model, metrics = train_function(X_train, y_train, model_path)
+                if model is None:
+                    logger_main.error("Model retraining failed")
+                else:
+                    logger_main.info(f"Model retrained successfully: {metrics}")
+
+                await asyncio.sleep(self.retrain_interval)
         except Exception as e:
-            logger_main.error(f"Error in scheduled retraining: {e}")
+            logger_main.error(f"Error in retraining schedule: {e}")
             return False
 
 __all__ = ['RetrainingManager']

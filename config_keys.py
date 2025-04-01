@@ -12,7 +12,7 @@ API_KEYS = {
 
 # Preferred exchanges for users
 PREFERRED_EXCHANGES = {
-    "user1": "mexc",
+    "user1": "mexc",  # Use MEXC for real trading
     "user2": "mexc"
 }
 
@@ -23,6 +23,8 @@ SUPPORTED_EXCHANGES = ['mexc', 'binance', 'bybit', 'kucoin', 'okx']
 MAX_OPEN_TRADES = 10
 MIN_TRADE_AMOUNT = 0.01
 MAX_LEVERAGE = 5
+MAX_POSITION_SIZE = 10000.0  # Maximum total position size in USDT
+MAX_POSITION_SIZE_PER_SYMBOL = 5000.0  # Maximum position size per symbol in USDT
 
 def validate_api_keys(api_key, api_secret):
     """Validates API keys with strict checks."""
@@ -42,4 +44,4 @@ def validate_api_keys(api_key, api_secret):
         logger_main.error(f"Error validating API keys: {e}")
         return False
 
-__all__ = ['API_KEYS', 'PREFERRED_EXCHANGES', 'SUPPORTED_EXCHANGES', 'MAX_OPEN_TRADES', 'MIN_TRADE_AMOUNT', 'MAX_LEVERAGE', 'validate_api_keys']
+__all__ = ['API_KEYS', 'PREFERRED_EXCHANGES', 'SUPPORTED_EXCHANGES', 'MAX_OPEN_TRADES', 'MIN_TRADE_AMOUNT', 'MAX_LEVERAGE', 'MAX_POSITION_SIZE', 'MAX_POSITION_SIZE_PER_SYMBOL', 'validate_api_keys']

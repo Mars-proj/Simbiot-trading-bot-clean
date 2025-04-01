@@ -2,48 +2,56 @@ import pandas as pd
 from logging_setup import logger_main
 
 def analyze_ohlcv(data):
-    """Analyzes OHLCV data for patterns or anomalies."""
+    """Analyzes OHLCV data for candlestick patterns and trends."""
     try:
         if not isinstance(data, pd.DataFrame):
             logger_main.error(f"Data must be a pandas DataFrame, got {type(data)}")
             return None
         if data.empty:
-            logger_main.error("OHLCV data is empty")
+            logger_main.error("DataFrame is empty")
             return None
-        required_columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
-        for col in required_columns:
-            if col not in data.columns:
-                logger_main.error(f"Missing required column: {col}")
-                return None
+        required_columns = ['open', 'high', 'low', 'close']
+        if not all(col in data.columns for col in required_columns):
+            missing = [col for col in required_columns if col not in data.columns]
+            logger_main.error(f"DataFrame missing required columns: {missing}")
+            return None
 
-        # Basic statistics
+        # Detect simple candlestick patterns (e.g., Doji, Hammer)
+        patterns = []
+        for i in range(1, len(data)):
+            open_price = data['open'].iloc[i]
+            high_price = data['high'].iloc[i]
+            low_price = data['low'].iloc[i]
+            close_price = data['close'].iloc[i]
+
+            # Calculate body and shadow lengths
+            body_length = abs(close_price - open_price)
+            upper_shadow = high_price - max(open_price, close_price)
+            lower_shadow = min(open_price, close_price) - low_price
+            total_range = high_price - low_price
+
+            # Doji pattern: very small body
+            if total_range > 0 and body_length / total_range < 0.1:
+                patterns.append({'index': i, 'pattern': 'Doji'})
+            # Hammer pattern: small body, long lower shadow
+            elif total_range > 0 and body_length / total_range < 0.3 and lower_shadow > 2 * body_length and upper_shadow < body_length:
+                patterns.append({'index': i, 'pattern': 'Hammer'})
+
+        # Analyze trend (simple moving average crossover)
+        short_ma = data['close'].rolling(window=20).mean()
+        long_ma = data['close'].rolling(window=50).mean()
+        latest_short_ma = short_ma.iloc[-1]
+        latest_long_ma = long_ma.iloc[-1]
+        trend = 'bullish' if latest_short_ma > latest_long_ma else 'bearish' if latest_short_ma < latest_long_ma else 'neutral'
+
         analysis = {
-            'average_price': data['close'].mean(),
-            'max_volume': data['volume'].max(),
-            'price_range': data['high'].max() - data['low'].min(),
-            'patterns': []
+            'patterns': patterns,
+            'trend': trend,
+            'latest_short_ma': latest_short_ma,
+            'latest_long_ma': latest_long_ma
         }
 
-        # Detect candlestick patterns (e.g., Hammer and Bearish Engulfing)
-        for i in range(1, len(data)):
-            prev_candle = data.iloc[i-1]
-            curr_candle = data.iloc[i]
-
-            # Hammer pattern (bullish reversal)
-            body = abs(curr_candle['close'] - curr_candle['open'])
-            lower_shadow = curr_candle['low'] - min(curr_candle['open'], curr_candle['close'])
-            upper_shadow = max(curr_candle['open'], curr_candle['close']) - curr_candle['high']
-            if lower_shadow > 2 * body and upper_shadow < body and curr_candle['close'] > curr_candle['open']:
-                analysis['patterns'].append({'type': 'hammer', 'timestamp': curr_candle['timestamp']})
-
-            # Bearish Engulfing pattern
-            if (prev_candle['close'] > prev_candle['open'] and  # Previous candle is bullish
-                curr_candle['open'] > prev_candle['close'] and  # Current candle opens above previous close
-                curr_candle['close'] < prev_candle['open'] and  # Current candle closes below previous open
-                curr_candle['close'] < curr_candle['open']):     # Current candle is bearish
-                analysis['patterns'].append({'type': 'bearish_engulfing', 'timestamp': curr_candle['timestamp']})
-
-        logger_main.info(f"OHLCV analysis: {analysis}")
+        logger_main.info(f"OHLCV analysis completed: trend={trend}, patterns_detected={len(patterns)}")
         return analysis
     except Exception as e:
         logger_main.error(f"Error analyzing OHLCV data: {e}")

@@ -1,0 +1,903 @@
+nohup: ignoring input
+2025-04-01 15:34:33,363 - main - INFO - [logging_setup.py:26] - All loggers initialized successfully
+2025-04-01 15:34:35,866 - main - INFO - [global_objects.py:11] - Global objects initialized with supported symbols
+2025-04-01 15:34:35,898 - main - INFO - [redis_client.py:14] - Initialized Redis client with URL: redis://localhost:6379
+2025-04-01 15:34:35,902 - main - INFO - [main.py:24] - Fetching test symbols
+2025-04-01 15:34:35,902 - main - INFO - [test_symbols.py:16] - Starting to fetch test symbols for mexc (user: user1, testnet: False)
+2025-04-01 15:34:35,903 - main - INFO - [config_keys.py:41] - API keys validated successfully
+2025-04-01 15:34:35,907 - main - INFO - [exchange_factory.py:51] - Created exchange instance for mexc (user: user1, testnet: False) with rateLimit: 2000
+2025-04-01 15:34:35,907 - main - INFO - [test_symbols.py:24] - Exchange instance created, loading markets for mexc
+2025-04-01 15:35:05,915 - main - ERROR - [test_symbols.py:37] - Timeout while loading markets for mexc (attempt 1/3)
+2025-04-01 15:35:35,945 - main - ERROR - [test_symbols.py:37] - Timeout while loading markets for mexc (attempt 2/3)
+2025-04-01 15:36:05,948 - main - ERROR - [test_symbols.py:37] - Timeout while loading markets for mexc (attempt 3/3)
+2025-04-01 15:36:05,949 - main - ERROR - [test_symbols.py:39] - Failed to load markets after 3 attempts
+2025-04-01 15:36:05,949 - main - WARNING - [test_symbols.py:43] - load_markets() failed, fetching symbols via public API for mexc
+2025-04-01 15:36:07,653 - main - INFO - [test_symbols.py:66] - Fetched 2606 symbols via public API for mexc: ['BROCKUSDT', 'BNTUSDT', 'NTXUSDT', 'DEVVEUSDT', 'XOXNOUSDT']...
+2025-04-01 15:36:07,655 - main - INFO - [redis_client.py:14] - Initialized Redis client with URL: redis://localhost:6379
+2025-04-01 15:36:07,661 - main - INFO - [test_symbols.py:80] - Loaded 114 invalid symbols from cache: ['HANDYUSDT', 'BOSONUSDT', 'UBXUSDT', 'LOKAUSDT', 'CATSUSDT']...
+2025-04-01 15:36:07,661 - main - INFO - [test_symbols.py:93] - Processing batch 1 of 261 (symbols 0 to 10)
+2025-04-01 15:36:07,662 - main - DEBUG - [test_symbols.py:98] - Symbol BROCKUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,662 - main - DEBUG - [test_symbols.py:98] - Symbol BNTUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,662 - main - DEBUG - [test_symbols.py:98] - Symbol NTXUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,662 - main - DEBUG - [test_symbols.py:98] - Symbol DEVVEUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,662 - main - DEBUG - [test_symbols.py:98] - Symbol XOXNOUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,662 - main - DEBUG - [test_symbols.py:98] - Symbol HTRUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,662 - main - DEBUG - [test_symbols.py:98] - Symbol GQBUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,663 - main - DEBUG - [test_symbols.py:98] - Symbol VOXELUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,663 - main - DEBUG - [test_symbols.py:98] - Symbol LVNUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,663 - main - DEBUG - [test_symbols.py:98] - Symbol LOKAUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,663 - main - INFO - [test_symbols.py:93] - Processing batch 2 of 261 (symbols 10 to 20)
+2025-04-01 15:36:07,663 - main - DEBUG - [test_symbols.py:98] - Symbol DEFIUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,663 - main - DEBUG - [test_symbols.py:98] - Symbol TURBOUSDC is in invalid symbols cache, skipping
+2025-04-01 15:36:07,663 - main - DEBUG - [test_symbols.py:98] - Symbol SSEUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,663 - main - DEBUG - [test_symbols.py:98] - Symbol F3USDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,664 - main - DEBUG - [test_symbols.py:98] - Symbol CATTONUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,664 - main - DEBUG - [test_symbols.py:98] - Symbol MANEKIUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,664 - main - DEBUG - [test_symbols.py:98] - Symbol ARUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,664 - main - DEBUG - [test_symbols.py:98] - Symbol BFICUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,664 - main - DEBUG - [test_symbols.py:98] - Symbol SNTUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,664 - main - DEBUG - [test_symbols.py:98] - Symbol BAKEUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,664 - main - INFO - [test_symbols.py:93] - Processing batch 3 of 261 (symbols 20 to 30)
+2025-04-01 15:36:07,665 - main - DEBUG - [test_symbols.py:98] - Symbol SWASHUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,665 - main - DEBUG - [test_symbols.py:98] - Symbol IXSUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,665 - main - DEBUG - [test_symbols.py:98] - Symbol ROAMUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,665 - main - DEBUG - [test_symbols.py:98] - Symbol EVERUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,665 - main - DEBUG - [test_symbols.py:98] - Symbol RINGAIUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,665 - main - DEBUG - [test_symbols.py:98] - Symbol HANDYUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,665 - main - DEBUG - [test_symbols.py:98] - Symbol OZONEUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,665 - main - DEBUG - [test_symbols.py:98] - Symbol TUAUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,665 - main - DEBUG - [test_symbols.py:98] - Symbol MYTHUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,666 - main - DEBUG - [test_symbols.py:98] - Symbol GCOTIUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,666 - main - INFO - [test_symbols.py:93] - Processing batch 4 of 261 (symbols 30 to 40)
+2025-04-01 15:36:07,666 - main - DEBUG - [test_symbols.py:98] - Symbol MAIVUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,666 - main - DEBUG - [test_symbols.py:98] - Symbol OOKIUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,666 - main - DEBUG - [test_symbols.py:98] - Symbol DFUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,666 - main - DEBUG - [test_symbols.py:98] - Symbol BOSONUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,666 - main - DEBUG - [test_symbols.py:98] - Symbol SKAIUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,667 - main - DEBUG - [test_symbols.py:98] - Symbol DOLZUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,667 - main - DEBUG - [test_symbols.py:98] - Symbol UBXUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,667 - main - DEBUG - [test_symbols.py:98] - Symbol VALORUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,667 - main - DEBUG - [test_symbols.py:98] - Symbol NFTUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,667 - main - DEBUG - [test_symbols.py:98] - Symbol GPTVUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,667 - main - INFO - [test_symbols.py:93] - Processing batch 5 of 261 (symbols 40 to 50)
+2025-04-01 15:36:07,667 - main - DEBUG - [test_symbols.py:98] - Symbol ALEOUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,667 - main - DEBUG - [test_symbols.py:98] - Symbol MOEUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,668 - main - DEBUG - [test_symbols.py:98] - Symbol WAIUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,668 - main - DEBUG - [test_symbols.py:98] - Symbol CATSUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,668 - main - DEBUG - [test_symbols.py:98] - Symbol FATUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,668 - main - DEBUG - [test_symbols.py:98] - Symbol SCCUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,668 - main - DEBUG - [test_symbols.py:98] - Symbol BERRYUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,668 - main - DEBUG - [test_symbols.py:98] - Symbol INSPUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,668 - main - DEBUG - [test_symbols.py:98] - Symbol GHTUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,668 - main - DEBUG - [test_symbols.py:98] - Symbol ATRSUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,669 - main - INFO - [test_symbols.py:93] - Processing batch 6 of 261 (symbols 50 to 60)
+2025-04-01 15:36:07,669 - main - DEBUG - [test_symbols.py:98] - Symbol IQUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,669 - main - DEBUG - [test_symbols.py:98] - Symbol LYUMUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,669 - main - DEBUG - [test_symbols.py:98] - Symbol GRIFFAINUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,669 - main - DEBUG - [test_symbols.py:98] - Symbol NTRNUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,669 - main - DEBUG - [test_symbols.py:98] - Symbol TOADUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,669 - main - DEBUG - [test_symbols.py:98] - Symbol SEEDUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,669 - main - DEBUG - [test_symbols.py:98] - Symbol MUBARAKAHUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,670 - main - DEBUG - [test_symbols.py:98] - Symbol RSRUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,670 - main - DEBUG - [test_symbols.py:98] - Symbol NSUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,670 - main - DEBUG - [test_symbols.py:98] - Symbol IRISUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,670 - main - INFO - [test_symbols.py:93] - Processing batch 7 of 261 (symbols 60 to 70)
+2025-04-01 15:36:07,670 - main - DEBUG - [test_symbols.py:98] - Symbol XPLAUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,670 - main - DEBUG - [test_symbols.py:98] - Symbol QTUMBTC is in invalid symbols cache, skipping
+2025-04-01 15:36:07,670 - main - DEBUG - [test_symbols.py:98] - Symbol IDEAUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,670 - main - DEBUG - [test_symbols.py:98] - Symbol T3AIUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,671 - main - DEBUG - [test_symbols.py:98] - Symbol AXOLUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,671 - main - DEBUG - [test_symbols.py:98] - Symbol GLINTUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,671 - main - DEBUG - [test_symbols.py:98] - Symbol BIOUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,671 - main - DEBUG - [test_symbols.py:98] - Symbol EMRLDUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,671 - main - DEBUG - [test_symbols.py:98] - Symbol NACUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,671 - main - DEBUG - [test_symbols.py:98] - Symbol AIDOGEUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,671 - main - INFO - [test_symbols.py:93] - Processing batch 8 of 261 (symbols 70 to 80)
+2025-04-01 15:36:07,671 - main - DEBUG - [test_symbols.py:98] - Symbol SOLUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,672 - main - DEBUG - [test_symbols.py:98] - Symbol MMTUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,672 - main - DEBUG - [test_symbols.py:98] - Symbol E4CUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,672 - main - DEBUG - [test_symbols.py:98] - Symbol AAUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,672 - main - DEBUG - [test_symbols.py:98] - Symbol NAPUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,672 - main - DEBUG - [test_symbols.py:98] - Symbol COKUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,672 - main - DEBUG - [test_symbols.py:98] - Symbol DRINKUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,672 - main - DEBUG - [test_symbols.py:98] - Symbol HRTUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,672 - main - DEBUG - [test_symbols.py:98] - Symbol KDAUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,672 - main - DEBUG - [test_symbols.py:98] - Symbol XENUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,673 - main - INFO - [test_symbols.py:93] - Processing batch 9 of 261 (symbols 80 to 90)
+2025-04-01 15:36:07,673 - main - DEBUG - [test_symbols.py:98] - Symbol PNICUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,673 - main - DEBUG - [test_symbols.py:98] - Symbol DOVUUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,673 - main - DEBUG - [test_symbols.py:98] - Symbol INJUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,673 - main - DEBUG - [test_symbols.py:98] - Symbol GELUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,673 - main - DEBUG - [test_symbols.py:98] - Symbol ETCBTC is in invalid symbols cache, skipping
+2025-04-01 15:36:07,673 - main - DEBUG - [test_symbols.py:98] - Symbol JUSTICEUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,673 - main - DEBUG - [test_symbols.py:98] - Symbol FIOUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,674 - main - DEBUG - [test_symbols.py:98] - Symbol HIFIUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,674 - main - DEBUG - [test_symbols.py:98] - Symbol BSTCUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,674 - main - DEBUG - [test_symbols.py:98] - Symbol ROCKUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,674 - main - INFO - [test_symbols.py:93] - Processing batch 10 of 261 (symbols 90 to 100)
+2025-04-01 15:36:07,674 - main - DEBUG - [test_symbols.py:98] - Symbol LAMBUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,674 - main - DEBUG - [test_symbols.py:98] - Symbol MELANIAUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,674 - main - DEBUG - [test_symbols.py:98] - Symbol ATNTUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,674 - main - DEBUG - [test_symbols.py:98] - Symbol REFUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,675 - main - DEBUG - [test_symbols.py:98] - Symbol OBORTECHUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,675 - main - DEBUG - [test_symbols.py:98] - Symbol ONDOUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,675 - main - DEBUG - [test_symbols.py:98] - Symbol DKAUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,675 - main - DEBUG - [test_symbols.py:98] - Symbol BVTUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,675 - main - DEBUG - [test_symbols.py:98] - Symbol LIXXUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,675 - main - DEBUG - [test_symbols.py:98] - Symbol KANGUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,675 - main - INFO - [test_symbols.py:93] - Processing batch 11 of 261 (symbols 100 to 110)
+2025-04-01 15:36:07,675 - main - DEBUG - [test_symbols.py:98] - Symbol KPNUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,676 - main - DEBUG - [test_symbols.py:98] - Symbol TGTUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,676 - main - DEBUG - [test_symbols.py:98] - Symbol BONDUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,676 - main - DEBUG - [test_symbols.py:98] - Symbol WEEBSUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,676 - main - DEBUG - [test_symbols.py:98] - Symbol OVERUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,676 - main - DEBUG - [test_symbols.py:98] - Symbol OKMUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,676 - main - DEBUG - [test_symbols.py:98] - Symbol TRXUSDC is in invalid symbols cache, skipping
+2025-04-01 15:36:07,676 - main - DEBUG - [test_symbols.py:98] - Symbol SYLOUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,676 - main - DEBUG - [test_symbols.py:98] - Symbol SHIBSOLUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,677 - main - DEBUG - [test_symbols.py:98] - Symbol CATEETHUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,677 - main - INFO - [test_symbols.py:93] - Processing batch 12 of 261 (symbols 110 to 120)
+2025-04-01 15:36:07,677 - main - DEBUG - [test_symbols.py:98] - Symbol VSYSUSDT is in invalid symbols cache, skipping
+2025-04-01 15:36:07,677 - main - DEBUG - [test_symbols.py:139] - Validating symbol TFIUSDT
+2025-04-01 15:36:07,677 - main - DEBUG - [test_symbols.py:139] - Validating symbol MUSDT
+2025-04-01 15:36:07,678 - main - DEBUG - [test_symbols.py:139] - Validating symbol DOGWIFHATUSDT
+2025-04-01 15:36:07,678 - main - DEBUG - [test_symbols.py:139] - Validating symbol CATIUSDT
+2025-04-01 15:36:07,678 - main - DEBUG - [test_symbols.py:139] - Validating symbol SPHRUSDT
+2025-04-01 15:36:07,678 - main - DEBUG - [test_symbols.py:139] - Validating symbol TBCUSDT
+2025-04-01 15:36:07,678 - main - DEBUG - [test_symbols.py:139] - Validating symbol ATRUSDT
+2025-04-01 15:36:07,679 - main - DEBUG - [test_symbols.py:139] - Validating symbol VELOUSDT
+2025-04-01 15:36:07,679 - main - DEBUG - [test_symbols.py:139] - Validating symbol GARIUSDT
+2025-04-01 15:36:17,679 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol TFIUSDT: 
+2025-04-01 15:36:17,680 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol MUSDT: 
+2025-04-01 15:36:17,680 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol DOGWIFHATUSDT: 
+2025-04-01 15:36:17,681 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol CATIUSDT: 
+2025-04-01 15:36:17,681 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SPHRUSDT: 
+2025-04-01 15:36:17,681 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol TBCUSDT: 
+2025-04-01 15:36:17,682 - main - DEBUG - [test_symbols.py:117] - Symbol TBCUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:17,682 - main - DEBUG - [test_symbols.py:117] - Symbol ATRUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:17,682 - main - DEBUG - [test_symbols.py:117] - Symbol VELOUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:17,682 - main - INFO - [test_symbols.py:93] - Processing batch 13 of 261 (symbols 120 to 130)
+2025-04-01 15:36:17,683 - main - DEBUG - [test_symbols.py:139] - Validating symbol LPTUSDT
+2025-04-01 15:36:17,683 - main - DEBUG - [test_symbols.py:139] - Validating symbol MONGUSDT
+2025-04-01 15:36:17,683 - main - DEBUG - [test_symbols.py:139] - Validating symbol KIKIUSDT
+2025-04-01 15:36:17,683 - main - DEBUG - [test_symbols.py:139] - Validating symbol ROGUSDT
+2025-04-01 15:36:17,684 - main - DEBUG - [test_symbols.py:139] - Validating symbol DOTBTC
+2025-04-01 15:36:17,684 - main - DEBUG - [test_symbols.py:139] - Validating symbol RXUSDT
+2025-04-01 15:36:17,684 - main - DEBUG - [test_symbols.py:139] - Validating symbol ORAIUSDT
+2025-04-01 15:36:17,684 - main - DEBUG - [test_symbols.py:139] - Validating symbol SYNTHUSDT
+2025-04-01 15:36:17,685 - main - DEBUG - [test_symbols.py:139] - Validating symbol RIZOUSDT
+2025-04-01 15:36:17,685 - main - DEBUG - [test_symbols.py:139] - Validating symbol LTCUSDC
+2025-04-01 15:36:27,683 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol LPTUSDT: 
+2025-04-01 15:36:27,684 - main - DEBUG - [test_symbols.py:117] - Symbol MONGUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:27,684 - main - DEBUG - [test_symbols.py:117] - Symbol KIKIUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:27,684 - main - DEBUG - [test_symbols.py:117] - Symbol ROGUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:27,684 - main - DEBUG - [test_symbols.py:117] - Symbol DOTBTC passed filtering and added to valid symbols
+2025-04-01 15:36:27,684 - main - DEBUG - [test_symbols.py:117] - Symbol RXUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:27,685 - main - DEBUG - [test_symbols.py:117] - Symbol ORAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:27,685 - main - DEBUG - [test_symbols.py:117] - Symbol SYNTHUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:27,685 - main - DEBUG - [test_symbols.py:117] - Symbol RIZOUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:27,685 - main - DEBUG - [test_symbols.py:117] - Symbol LTCUSDC passed filtering and added to valid symbols
+2025-04-01 15:36:27,685 - main - INFO - [test_symbols.py:93] - Processing batch 14 of 261 (symbols 130 to 140)
+2025-04-01 15:36:27,686 - main - DEBUG - [test_symbols.py:139] - Validating symbol SBR1USDT
+2025-04-01 15:36:27,686 - main - DEBUG - [test_symbols.py:139] - Validating symbol ENAUSDC
+2025-04-01 15:36:27,686 - main - DEBUG - [test_symbols.py:139] - Validating symbol ZKJUSDT
+2025-04-01 15:36:27,686 - main - DEBUG - [test_symbols.py:139] - Validating symbol AIMMTUSDT
+2025-04-01 15:36:27,686 - main - DEBUG - [test_symbols.py:139] - Validating symbol VNTRUSDT
+2025-04-01 15:36:27,687 - main - DEBUG - [test_symbols.py:139] - Validating symbol HAROLDUSDT
+2025-04-01 15:36:27,687 - main - DEBUG - [test_symbols.py:139] - Validating symbol LTTUSDT
+2025-04-01 15:36:27,687 - main - DEBUG - [test_symbols.py:139] - Validating symbol CONVUSDT
+2025-04-01 15:36:27,687 - main - DEBUG - [test_symbols.py:139] - Validating symbol BCBUSDT
+2025-04-01 15:36:27,687 - main - DEBUG - [test_symbols.py:139] - Validating symbol ICNXUSDT
+2025-04-01 15:36:37,687 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SBR1USDT: 
+2025-04-01 15:36:37,687 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol ENAUSDC: 
+2025-04-01 15:36:37,687 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol ZKJUSDT: 
+2025-04-01 15:36:37,687 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol AIMMTUSDT: 
+2025-04-01 15:36:37,688 - main - DEBUG - [test_symbols.py:117] - Symbol VNTRUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:37,688 - main - DEBUG - [test_symbols.py:117] - Symbol HAROLDUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:37,688 - main - DEBUG - [test_symbols.py:117] - Symbol LTTUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:37,688 - main - DEBUG - [test_symbols.py:117] - Symbol CONVUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:37,688 - main - DEBUG - [test_symbols.py:117] - Symbol BCBUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:37,689 - main - DEBUG - [test_symbols.py:117] - Symbol ICNXUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:37,689 - main - INFO - [test_symbols.py:93] - Processing batch 15 of 261 (symbols 140 to 150)
+2025-04-01 15:36:37,689 - main - DEBUG - [test_symbols.py:139] - Validating symbol WELLUSDT
+2025-04-01 15:36:37,689 - main - DEBUG - [test_symbols.py:139] - Validating symbol JUPUSDT
+2025-04-01 15:36:37,690 - main - DEBUG - [test_symbols.py:139] - Validating symbol SOEXUSDT
+2025-04-01 15:36:37,690 - main - DEBUG - [test_symbols.py:139] - Validating symbol EPXUSDT
+2025-04-01 15:36:37,690 - main - DEBUG - [test_symbols.py:139] - Validating symbol MERLUSDT
+2025-04-01 15:36:37,690 - main - DEBUG - [test_symbols.py:139] - Validating symbol AIDEEPGAMESUSDT
+2025-04-01 15:36:37,690 - main - DEBUG - [test_symbols.py:139] - Validating symbol TREMPUSDT
+2025-04-01 15:36:37,691 - main - DEBUG - [test_symbols.py:139] - Validating symbol PYTHIAUSDT
+2025-04-01 15:36:37,691 - main - DEBUG - [test_symbols.py:139] - Validating symbol ZYPTOUSDT
+2025-04-01 15:36:37,691 - main - DEBUG - [test_symbols.py:139] - Validating symbol PKRUSDT
+2025-04-01 15:36:47,691 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol WELLUSDT: 
+2025-04-01 15:36:47,691 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol JUPUSDT: 
+2025-04-01 15:36:47,691 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SOEXUSDT: 
+2025-04-01 15:36:47,691 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol EPXUSDT: 
+2025-04-01 15:36:47,691 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol MERLUSDT: 
+2025-04-01 15:36:47,692 - main - DEBUG - [test_symbols.py:117] - Symbol AIDEEPGAMESUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:47,692 - main - DEBUG - [test_symbols.py:117] - Symbol TREMPUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:47,692 - main - DEBUG - [test_symbols.py:117] - Symbol PYTHIAUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:47,692 - main - DEBUG - [test_symbols.py:117] - Symbol ZYPTOUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:47,692 - main - DEBUG - [test_symbols.py:117] - Symbol PKRUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:47,693 - main - INFO - [test_symbols.py:93] - Processing batch 16 of 261 (symbols 150 to 160)
+2025-04-01 15:36:47,693 - main - DEBUG - [test_symbols.py:139] - Validating symbol TROLLUSDT
+2025-04-01 15:36:47,693 - main - DEBUG - [test_symbols.py:139] - Validating symbol AIRIUSDT
+2025-04-01 15:36:47,693 - main - DEBUG - [test_symbols.py:139] - Validating symbol GTCAIUSDT
+2025-04-01 15:36:47,694 - main - DEBUG - [test_symbols.py:139] - Validating symbol SYSUSDT
+2025-04-01 15:36:47,694 - main - DEBUG - [test_symbols.py:139] - Validating symbol MDOGSUSDT
+2025-04-01 15:36:47,694 - main - DEBUG - [test_symbols.py:139] - Validating symbol TEVAUSDT
+2025-04-01 15:36:47,694 - main - DEBUG - [test_symbols.py:139] - Validating symbol LEEUSDT
+2025-04-01 15:36:47,694 - main - DEBUG - [test_symbols.py:139] - Validating symbol DOVAUSDT
+2025-04-01 15:36:47,695 - main - DEBUG - [test_symbols.py:139] - Validating symbol AVAXUSDT
+2025-04-01 15:36:47,695 - main - DEBUG - [test_symbols.py:139] - Validating symbol KITEAIUSDT
+2025-04-01 15:36:57,695 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol TROLLUSDT: 
+2025-04-01 15:36:57,696 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol AIRIUSDT: 
+2025-04-01 15:36:57,696 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol GTCAIUSDT: 
+2025-04-01 15:36:57,696 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SYSUSDT: 
+2025-04-01 15:36:57,696 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol MDOGSUSDT: 
+2025-04-01 15:36:57,697 - main - DEBUG - [test_symbols.py:117] - Symbol TEVAUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:57,697 - main - DEBUG - [test_symbols.py:117] - Symbol LEEUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:57,697 - main - DEBUG - [test_symbols.py:117] - Symbol DOVAUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:57,697 - main - DEBUG - [test_symbols.py:117] - Symbol AVAXUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:57,697 - main - DEBUG - [test_symbols.py:117] - Symbol KITEAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:36:57,697 - main - INFO - [test_symbols.py:93] - Processing batch 17 of 261 (symbols 160 to 170)
+2025-04-01 15:36:57,698 - main - DEBUG - [test_symbols.py:139] - Validating symbol TJRMUSDT
+2025-04-01 15:36:57,698 - main - DEBUG - [test_symbols.py:139] - Validating symbol XWGTUSDT
+2025-04-01 15:36:57,698 - main - DEBUG - [test_symbols.py:139] - Validating symbol CAWUSDC
+2025-04-01 15:36:57,699 - main - DEBUG - [test_symbols.py:139] - Validating symbol CELRUSDT
+2025-04-01 15:36:57,699 - main - DEBUG - [test_symbols.py:139] - Validating symbol AIGPTUSDT
+2025-04-01 15:36:57,699 - main - DEBUG - [test_symbols.py:139] - Validating symbol SUIUSDT
+2025-04-01 15:36:57,699 - main - DEBUG - [test_symbols.py:139] - Validating symbol NEXOUSDT
+2025-04-01 15:36:57,699 - main - DEBUG - [test_symbols.py:139] - Validating symbol LOTTUSDT
+2025-04-01 15:36:57,700 - main - DEBUG - [test_symbols.py:139] - Validating symbol NYAUSDT
+2025-04-01 15:36:57,700 - main - DEBUG - [test_symbols.py:139] - Validating symbol PUSSUSDT
+2025-04-01 15:37:07,700 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol TJRMUSDT: 
+2025-04-01 15:37:07,700 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol XWGTUSDT: 
+2025-04-01 15:37:07,700 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol CAWUSDC: 
+2025-04-01 15:37:07,700 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol CELRUSDT: 
+2025-04-01 15:37:07,701 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol AIGPTUSDT: 
+2025-04-01 15:37:07,701 - main - DEBUG - [test_symbols.py:117] - Symbol SUIUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:07,701 - main - DEBUG - [test_symbols.py:117] - Symbol NEXOUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:07,701 - main - DEBUG - [test_symbols.py:117] - Symbol LOTTUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:07,701 - main - DEBUG - [test_symbols.py:117] - Symbol NYAUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:07,701 - main - DEBUG - [test_symbols.py:117] - Symbol PUSSUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:07,702 - main - INFO - [test_symbols.py:93] - Processing batch 18 of 261 (symbols 170 to 180)
+2025-04-01 15:37:07,702 - main - DEBUG - [test_symbols.py:139] - Validating symbol WEB3USDT
+2025-04-01 15:37:07,702 - main - DEBUG - [test_symbols.py:139] - Validating symbol AKUMAUSDT
+2025-04-01 15:37:07,703 - main - DEBUG - [test_symbols.py:139] - Validating symbol FDUSDUSDT
+2025-04-01 15:37:07,703 - main - DEBUG - [test_symbols.py:139] - Validating symbol EAIUSDT
+2025-04-01 15:37:07,703 - main - DEBUG - [test_symbols.py:139] - Validating symbol BLOCXUSDT
+2025-04-01 15:37:07,703 - main - DEBUG - [test_symbols.py:139] - Validating symbol TAOUSDT
+2025-04-01 15:37:07,703 - main - DEBUG - [test_symbols.py:139] - Validating symbol OMGUSDT
+2025-04-01 15:37:07,704 - main - DEBUG - [test_symbols.py:139] - Validating symbol ERGUSDT
+2025-04-01 15:37:07,704 - main - DEBUG - [test_symbols.py:139] - Validating symbol PHNIXUSDT
+2025-04-01 15:37:07,704 - main - DEBUG - [test_symbols.py:139] - Validating symbol AINUUSDT
+2025-04-01 15:37:17,703 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol WEB3USDT: 
+2025-04-01 15:37:17,703 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol AKUMAUSDT: 
+2025-04-01 15:37:17,704 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol FDUSDUSDT: 
+2025-04-01 15:37:17,704 - main - DEBUG - [test_symbols.py:117] - Symbol EAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:17,704 - main - DEBUG - [test_symbols.py:117] - Symbol BLOCXUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:17,704 - main - DEBUG - [test_symbols.py:117] - Symbol TAOUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:17,705 - main - DEBUG - [test_symbols.py:117] - Symbol OMGUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:17,705 - main - DEBUG - [test_symbols.py:117] - Symbol ERGUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:17,705 - main - DEBUG - [test_symbols.py:117] - Symbol PHNIXUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:17,705 - main - DEBUG - [test_symbols.py:117] - Symbol AINUUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:17,705 - main - INFO - [test_symbols.py:93] - Processing batch 19 of 261 (symbols 180 to 190)
+2025-04-01 15:37:17,705 - main - DEBUG - [test_symbols.py:139] - Validating symbol HTMUSDT
+2025-04-01 15:37:17,706 - main - DEBUG - [test_symbols.py:139] - Validating symbol TAOUSDC
+2025-04-01 15:37:17,706 - main - DEBUG - [test_symbols.py:139] - Validating symbol MAVUSDT
+2025-04-01 15:37:17,706 - main - DEBUG - [test_symbols.py:139] - Validating symbol PNDRUSDT
+2025-04-01 15:37:17,706 - main - DEBUG - [test_symbols.py:139] - Validating symbol GTONUSDT
+2025-04-01 15:37:17,707 - main - DEBUG - [test_symbols.py:139] - Validating symbol ATATUSDT
+2025-04-01 15:37:17,707 - main - DEBUG - [test_symbols.py:139] - Validating symbol ARIXUSDT
+2025-04-01 15:37:17,707 - main - DEBUG - [test_symbols.py:139] - Validating symbol EPICUSDT
+2025-04-01 15:37:17,707 - main - DEBUG - [test_symbols.py:139] - Validating symbol STREAMUSDT
+2025-04-01 15:37:17,707 - main - DEBUG - [test_symbols.py:139] - Validating symbol SEXYUSDT
+2025-04-01 15:37:27,707 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol HTMUSDT: 
+2025-04-01 15:37:27,707 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol TAOUSDC: 
+2025-04-01 15:37:27,708 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol MAVUSDT: 
+2025-04-01 15:37:27,708 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol PNDRUSDT: 
+2025-04-01 15:37:27,708 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol GTONUSDT: 
+2025-04-01 15:37:27,708 - main - DEBUG - [test_symbols.py:117] - Symbol ATATUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:27,708 - main - DEBUG - [test_symbols.py:117] - Symbol ARIXUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:27,709 - main - DEBUG - [test_symbols.py:117] - Symbol EPICUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:27,709 - main - DEBUG - [test_symbols.py:117] - Symbol STREAMUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:27,709 - main - DEBUG - [test_symbols.py:117] - Symbol SEXYUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:27,709 - main - INFO - [test_symbols.py:93] - Processing batch 20 of 261 (symbols 190 to 200)
+2025-04-01 15:37:27,709 - main - DEBUG - [test_symbols.py:139] - Validating symbol HEMULEUSDT
+2025-04-01 15:37:27,710 - main - DEBUG - [test_symbols.py:139] - Validating symbol BERAUSDT
+2025-04-01 15:37:27,710 - main - DEBUG - [test_symbols.py:139] - Validating symbol HIPPOPUSDT
+2025-04-01 15:37:27,710 - main - DEBUG - [test_symbols.py:139] - Validating symbol FILUSDC
+2025-04-01 15:37:27,710 - main - DEBUG - [test_symbols.py:139] - Validating symbol SEIUSDT
+2025-04-01 15:37:27,710 - main - DEBUG - [test_symbols.py:139] - Validating symbol POWERAIUSDT
+2025-04-01 15:37:27,711 - main - DEBUG - [test_symbols.py:139] - Validating symbol BAIUSDT
+2025-04-01 15:37:27,711 - main - DEBUG - [test_symbols.py:139] - Validating symbol TRIOUSDT
+2025-04-01 15:37:27,712 - main - DEBUG - [test_symbols.py:139] - Validating symbol COMUSDT
+2025-04-01 15:37:27,712 - main - DEBUG - [test_symbols.py:139] - Validating symbol NEXAUSDT
+2025-04-01 15:37:37,712 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol HEMULEUSDT: 
+2025-04-01 15:37:37,713 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol BERAUSDT: 
+2025-04-01 15:37:37,713 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol HIPPOPUSDT: 
+2025-04-01 15:37:37,713 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol FILUSDC: 
+2025-04-01 15:37:37,713 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SEIUSDT: 
+2025-04-01 15:37:37,714 - main - DEBUG - [test_symbols.py:117] - Symbol POWERAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:37,714 - main - DEBUG - [test_symbols.py:117] - Symbol BAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:37,714 - main - DEBUG - [test_symbols.py:117] - Symbol TRIOUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:37,714 - main - DEBUG - [test_symbols.py:117] - Symbol COMUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:37,714 - main - DEBUG - [test_symbols.py:117] - Symbol NEXAUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:37,714 - main - INFO - [test_symbols.py:93] - Processing batch 21 of 261 (symbols 200 to 210)
+2025-04-01 15:37:37,715 - main - DEBUG - [test_symbols.py:139] - Validating symbol GINNANUSDT
+2025-04-01 15:37:37,715 - main - DEBUG - [test_symbols.py:139] - Validating symbol GAINSUSDT
+2025-04-01 15:37:37,715 - main - DEBUG - [test_symbols.py:139] - Validating symbol K21USDT
+2025-04-01 15:37:37,716 - main - DEBUG - [test_symbols.py:139] - Validating symbol ZEBUUSDT
+2025-04-01 15:37:37,716 - main - DEBUG - [test_symbols.py:139] - Validating symbol BITBULLUSDT
+2025-04-01 15:37:37,716 - main - DEBUG - [test_symbols.py:139] - Validating symbol WBTCUSDT
+2025-04-01 15:37:37,716 - main - DEBUG - [test_symbols.py:139] - Validating symbol AURAUSDT
+2025-04-01 15:37:37,716 - main - DEBUG - [test_symbols.py:139] - Validating symbol HIPPOSWAPUSDT
+2025-04-01 15:37:37,717 - main - DEBUG - [test_symbols.py:139] - Validating symbol BVMUSDT
+2025-04-01 15:37:37,717 - main - DEBUG - [test_symbols.py:139] - Validating symbol ZAXUSDT
+2025-04-01 15:37:47,716 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol GINNANUSDT: 
+2025-04-01 15:37:47,716 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol GAINSUSDT: 
+2025-04-01 15:37:47,717 - main - DEBUG - [test_symbols.py:117] - Symbol K21USDT passed filtering and added to valid symbols
+2025-04-01 15:37:47,717 - main - DEBUG - [test_symbols.py:117] - Symbol ZEBUUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:47,717 - main - DEBUG - [test_symbols.py:117] - Symbol BITBULLUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:47,717 - main - DEBUG - [test_symbols.py:117] - Symbol WBTCUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:47,717 - main - DEBUG - [test_symbols.py:117] - Symbol AURAUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:47,718 - main - DEBUG - [test_symbols.py:117] - Symbol HIPPOSWAPUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:47,718 - main - DEBUG - [test_symbols.py:117] - Symbol BVMUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:47,718 - main - DEBUG - [test_symbols.py:117] - Symbol ZAXUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:47,718 - main - INFO - [test_symbols.py:93] - Processing batch 22 of 261 (symbols 210 to 220)
+2025-04-01 15:37:47,719 - main - DEBUG - [test_symbols.py:139] - Validating symbol LESTERUSDT
+2025-04-01 15:37:47,719 - main - DEBUG - [test_symbols.py:139] - Validating symbol BXXUSDT
+2025-04-01 15:37:47,719 - main - DEBUG - [test_symbols.py:139] - Validating symbol HEIUSDT
+2025-04-01 15:37:47,719 - main - DEBUG - [test_symbols.py:139] - Validating symbol NZEROUSDT
+2025-04-01 15:37:47,719 - main - DEBUG - [test_symbols.py:139] - Validating symbol MANAUSDT
+2025-04-01 15:37:47,720 - main - DEBUG - [test_symbols.py:139] - Validating symbol FROCUSDT
+2025-04-01 15:37:47,720 - main - DEBUG - [test_symbols.py:139] - Validating symbol COCKUSDT
+2025-04-01 15:37:47,720 - main - DEBUG - [test_symbols.py:139] - Validating symbol PSPUSDT
+2025-04-01 15:37:47,720 - main - DEBUG - [test_symbols.py:139] - Validating symbol CHRPUSDT
+2025-04-01 15:37:47,721 - main - DEBUG - [test_symbols.py:139] - Validating symbol TAONUUSDT
+2025-04-01 15:37:57,720 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol LESTERUSDT: 
+2025-04-01 15:37:57,720 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol BXXUSDT: 
+2025-04-01 15:37:57,720 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol HEIUSDT: 
+2025-04-01 15:37:57,721 - main - DEBUG - [test_symbols.py:117] - Symbol NZEROUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:57,721 - main - DEBUG - [test_symbols.py:117] - Symbol MANAUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:57,721 - main - DEBUG - [test_symbols.py:117] - Symbol FROCUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:57,721 - main - DEBUG - [test_symbols.py:117] - Symbol COCKUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:57,721 - main - DEBUG - [test_symbols.py:117] - Symbol PSPUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:57,722 - main - DEBUG - [test_symbols.py:117] - Symbol CHRPUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:57,722 - main - DEBUG - [test_symbols.py:117] - Symbol TAONUUSDT passed filtering and added to valid symbols
+2025-04-01 15:37:57,722 - main - INFO - [test_symbols.py:93] - Processing batch 23 of 261 (symbols 220 to 230)
+2025-04-01 15:37:57,722 - main - DEBUG - [test_symbols.py:139] - Validating symbol COREUMUSDT
+2025-04-01 15:37:57,723 - main - DEBUG - [test_symbols.py:139] - Validating symbol JAILSTOOLUSDT
+2025-04-01 15:37:57,723 - main - DEBUG - [test_symbols.py:139] - Validating symbol OOEUSDT
+2025-04-01 15:37:57,723 - main - DEBUG - [test_symbols.py:139] - Validating symbol ALGOUSDT
+2025-04-01 15:37:57,723 - main - DEBUG - [test_symbols.py:139] - Validating symbol SSNCUSDT
+2025-04-01 15:37:57,723 - main - DEBUG - [test_symbols.py:139] - Validating symbol BLYUSDT
+2025-04-01 15:37:57,724 - main - DEBUG - [test_symbols.py:139] - Validating symbol TUXCUSDT
+2025-04-01 15:37:57,724 - main - DEBUG - [test_symbols.py:139] - Validating symbol GSWIFTUSDT
+2025-04-01 15:37:57,724 - main - DEBUG - [test_symbols.py:139] - Validating symbol STRMUSDT
+2025-04-01 15:37:57,724 - main - DEBUG - [test_symbols.py:139] - Validating symbol NRSUSDT
+2025-04-01 15:38:07,724 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol COREUMUSDT: 
+2025-04-01 15:38:07,724 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol JAILSTOOLUSDT: 
+2025-04-01 15:38:07,724 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol OOEUSDT: 
+2025-04-01 15:38:07,724 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol ALGOUSDT: 
+2025-04-01 15:38:07,725 - main - DEBUG - [test_symbols.py:117] - Symbol SSNCUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:07,725 - main - DEBUG - [test_symbols.py:117] - Symbol BLYUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:07,725 - main - DEBUG - [test_symbols.py:117] - Symbol TUXCUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:07,725 - main - DEBUG - [test_symbols.py:117] - Symbol GSWIFTUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:07,725 - main - DEBUG - [test_symbols.py:117] - Symbol STRMUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:07,726 - main - DEBUG - [test_symbols.py:117] - Symbol NRSUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:07,726 - main - INFO - [test_symbols.py:93] - Processing batch 24 of 261 (symbols 230 to 240)
+2025-04-01 15:38:07,726 - main - DEBUG - [test_symbols.py:139] - Validating symbol X2Y2USDT
+2025-04-01 15:38:07,727 - main - DEBUG - [test_symbols.py:139] - Validating symbol LAYERUSDT
+2025-04-01 15:38:07,727 - main - DEBUG - [test_symbols.py:139] - Validating symbol AKITAXUSDT
+2025-04-01 15:38:07,727 - main - DEBUG - [test_symbols.py:139] - Validating symbol ONTUSDT
+2025-04-01 15:38:07,727 - main - DEBUG - [test_symbols.py:139] - Validating symbol CROUSDT
+2025-04-01 15:38:07,727 - main - DEBUG - [test_symbols.py:139] - Validating symbol SGPTUSDT
+2025-04-01 15:38:07,728 - main - DEBUG - [test_symbols.py:139] - Validating symbol WINGUSDT
+2025-04-01 15:38:07,728 - main - DEBUG - [test_symbols.py:139] - Validating symbol BLZUSDT
+2025-04-01 15:38:07,728 - main - DEBUG - [test_symbols.py:139] - Validating symbol KATUSDT
+2025-04-01 15:38:07,728 - main - DEBUG - [test_symbols.py:139] - Validating symbol SATXUSDT
+2025-04-01 15:38:17,727 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol X2Y2USDT: 
+2025-04-01 15:38:17,728 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol LAYERUSDT: 
+2025-04-01 15:38:17,728 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol AKITAXUSDT: 
+2025-04-01 15:38:17,728 - main - DEBUG - [test_symbols.py:117] - Symbol ONTUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:17,729 - main - DEBUG - [test_symbols.py:117] - Symbol CROUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:17,729 - main - DEBUG - [test_symbols.py:117] - Symbol SGPTUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:17,729 - main - DEBUG - [test_symbols.py:117] - Symbol WINGUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:17,729 - main - DEBUG - [test_symbols.py:117] - Symbol BLZUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:17,729 - main - DEBUG - [test_symbols.py:117] - Symbol KATUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:17,729 - main - DEBUG - [test_symbols.py:117] - Symbol SATXUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:17,730 - main - INFO - [test_symbols.py:93] - Processing batch 25 of 261 (symbols 240 to 250)
+2025-04-01 15:38:17,730 - main - DEBUG - [test_symbols.py:139] - Validating symbol RVNUSDT
+2025-04-01 15:38:17,730 - main - DEBUG - [test_symbols.py:139] - Validating symbol AIEPKUSDT
+2025-04-01 15:38:17,731 - main - DEBUG - [test_symbols.py:139] - Validating symbol LAIKAL2USDT
+2025-04-01 15:38:17,731 - main - DEBUG - [test_symbols.py:139] - Validating symbol CWOLFUSDT
+2025-04-01 15:38:17,731 - main - DEBUG - [test_symbols.py:139] - Validating symbol PIGCOINUSDT
+2025-04-01 15:38:17,731 - main - DEBUG - [test_symbols.py:139] - Validating symbol TRXUSDT
+2025-04-01 15:38:17,732 - main - DEBUG - [test_symbols.py:139] - Validating symbol ELGUSDT
+2025-04-01 15:38:17,732 - main - DEBUG - [test_symbols.py:139] - Validating symbol DFIUSDT
+2025-04-01 15:38:17,732 - main - DEBUG - [test_symbols.py:139] - Validating symbol VIDTUSDT
+2025-04-01 15:38:17,732 - main - DEBUG - [test_symbols.py:139] - Validating symbol SNAPUSDT
+2025-04-01 15:38:27,731 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol RVNUSDT: 
+2025-04-01 15:38:27,732 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol AIEPKUSDT: 
+2025-04-01 15:38:27,732 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol LAIKAL2USDT: 
+2025-04-01 15:38:27,732 - main - DEBUG - [test_symbols.py:117] - Symbol CWOLFUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:27,732 - main - DEBUG - [test_symbols.py:117] - Symbol PIGCOINUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:27,733 - main - DEBUG - [test_symbols.py:117] - Symbol TRXUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:27,733 - main - DEBUG - [test_symbols.py:117] - Symbol ELGUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:27,733 - main - DEBUG - [test_symbols.py:117] - Symbol DFIUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:27,733 - main - DEBUG - [test_symbols.py:117] - Symbol VIDTUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:27,733 - main - DEBUG - [test_symbols.py:117] - Symbol SNAPUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:27,733 - main - INFO - [test_symbols.py:93] - Processing batch 26 of 261 (symbols 250 to 260)
+2025-04-01 15:38:27,734 - main - DEBUG - [test_symbols.py:139] - Validating symbol SRCUSDT
+2025-04-01 15:38:27,734 - main - DEBUG - [test_symbols.py:139] - Validating symbol AIPUMPUSDT
+2025-04-01 15:38:27,734 - main - DEBUG - [test_symbols.py:139] - Validating symbol BNAUSDT
+2025-04-01 15:38:27,735 - main - DEBUG - [test_symbols.py:139] - Validating symbol CHONKYUSDT
+2025-04-01 15:38:27,735 - main - DEBUG - [test_symbols.py:139] - Validating symbol THLUSDT
+2025-04-01 15:38:27,735 - main - DEBUG - [test_symbols.py:139] - Validating symbol CHZUSDT
+2025-04-01 15:38:27,735 - main - DEBUG - [test_symbols.py:139] - Validating symbol VAIUSDT
+2025-04-01 15:38:27,735 - main - DEBUG - [test_symbols.py:139] - Validating symbol REXUSDT
+2025-04-01 15:38:27,736 - main - DEBUG - [test_symbols.py:139] - Validating symbol LITHUSDT
+2025-04-01 15:38:27,736 - main - DEBUG - [test_symbols.py:139] - Validating symbol SHILLUSDT
+2025-04-01 15:38:37,736 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SRCUSDT: 
+2025-04-01 15:38:37,736 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol AIPUMPUSDT: 
+2025-04-01 15:38:37,737 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol BNAUSDT: 
+2025-04-01 15:38:37,737 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol CHONKYUSDT: 
+2025-04-01 15:38:37,737 - main - DEBUG - [test_symbols.py:117] - Symbol THLUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:37,738 - main - DEBUG - [test_symbols.py:117] - Symbol CHZUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:37,738 - main - DEBUG - [test_symbols.py:117] - Symbol VAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:37,738 - main - DEBUG - [test_symbols.py:117] - Symbol REXUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:37,738 - main - DEBUG - [test_symbols.py:117] - Symbol LITHUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:37,738 - main - DEBUG - [test_symbols.py:117] - Symbol SHILLUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:37,738 - main - INFO - [test_symbols.py:93] - Processing batch 27 of 261 (symbols 260 to 270)
+2025-04-01 15:38:37,739 - main - DEBUG - [test_symbols.py:139] - Validating symbol BABYBTCUSDT
+2025-04-01 15:38:37,739 - main - DEBUG - [test_symbols.py:139] - Validating symbol AIXBTUSDC
+2025-04-01 15:38:37,740 - main - DEBUG - [test_symbols.py:139] - Validating symbol MAGICUSDT
+2025-04-01 15:38:37,740 - main - DEBUG - [test_symbols.py:139] - Validating symbol ZOOUSDT
+2025-04-01 15:38:37,740 - main - DEBUG - [test_symbols.py:139] - Validating symbol OLUSDT
+2025-04-01 15:38:37,740 - main - DEBUG - [test_symbols.py:139] - Validating symbol NODLUSDT
+2025-04-01 15:38:37,740 - main - DEBUG - [test_symbols.py:139] - Validating symbol ATOMUSDC
+2025-04-01 15:38:37,741 - main - DEBUG - [test_symbols.py:139] - Validating symbol AUTOUSDT
+2025-04-01 15:38:37,741 - main - DEBUG - [test_symbols.py:139] - Validating symbol VICEUSDT
+2025-04-01 15:38:37,741 - main - DEBUG - [test_symbols.py:139] - Validating symbol SXUSDT
+2025-04-01 15:38:47,740 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol BABYBTCUSDT: 
+2025-04-01 15:38:47,740 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol AIXBTUSDC: 
+2025-04-01 15:38:47,741 - main - DEBUG - [test_symbols.py:117] - Symbol MAGICUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:47,741 - main - DEBUG - [test_symbols.py:117] - Symbol ZOOUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:47,741 - main - DEBUG - [test_symbols.py:117] - Symbol OLUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:47,741 - main - DEBUG - [test_symbols.py:117] - Symbol NODLUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:47,741 - main - DEBUG - [test_symbols.py:117] - Symbol ATOMUSDC passed filtering and added to valid symbols
+2025-04-01 15:38:47,741 - main - DEBUG - [test_symbols.py:117] - Symbol AUTOUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:47,742 - main - DEBUG - [test_symbols.py:117] - Symbol VICEUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:47,742 - main - DEBUG - [test_symbols.py:117] - Symbol SXUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:47,742 - main - INFO - [test_symbols.py:93] - Processing batch 28 of 261 (symbols 270 to 280)
+2025-04-01 15:38:47,742 - main - DEBUG - [test_symbols.py:139] - Validating symbol MOGULUSDT
+2025-04-01 15:38:47,742 - main - DEBUG - [test_symbols.py:139] - Validating symbol BDCUSDT
+2025-04-01 15:38:47,743 - main - DEBUG - [test_symbols.py:139] - Validating symbol DOGGOSOLUSDT
+2025-04-01 15:38:47,743 - main - DEBUG - [test_symbols.py:139] - Validating symbol BICITYUSDT
+2025-04-01 15:38:47,743 - main - DEBUG - [test_symbols.py:139] - Validating symbol NULSUSDT
+2025-04-01 15:38:47,743 - main - DEBUG - [test_symbols.py:139] - Validating symbol FANCUSDT
+2025-04-01 15:38:47,743 - main - DEBUG - [test_symbols.py:139] - Validating symbol DEFXUSDT
+2025-04-01 15:38:47,744 - main - DEBUG - [test_symbols.py:139] - Validating symbol PROSUSDT
+2025-04-01 15:38:47,744 - main - DEBUG - [test_symbols.py:139] - Validating symbol MLNUSDT
+2025-04-01 15:38:47,744 - main - DEBUG - [test_symbols.py:139] - Validating symbol SINUSDT
+2025-04-01 15:38:57,744 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol MOGULUSDT: 
+2025-04-01 15:38:57,744 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol BDCUSDT: 
+2025-04-01 15:38:57,744 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol DOGGOSOLUSDT: 
+2025-04-01 15:38:57,744 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol BICITYUSDT: 
+2025-04-01 15:38:57,745 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol NULSUSDT: 
+2025-04-01 15:38:57,745 - main - DEBUG - [test_symbols.py:117] - Symbol FANCUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:57,745 - main - DEBUG - [test_symbols.py:117] - Symbol DEFXUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:57,745 - main - DEBUG - [test_symbols.py:117] - Symbol PROSUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:57,745 - main - DEBUG - [test_symbols.py:117] - Symbol MLNUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:57,746 - main - DEBUG - [test_symbols.py:117] - Symbol SINUSDT passed filtering and added to valid symbols
+2025-04-01 15:38:57,746 - main - INFO - [test_symbols.py:93] - Processing batch 29 of 261 (symbols 280 to 290)
+2025-04-01 15:38:57,746 - main - DEBUG - [test_symbols.py:139] - Validating symbol VRAUSDT
+2025-04-01 15:38:57,746 - main - DEBUG - [test_symbols.py:139] - Validating symbol PSUSDT
+2025-04-01 15:38:57,747 - main - DEBUG - [test_symbols.py:139] - Validating symbol CATCOINUSDT
+2025-04-01 15:38:57,747 - main - DEBUG - [test_symbols.py:139] - Validating symbol BRAINLETUSDT
+2025-04-01 15:38:57,747 - main - DEBUG - [test_symbols.py:139] - Validating symbol W3SUSDT
+2025-04-01 15:38:57,747 - main - DEBUG - [test_symbols.py:139] - Validating symbol HAIUSDT
+2025-04-01 15:38:57,747 - main - DEBUG - [test_symbols.py:139] - Validating symbol NIMBUSUSDT
+2025-04-01 15:38:57,748 - main - DEBUG - [test_symbols.py:139] - Validating symbol DCOINUSDT
+2025-04-01 15:38:57,748 - main - DEBUG - [test_symbols.py:139] - Validating symbol CHRUSDT
+2025-04-01 15:38:57,748 - main - DEBUG - [test_symbols.py:139] - Validating symbol TRAVAUSDT
+2025-04-01 15:39:07,748 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol VRAUSDT: 
+2025-04-01 15:39:07,748 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol PSUSDT: 
+2025-04-01 15:39:07,748 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol CATCOINUSDT: 
+2025-04-01 15:39:07,748 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol BRAINLETUSDT: 
+2025-04-01 15:39:07,749 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol W3SUSDT: 
+2025-04-01 15:39:07,749 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol HAIUSDT: 
+2025-04-01 15:39:07,749 - main - DEBUG - [test_symbols.py:117] - Symbol NIMBUSUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:07,749 - main - DEBUG - [test_symbols.py:117] - Symbol DCOINUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:07,750 - main - DEBUG - [test_symbols.py:117] - Symbol CHRUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:07,750 - main - DEBUG - [test_symbols.py:117] - Symbol TRAVAUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:07,750 - main - INFO - [test_symbols.py:93] - Processing batch 30 of 261 (symbols 290 to 300)
+2025-04-01 15:39:07,750 - main - DEBUG - [test_symbols.py:139] - Validating symbol SUSDT
+2025-04-01 15:39:07,750 - main - DEBUG - [test_symbols.py:139] - Validating symbol TABOOUSDT
+2025-04-01 15:39:07,751 - main - DEBUG - [test_symbols.py:139] - Validating symbol CTUSDT
+2025-04-01 15:39:07,751 - main - DEBUG - [test_symbols.py:139] - Validating symbol COOKIEUSDT
+2025-04-01 15:39:07,751 - main - DEBUG - [test_symbols.py:139] - Validating symbol LBUSDT
+2025-04-01 15:39:07,751 - main - DEBUG - [test_symbols.py:139] - Validating symbol MARSUSDT
+2025-04-01 15:39:07,751 - main - DEBUG - [test_symbols.py:139] - Validating symbol SERUSDT
+2025-04-01 15:39:07,752 - main - DEBUG - [test_symbols.py:139] - Validating symbol SEALUSDT
+2025-04-01 15:39:07,752 - main - DEBUG - [test_symbols.py:139] - Validating symbol SDEXUSDT
+2025-04-01 15:39:07,752 - main - DEBUG - [test_symbols.py:139] - Validating symbol ISPUSDT
+2025-04-01 15:39:17,751 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SUSDT: 
+2025-04-01 15:39:17,752 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol TABOOUSDT: 
+2025-04-01 15:39:17,752 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol CTUSDT: 
+2025-04-01 15:39:17,752 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol COOKIEUSDT: 
+2025-04-01 15:39:17,752 - main - DEBUG - [test_symbols.py:117] - Symbol LBUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:17,753 - main - DEBUG - [test_symbols.py:117] - Symbol MARSUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:17,753 - main - DEBUG - [test_symbols.py:117] - Symbol SERUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:17,753 - main - DEBUG - [test_symbols.py:117] - Symbol SEALUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:17,753 - main - DEBUG - [test_symbols.py:117] - Symbol SDEXUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:17,753 - main - DEBUG - [test_symbols.py:117] - Symbol ISPUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:17,753 - main - INFO - [test_symbols.py:93] - Processing batch 31 of 261 (symbols 300 to 310)
+2025-04-01 15:39:17,754 - main - DEBUG - [test_symbols.py:139] - Validating symbol FACTUSDT
+2025-04-01 15:39:17,754 - main - DEBUG - [test_symbols.py:139] - Validating symbol PAYSUSDT
+2025-04-01 15:39:17,754 - main - DEBUG - [test_symbols.py:139] - Validating symbol PONKEUSDT
+2025-04-01 15:39:17,754 - main - DEBUG - [test_symbols.py:139] - Validating symbol PEAQUSDT
+2025-04-01 15:39:17,755 - main - DEBUG - [test_symbols.py:139] - Validating symbol BNCUSDT
+2025-04-01 15:39:17,755 - main - DEBUG - [test_symbols.py:139] - Validating symbol MILLIUSDT
+2025-04-01 15:39:17,755 - main - DEBUG - [test_symbols.py:139] - Validating symbol ROCKIUSDT
+2025-04-01 15:39:17,755 - main - DEBUG - [test_symbols.py:139] - Validating symbol WLTHUSDT
+2025-04-01 15:39:17,755 - main - DEBUG - [test_symbols.py:139] - Validating symbol WNCGUSDT
+2025-04-01 15:39:17,756 - main - DEBUG - [test_symbols.py:139] - Validating symbol CSIXUSDT
+2025-04-01 15:39:27,755 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol FACTUSDT: 
+2025-04-01 15:39:27,756 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol PAYSUSDT: 
+2025-04-01 15:39:27,756 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol PONKEUSDT: 
+2025-04-01 15:39:27,756 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol PEAQUSDT: 
+2025-04-01 15:39:27,756 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol BNCUSDT: 
+2025-04-01 15:39:27,757 - main - DEBUG - [test_symbols.py:117] - Symbol MILLIUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:27,757 - main - DEBUG - [test_symbols.py:117] - Symbol ROCKIUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:27,757 - main - DEBUG - [test_symbols.py:117] - Symbol WLTHUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:27,757 - main - DEBUG - [test_symbols.py:117] - Symbol WNCGUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:27,757 - main - DEBUG - [test_symbols.py:117] - Symbol CSIXUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:27,757 - main - INFO - [test_symbols.py:93] - Processing batch 32 of 261 (symbols 310 to 320)
+2025-04-01 15:39:27,758 - main - DEBUG - [test_symbols.py:139] - Validating symbol DPRUSDT
+2025-04-01 15:39:27,758 - main - DEBUG - [test_symbols.py:139] - Validating symbol DEPCUSDT
+2025-04-01 15:39:27,758 - main - DEBUG - [test_symbols.py:139] - Validating symbol NEUROSUSDT
+2025-04-01 15:39:27,758 - main - DEBUG - [test_symbols.py:139] - Validating symbol FAVEUSDT
+2025-04-01 15:39:27,759 - main - DEBUG - [test_symbols.py:139] - Validating symbol FINCUSDT
+2025-04-01 15:39:27,759 - main - DEBUG - [test_symbols.py:139] - Validating symbol GUMMYUSDT
+2025-04-01 15:39:27,759 - main - DEBUG - [test_symbols.py:139] - Validating symbol SANTOSUSDT
+2025-04-01 15:39:27,759 - main - DEBUG - [test_symbols.py:139] - Validating symbol CAWUSDT
+2025-04-01 15:39:27,759 - main - DEBUG - [test_symbols.py:139] - Validating symbol AEGISUSDT
+2025-04-01 15:39:27,760 - main - DEBUG - [test_symbols.py:139] - Validating symbol OSOLUSDT
+2025-04-01 15:39:37,759 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol DPRUSDT: 
+2025-04-01 15:39:37,759 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol DEPCUSDT: 
+2025-04-01 15:39:37,760 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol NEUROSUSDT: 
+2025-04-01 15:39:37,760 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol FAVEUSDT: 
+2025-04-01 15:39:37,760 - main - DEBUG - [test_symbols.py:117] - Symbol FINCUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:37,760 - main - DEBUG - [test_symbols.py:117] - Symbol GUMMYUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:37,760 - main - DEBUG - [test_symbols.py:117] - Symbol SANTOSUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:37,761 - main - DEBUG - [test_symbols.py:117] - Symbol CAWUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:37,761 - main - DEBUG - [test_symbols.py:117] - Symbol AEGISUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:37,761 - main - DEBUG - [test_symbols.py:117] - Symbol OSOLUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:37,761 - main - INFO - [test_symbols.py:93] - Processing batch 33 of 261 (symbols 320 to 330)
+2025-04-01 15:39:37,761 - main - DEBUG - [test_symbols.py:139] - Validating symbol XECUSDT
+2025-04-01 15:39:37,762 - main - DEBUG - [test_symbols.py:139] - Validating symbol HEUUSDT
+2025-04-01 15:39:37,762 - main - DEBUG - [test_symbols.py:139] - Validating symbol FORMUSDT
+2025-04-01 15:39:37,762 - main - DEBUG - [test_symbols.py:139] - Validating symbol BERTUSDT
+2025-04-01 15:39:37,762 - main - DEBUG - [test_symbols.py:139] - Validating symbol DCBUSDT
+2025-04-01 15:39:37,762 - main - DEBUG - [test_symbols.py:139] - Validating symbol LIONUSDT
+2025-04-01 15:39:37,763 - main - DEBUG - [test_symbols.py:139] - Validating symbol BNBXBTUSDT
+2025-04-01 15:39:37,763 - main - DEBUG - [test_symbols.py:139] - Validating symbol DEFROGSUSDT
+2025-04-01 15:39:37,763 - main - DEBUG - [test_symbols.py:139] - Validating symbol RIVALUSDT
+2025-04-01 15:39:37,763 - main - DEBUG - [test_symbols.py:139] - Validating symbol PRQUSDT
+2025-04-01 15:39:47,763 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol XECUSDT: 
+2025-04-01 15:39:47,764 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol HEUUSDT: 
+2025-04-01 15:39:47,764 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol FORMUSDT: 
+2025-04-01 15:39:47,765 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol BERTUSDT: 
+2025-04-01 15:39:47,765 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol DCBUSDT: 
+2025-04-01 15:39:47,765 - main - DEBUG - [test_symbols.py:117] - Symbol LIONUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:47,765 - main - DEBUG - [test_symbols.py:117] - Symbol BNBXBTUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:47,766 - main - DEBUG - [test_symbols.py:117] - Symbol DEFROGSUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:47,766 - main - DEBUG - [test_symbols.py:117] - Symbol RIVALUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:47,766 - main - DEBUG - [test_symbols.py:117] - Symbol PRQUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:47,766 - main - INFO - [test_symbols.py:93] - Processing batch 34 of 261 (symbols 330 to 340)
+2025-04-01 15:39:47,767 - main - DEBUG - [test_symbols.py:139] - Validating symbol SLPUSDT
+2025-04-01 15:39:47,767 - main - DEBUG - [test_symbols.py:139] - Validating symbol SBXUSDT
+2025-04-01 15:39:47,767 - main - DEBUG - [test_symbols.py:139] - Validating symbol ETHWUSDT
+2025-04-01 15:39:47,767 - main - DEBUG - [test_symbols.py:139] - Validating symbol BABYGROKUSDT
+2025-04-01 15:39:47,767 - main - DEBUG - [test_symbols.py:139] - Validating symbol LKIUSDT
+2025-04-01 15:39:47,768 - main - DEBUG - [test_symbols.py:139] - Validating symbol SATUSDT
+2025-04-01 15:39:47,768 - main - DEBUG - [test_symbols.py:139] - Validating symbol YAYUSDT
+2025-04-01 15:39:47,768 - main - DEBUG - [test_symbols.py:139] - Validating symbol AVGUSDT
+2025-04-01 15:39:47,768 - main - DEBUG - [test_symbols.py:139] - Validating symbol DOGEUSDT
+2025-04-01 15:39:47,768 - main - DEBUG - [test_symbols.py:139] - Validating symbol KLVUSDT
+2025-04-01 15:39:57,767 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SLPUSDT: 
+2025-04-01 15:39:57,768 - main - DEBUG - [test_symbols.py:117] - Symbol SBXUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:57,768 - main - DEBUG - [test_symbols.py:117] - Symbol ETHWUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:57,768 - main - DEBUG - [test_symbols.py:117] - Symbol BABYGROKUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:57,768 - main - DEBUG - [test_symbols.py:117] - Symbol LKIUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:57,768 - main - DEBUG - [test_symbols.py:117] - Symbol SATUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:57,769 - main - DEBUG - [test_symbols.py:117] - Symbol YAYUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:57,769 - main - DEBUG - [test_symbols.py:117] - Symbol AVGUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:57,769 - main - DEBUG - [test_symbols.py:117] - Symbol DOGEUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:57,769 - main - DEBUG - [test_symbols.py:117] - Symbol KLVUSDT passed filtering and added to valid symbols
+2025-04-01 15:39:57,769 - main - INFO - [test_symbols.py:93] - Processing batch 35 of 261 (symbols 340 to 350)
+2025-04-01 15:39:57,770 - main - DEBUG - [test_symbols.py:139] - Validating symbol IUSUSDT
+2025-04-01 15:39:57,770 - main - DEBUG - [test_symbols.py:139] - Validating symbol ZTXUSDT
+2025-04-01 15:39:57,770 - main - DEBUG - [test_symbols.py:139] - Validating symbol KP3RUSDT
+2025-04-01 15:39:57,770 - main - DEBUG - [test_symbols.py:139] - Validating symbol SOSOUSDC
+2025-04-01 15:39:57,771 - main - DEBUG - [test_symbols.py:139] - Validating symbol TOKKIUSDT
+2025-04-01 15:39:57,771 - main - DEBUG - [test_symbols.py:139] - Validating symbol ESEUSDT
+2025-04-01 15:39:57,771 - main - DEBUG - [test_symbols.py:139] - Validating symbol TLMUSDT
+2025-04-01 15:39:57,771 - main - DEBUG - [test_symbols.py:139] - Validating symbol RETUSDT
+2025-04-01 15:39:57,771 - main - DEBUG - [test_symbols.py:139] - Validating symbol WVTRSUSDT
+2025-04-01 15:39:57,772 - main - DEBUG - [test_symbols.py:139] - Validating symbol FITFIUSDT
+2025-04-01 15:40:07,771 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol IUSUSDT: 
+2025-04-01 15:40:07,771 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol ZTXUSDT: 
+2025-04-01 15:40:07,772 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol KP3RUSDT: 
+2025-04-01 15:40:07,772 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SOSOUSDC: 
+2025-04-01 15:40:07,772 - main - DEBUG - [test_symbols.py:117] - Symbol TOKKIUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:07,772 - main - DEBUG - [test_symbols.py:117] - Symbol ESEUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:07,773 - main - DEBUG - [test_symbols.py:117] - Symbol TLMUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:07,773 - main - DEBUG - [test_symbols.py:117] - Symbol RETUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:07,773 - main - DEBUG - [test_symbols.py:117] - Symbol WVTRSUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:07,773 - main - DEBUG - [test_symbols.py:117] - Symbol FITFIUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:07,773 - main - INFO - [test_symbols.py:93] - Processing batch 36 of 261 (symbols 350 to 360)
+2025-04-01 15:40:07,774 - main - DEBUG - [test_symbols.py:139] - Validating symbol TRU1USDT
+2025-04-01 15:40:07,774 - main - DEBUG - [test_symbols.py:139] - Validating symbol POOLXUSDT
+2025-04-01 15:40:07,774 - main - DEBUG - [test_symbols.py:139] - Validating symbol KEKEUSDT
+2025-04-01 15:40:07,774 - main - DEBUG - [test_symbols.py:139] - Validating symbol DYPUSDT
+2025-04-01 15:40:07,775 - main - DEBUG - [test_symbols.py:139] - Validating symbol MYSTUSDT
+2025-04-01 15:40:07,775 - main - DEBUG - [test_symbols.py:139] - Validating symbol KAIUSDT
+2025-04-01 15:40:07,775 - main - DEBUG - [test_symbols.py:139] - Validating symbol SKYAUSDT
+2025-04-01 15:40:07,775 - main - DEBUG - [test_symbols.py:139] - Validating symbol REMUSDT
+2025-04-01 15:40:07,775 - main - DEBUG - [test_symbols.py:139] - Validating symbol GROKAIUSDT
+2025-04-01 15:40:07,776 - main - DEBUG - [test_symbols.py:139] - Validating symbol ARPAUSDT
+2025-04-01 15:40:17,775 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol TRU1USDT: 
+2025-04-01 15:40:17,775 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol POOLXUSDT: 
+2025-04-01 15:40:17,775 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol KEKEUSDT: 
+2025-04-01 15:40:17,776 - main - DEBUG - [test_symbols.py:117] - Symbol DYPUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:17,776 - main - DEBUG - [test_symbols.py:117] - Symbol MYSTUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:17,776 - main - DEBUG - [test_symbols.py:117] - Symbol KAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:17,776 - main - DEBUG - [test_symbols.py:117] - Symbol SKYAUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:17,777 - main - DEBUG - [test_symbols.py:117] - Symbol REMUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:17,777 - main - DEBUG - [test_symbols.py:117] - Symbol GROKAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:17,777 - main - DEBUG - [test_symbols.py:117] - Symbol ARPAUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:17,777 - main - INFO - [test_symbols.py:93] - Processing batch 37 of 261 (symbols 360 to 370)
+2025-04-01 15:40:17,777 - main - DEBUG - [test_symbols.py:139] - Validating symbol PEPAUSDT
+2025-04-01 15:40:17,778 - main - DEBUG - [test_symbols.py:139] - Validating symbol RPLUSDT
+2025-04-01 15:40:17,778 - main - DEBUG - [test_symbols.py:139] - Validating symbol DIKOUSDT
+2025-04-01 15:40:17,778 - main - DEBUG - [test_symbols.py:139] - Validating symbol AESUSDT
+2025-04-01 15:40:17,778 - main - DEBUG - [test_symbols.py:139] - Validating symbol STRKUSDT
+2025-04-01 15:40:17,779 - main - DEBUG - [test_symbols.py:139] - Validating symbol RAIUSDT
+2025-04-01 15:40:17,779 - main - DEBUG - [test_symbols.py:139] - Validating symbol BLOKUSDT
+2025-04-01 15:40:17,779 - main - DEBUG - [test_symbols.py:139] - Validating symbol BAKEDUSDT
+2025-04-01 15:40:17,779 - main - DEBUG - [test_symbols.py:139] - Validating symbol ASTRUSDT
+2025-04-01 15:40:17,779 - main - DEBUG - [test_symbols.py:139] - Validating symbol LINKETH
+2025-04-01 15:40:27,779 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol PEPAUSDT: 
+2025-04-01 15:40:27,779 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol RPLUSDT: 
+2025-04-01 15:40:27,779 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol DIKOUSDT: 
+2025-04-01 15:40:27,780 - main - DEBUG - [test_symbols.py:117] - Symbol AESUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:27,780 - main - DEBUG - [test_symbols.py:117] - Symbol STRKUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:27,780 - main - DEBUG - [test_symbols.py:117] - Symbol RAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:27,780 - main - DEBUG - [test_symbols.py:117] - Symbol BLOKUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:27,780 - main - DEBUG - [test_symbols.py:117] - Symbol BAKEDUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:27,781 - main - DEBUG - [test_symbols.py:117] - Symbol ASTRUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:27,781 - main - DEBUG - [test_symbols.py:117] - Symbol LINKETH passed filtering and added to valid symbols
+2025-04-01 15:40:27,781 - main - INFO - [test_symbols.py:93] - Processing batch 38 of 261 (symbols 370 to 380)
+2025-04-01 15:40:27,781 - main - DEBUG - [test_symbols.py:98] - Symbol XRPUSDT is in invalid symbols cache, skipping
+2025-04-01 15:40:27,782 - main - DEBUG - [test_symbols.py:139] - Validating symbol A8USDT
+2025-04-01 15:40:27,782 - main - DEBUG - [test_symbols.py:139] - Validating symbol GOMININGUSDT
+2025-04-01 15:40:27,782 - main - DEBUG - [test_symbols.py:139] - Validating symbol ASTOUSDT
+2025-04-01 15:40:27,782 - main - DEBUG - [test_symbols.py:139] - Validating symbol ZEEUSDT
+2025-04-01 15:40:27,782 - main - DEBUG - [test_symbols.py:139] - Validating symbol ARTUSDT
+2025-04-01 15:40:27,783 - main - DEBUG - [test_symbols.py:139] - Validating symbol CRAIUSDT
+2025-04-01 15:40:27,783 - main - DEBUG - [test_symbols.py:139] - Validating symbol COCOROUSDT
+2025-04-01 15:40:27,783 - main - DEBUG - [test_symbols.py:139] - Validating symbol FNFUSDT
+2025-04-01 15:40:27,783 - main - DEBUG - [test_symbols.py:139] - Validating symbol IDEXUSDT
+2025-04-01 15:40:37,782 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol A8USDT: 
+2025-04-01 15:40:37,783 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol GOMININGUSDT: 
+2025-04-01 15:40:37,783 - main - DEBUG - [test_symbols.py:117] - Symbol XRPUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:37,783 - main - DEBUG - [test_symbols.py:117] - Symbol ASTOUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:37,784 - main - DEBUG - [test_symbols.py:117] - Symbol ZEEUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:37,784 - main - DEBUG - [test_symbols.py:117] - Symbol ARTUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:37,784 - main - DEBUG - [test_symbols.py:117] - Symbol CRAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:37,784 - main - DEBUG - [test_symbols.py:117] - Symbol COCOROUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:37,784 - main - DEBUG - [test_symbols.py:117] - Symbol FNFUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:37,784 - main - INFO - [test_symbols.py:93] - Processing batch 39 of 261 (symbols 380 to 390)
+2025-04-01 15:40:37,785 - main - DEBUG - [test_symbols.py:139] - Validating symbol DOGINMEUSDT
+2025-04-01 15:40:37,785 - main - DEBUG - [test_symbols.py:139] - Validating symbol MICROUSDT
+2025-04-01 15:40:37,785 - main - DEBUG - [test_symbols.py:139] - Validating symbol MULTIUSDT
+2025-04-01 15:40:37,785 - main - DEBUG - [test_symbols.py:139] - Validating symbol HOLDSTATIONUSDT
+2025-04-01 15:40:37,786 - main - DEBUG - [test_symbols.py:139] - Validating symbol LUNCUSDT
+2025-04-01 15:40:37,786 - main - DEBUG - [test_symbols.py:139] - Validating symbol FLMUSDT
+2025-04-01 15:40:37,786 - main - DEBUG - [test_symbols.py:139] - Validating symbol CPKUSDT
+2025-04-01 15:40:37,786 - main - DEBUG - [test_symbols.py:139] - Validating symbol ALEPHUSDT
+2025-04-01 15:40:37,787 - main - DEBUG - [test_symbols.py:139] - Validating symbol HOSKYUSDT
+2025-04-01 15:40:37,787 - main - DEBUG - [test_symbols.py:139] - Validating symbol CLANKERUSDT
+2025-04-01 15:40:47,786 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol DOGINMEUSDT: 
+2025-04-01 15:40:47,787 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol MICROUSDT: 
+2025-04-01 15:40:47,787 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol MULTIUSDT: 
+2025-04-01 15:40:47,787 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol HOLDSTATIONUSDT: 
+2025-04-01 15:40:47,787 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol LUNCUSDT: 
+2025-04-01 15:40:47,788 - main - DEBUG - [test_symbols.py:117] - Symbol FLMUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:47,788 - main - DEBUG - [test_symbols.py:117] - Symbol CPKUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:47,788 - main - DEBUG - [test_symbols.py:117] - Symbol ALEPHUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:47,788 - main - DEBUG - [test_symbols.py:117] - Symbol HOSKYUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:47,788 - main - DEBUG - [test_symbols.py:117] - Symbol CLANKERUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:47,789 - main - INFO - [test_symbols.py:93] - Processing batch 40 of 261 (symbols 390 to 400)
+2025-04-01 15:40:47,789 - main - DEBUG - [test_symbols.py:139] - Validating symbol RXDUSDT
+2025-04-01 15:40:47,789 - main - DEBUG - [test_symbols.py:139] - Validating symbol EMRUSDT
+2025-04-01 15:40:47,790 - main - DEBUG - [test_symbols.py:139] - Validating symbol ATLASUSDT
+2025-04-01 15:40:47,790 - main - DEBUG - [test_symbols.py:139] - Validating symbol SANDUSDT
+2025-04-01 15:40:47,790 - main - DEBUG - [test_symbols.py:139] - Validating symbol SQTUSDT
+2025-04-01 15:40:47,790 - main - DEBUG - [test_symbols.py:139] - Validating symbol AIFUNUSDT
+2025-04-01 15:40:47,790 - main - DEBUG - [test_symbols.py:139] - Validating symbol PRISMAUSDT
+2025-04-01 15:40:47,791 - main - DEBUG - [test_symbols.py:139] - Validating symbol XPRUSDT
+2025-04-01 15:40:47,791 - main - DEBUG - [test_symbols.py:139] - Validating symbol PSGUSDT
+2025-04-01 15:40:47,791 - main - DEBUG - [test_symbols.py:139] - Validating symbol MFERUSDT
+2025-04-01 15:40:57,790 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol RXDUSDT: 
+2025-04-01 15:40:57,791 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol EMRUSDT: 
+2025-04-01 15:40:57,791 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol ATLASUSDT: 
+2025-04-01 15:40:57,791 - main - DEBUG - [test_symbols.py:117] - Symbol SANDUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:57,791 - main - DEBUG - [test_symbols.py:117] - Symbol SQTUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:57,791 - main - DEBUG - [test_symbols.py:117] - Symbol AIFUNUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:57,792 - main - DEBUG - [test_symbols.py:117] - Symbol PRISMAUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:57,792 - main - DEBUG - [test_symbols.py:117] - Symbol XPRUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:57,792 - main - DEBUG - [test_symbols.py:117] - Symbol PSGUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:57,792 - main - DEBUG - [test_symbols.py:117] - Symbol MFERUSDT passed filtering and added to valid symbols
+2025-04-01 15:40:57,792 - main - INFO - [test_symbols.py:93] - Processing batch 41 of 261 (symbols 400 to 410)
+2025-04-01 15:40:57,793 - main - DEBUG - [test_symbols.py:139] - Validating symbol KINICUSDT
+2025-04-01 15:40:57,793 - main - DEBUG - [test_symbols.py:139] - Validating symbol XMRUSDC
+2025-04-01 15:40:57,793 - main - DEBUG - [test_symbols.py:139] - Validating symbol SUSHIUSDT
+2025-04-01 15:40:57,793 - main - DEBUG - [test_symbols.py:139] - Validating symbol LUNAIUSDT
+2025-04-01 15:40:57,794 - main - DEBUG - [test_symbols.py:139] - Validating symbol CVNUSDT
+2025-04-01 15:40:57,794 - main - DEBUG - [test_symbols.py:139] - Validating symbol CAPTAINBNBUSDT
+2025-04-01 15:40:57,794 - main - DEBUG - [test_symbols.py:139] - Validating symbol SXPUSDT
+2025-04-01 15:40:57,794 - main - DEBUG - [test_symbols.py:139] - Validating symbol AGIIUSDT
+2025-04-01 15:40:57,795 - main - DEBUG - [test_symbols.py:139] - Validating symbol AIPAYUSDT
+2025-04-01 15:40:57,795 - main - DEBUG - [test_symbols.py:139] - Validating symbol KEKIUSUSDC
+2025-04-01 15:41:07,794 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol KINICUSDT: 
+2025-04-01 15:41:07,794 - main - DEBUG - [test_symbols.py:117] - Symbol XMRUSDC passed filtering and added to valid symbols
+2025-04-01 15:41:07,794 - main - DEBUG - [test_symbols.py:117] - Symbol SUSHIUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:07,794 - main - DEBUG - [test_symbols.py:117] - Symbol LUNAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:07,795 - main - DEBUG - [test_symbols.py:117] - Symbol CVNUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:07,795 - main - DEBUG - [test_symbols.py:117] - Symbol CAPTAINBNBUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:07,795 - main - DEBUG - [test_symbols.py:117] - Symbol SXPUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:07,795 - main - DEBUG - [test_symbols.py:117] - Symbol AGIIUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:07,795 - main - DEBUG - [test_symbols.py:117] - Symbol AIPAYUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:07,795 - main - DEBUG - [test_symbols.py:117] - Symbol KEKIUSUSDC passed filtering and added to valid symbols
+2025-04-01 15:41:07,795 - main - INFO - [test_symbols.py:93] - Processing batch 42 of 261 (symbols 410 to 420)
+2025-04-01 15:41:07,796 - main - DEBUG - [test_symbols.py:139] - Validating symbol HMSTRUSDT
+2025-04-01 15:41:07,796 - main - DEBUG - [test_symbols.py:139] - Validating symbol INFRAUSDT
+2025-04-01 15:41:07,796 - main - DEBUG - [test_symbols.py:139] - Validating symbol CAUUSDT
+2025-04-01 15:41:07,796 - main - DEBUG - [test_symbols.py:139] - Validating symbol EWAUSDT
+2025-04-01 15:41:07,797 - main - DEBUG - [test_symbols.py:139] - Validating symbol KARATEUSDT
+2025-04-01 15:41:07,797 - main - DEBUG - [test_symbols.py:139] - Validating symbol AVAXAIUSDT
+2025-04-01 15:41:07,797 - main - DEBUG - [test_symbols.py:139] - Validating symbol GVLUSDT
+2025-04-01 15:41:07,797 - main - DEBUG - [test_symbols.py:139] - Validating symbol APESUSDT
+2025-04-01 15:41:07,797 - main - DEBUG - [test_symbols.py:139] - Validating symbol REVVUSDT
+2025-04-01 15:41:07,798 - main - DEBUG - [test_symbols.py:139] - Validating symbol LAIUSDT
+2025-04-01 15:41:17,797 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol HMSTRUSDT: 
+2025-04-01 15:41:17,798 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol INFRAUSDT: 
+2025-04-01 15:41:17,798 - main - DEBUG - [test_symbols.py:117] - Symbol CAUUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:17,799 - main - DEBUG - [test_symbols.py:117] - Symbol EWAUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:17,799 - main - DEBUG - [test_symbols.py:117] - Symbol KARATEUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:17,799 - main - DEBUG - [test_symbols.py:117] - Symbol AVAXAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:17,799 - main - DEBUG - [test_symbols.py:117] - Symbol GVLUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:17,799 - main - DEBUG - [test_symbols.py:117] - Symbol APESUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:17,799 - main - DEBUG - [test_symbols.py:117] - Symbol REVVUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:17,800 - main - DEBUG - [test_symbols.py:117] - Symbol LAIUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:17,800 - main - INFO - [test_symbols.py:93] - Processing batch 43 of 261 (symbols 420 to 430)
+2025-04-01 15:41:17,800 - main - DEBUG - [test_symbols.py:139] - Validating symbol SPAUSDT
+2025-04-01 15:41:17,801 - main - DEBUG - [test_symbols.py:139] - Validating symbol HNSUSDT
+2025-04-01 15:41:17,801 - main - DEBUG - [test_symbols.py:139] - Validating symbol IDUSDT
+2025-04-01 15:41:17,801 - main - DEBUG - [test_symbols.py:139] - Validating symbol ONONUSDT
+2025-04-01 15:41:17,801 - main - DEBUG - [test_symbols.py:139] - Validating symbol AERGOUSDT
+2025-04-01 15:41:17,802 - main - DEBUG - [test_symbols.py:139] - Validating symbol AISTUSDT
+2025-04-01 15:41:17,802 - main - DEBUG - [test_symbols.py:139] - Validating symbol GAGAUSDT
+2025-04-01 15:41:17,802 - main - DEBUG - [test_symbols.py:139] - Validating symbol BTMUSDT
+2025-04-01 15:41:17,802 - main - DEBUG - [test_symbols.py:139] - Validating symbol ANDYUSDT
+2025-04-01 15:41:17,802 - main - DEBUG - [test_symbols.py:139] - Validating symbol LOEUSDT
+2025-04-01 15:41:27,802 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SPAUSDT: 
+2025-04-01 15:41:27,802 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol HNSUSDT: 
+2025-04-01 15:41:27,802 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol IDUSDT: 
+2025-04-01 15:41:27,803 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol ONONUSDT: 
+2025-04-01 15:41:27,803 - main - DEBUG - [test_symbols.py:117] - Symbol AERGOUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:27,803 - main - DEBUG - [test_symbols.py:117] - Symbol AISTUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:27,803 - main - DEBUG - [test_symbols.py:117] - Symbol GAGAUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:27,804 - main - DEBUG - [test_symbols.py:117] - Symbol BTMUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:27,804 - main - DEBUG - [test_symbols.py:117] - Symbol ANDYUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:27,804 - main - DEBUG - [test_symbols.py:117] - Symbol LOEUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:27,804 - main - INFO - [test_symbols.py:93] - Processing batch 44 of 261 (symbols 430 to 440)
+2025-04-01 15:41:27,804 - main - DEBUG - [test_symbols.py:139] - Validating symbol DOMIUSDT
+2025-04-01 15:41:27,805 - main - DEBUG - [test_symbols.py:139] - Validating symbol ARRRUSDT
+2025-04-01 15:41:27,805 - main - DEBUG - [test_symbols.py:139] - Validating symbol KRYUSDT
+2025-04-01 15:41:27,805 - main - DEBUG - [test_symbols.py:139] - Validating symbol OGUSDT
+2025-04-01 15:41:27,805 - main - DEBUG - [test_symbols.py:139] - Validating symbol GNSUSDT
+2025-04-01 15:41:27,806 - main - DEBUG - [test_symbols.py:139] - Validating symbol XIONUSDT
+2025-04-01 15:41:27,806 - main - DEBUG - [test_symbols.py:139] - Validating symbol ZENUSDT
+2025-04-01 15:41:27,806 - main - DEBUG - [test_symbols.py:139] - Validating symbol TANUKIUSDT
+2025-04-01 15:41:27,806 - main - DEBUG - [test_symbols.py:139] - Validating symbol TRUMPUSDC
+2025-04-01 15:41:27,807 - main - DEBUG - [test_symbols.py:139] - Validating symbol ZPAYUSDT
+2025-04-01 15:41:37,806 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol DOMIUSDT: 
+2025-04-01 15:41:37,806 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol ARRRUSDT: 
+2025-04-01 15:41:37,806 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol KRYUSDT: 
+2025-04-01 15:41:37,807 - main - DEBUG - [test_symbols.py:117] - Symbol OGUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:37,807 - main - DEBUG - [test_symbols.py:117] - Symbol GNSUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:37,807 - main - DEBUG - [test_symbols.py:117] - Symbol XIONUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:37,807 - main - DEBUG - [test_symbols.py:117] - Symbol ZENUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:37,807 - main - DEBUG - [test_symbols.py:117] - Symbol TANUKIUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:37,807 - main - DEBUG - [test_symbols.py:117] - Symbol TRUMPUSDC passed filtering and added to valid symbols
+2025-04-01 15:41:37,808 - main - DEBUG - [test_symbols.py:117] - Symbol ZPAYUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:37,808 - main - INFO - [test_symbols.py:93] - Processing batch 45 of 261 (symbols 440 to 450)
+2025-04-01 15:41:37,808 - main - DEBUG - [test_symbols.py:139] - Validating symbol HELIUSDT
+2025-04-01 15:41:37,809 - main - DEBUG - [test_symbols.py:139] - Validating symbol SOCIALUSDT
+2025-04-01 15:41:37,809 - main - DEBUG - [test_symbols.py:139] - Validating symbol JASMYUSDC
+2025-04-01 15:41:37,809 - main - DEBUG - [test_symbols.py:139] - Validating symbol VEXTUSDT
+2025-04-01 15:41:37,809 - main - DEBUG - [test_symbols.py:139] - Validating symbol DVAUSDT
+2025-04-01 15:41:37,809 - main - DEBUG - [test_symbols.py:139] - Validating symbol POWERUSDT
+2025-04-01 15:41:37,810 - main - DEBUG - [test_symbols.py:139] - Validating symbol PUNCHUSDT
+2025-04-01 15:41:37,810 - main - DEBUG - [test_symbols.py:139] - Validating symbol FINEETHUSDT
+2025-04-01 15:41:37,810 - main - DEBUG - [test_symbols.py:139] - Validating symbol SFTUSDT
+2025-04-01 15:41:37,810 - main - DEBUG - [test_symbols.py:139] - Validating symbol VPPUSDT
+2025-04-01 15:41:47,809 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol HELIUSDT: 
+2025-04-01 15:41:47,810 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol SOCIALUSDT: 
+2025-04-01 15:41:47,810 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol JASMYUSDC: 
+2025-04-01 15:41:47,810 - main - DEBUG - [test_symbols.py:117] - Symbol VEXTUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:47,811 - main - DEBUG - [test_symbols.py:117] - Symbol DVAUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:47,811 - main - DEBUG - [test_symbols.py:117] - Symbol POWERUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:47,811 - main - DEBUG - [test_symbols.py:117] - Symbol PUNCHUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:47,811 - main - DEBUG - [test_symbols.py:117] - Symbol FINEETHUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:47,811 - main - DEBUG - [test_symbols.py:117] - Symbol SFTUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:47,811 - main - DEBUG - [test_symbols.py:117] - Symbol VPPUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:47,812 - main - INFO - [test_symbols.py:93] - Processing batch 46 of 261 (symbols 450 to 460)
+2025-04-01 15:41:47,812 - main - DEBUG - [test_symbols.py:139] - Validating symbol AMBUSDT
+2025-04-01 15:41:47,812 - main - DEBUG - [test_symbols.py:139] - Validating symbol OLAUSDT
+2025-04-01 15:41:47,813 - main - DEBUG - [test_symbols.py:139] - Validating symbol XBLAZEUSDT
+2025-04-01 15:41:47,813 - main - DEBUG - [test_symbols.py:139] - Validating symbol GRASSUSDT
+2025-04-01 15:41:47,813 - main - DEBUG - [test_symbols.py:139] - Validating symbol XZKUSDT
+2025-04-01 15:41:47,813 - main - DEBUG - [test_symbols.py:139] - Validating symbol WACMEUSDT
+2025-04-01 15:41:47,813 - main - DEBUG - [test_symbols.py:139] - Validating symbol DERIUSDT
+2025-04-01 15:41:47,814 - main - DEBUG - [test_symbols.py:139] - Validating symbol GEODUSDT
+2025-04-01 15:41:47,814 - main - DEBUG - [test_symbols.py:139] - Validating symbol NCDTUSDT
+2025-04-01 15:41:47,814 - main - DEBUG - [test_symbols.py:139] - Validating symbol ELYSUSDT
+2025-04-01 15:41:57,813 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol AMBUSDT: 
+2025-04-01 15:41:57,814 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol OLAUSDT: 
+2025-04-01 15:41:57,814 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol XBLAZEUSDT: 
+2025-04-01 15:41:57,814 - main - DEBUG - [test_symbols.py:117] - Symbol GRASSUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:57,814 - main - DEBUG - [test_symbols.py:117] - Symbol XZKUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:57,815 - main - DEBUG - [test_symbols.py:117] - Symbol WACMEUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:57,815 - main - DEBUG - [test_symbols.py:117] - Symbol DERIUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:57,815 - main - DEBUG - [test_symbols.py:117] - Symbol GEODUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:57,815 - main - DEBUG - [test_symbols.py:117] - Symbol NCDTUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:57,815 - main - DEBUG - [test_symbols.py:117] - Symbol ELYSUSDT passed filtering and added to valid symbols
+2025-04-01 15:41:57,815 - main - INFO - [test_symbols.py:93] - Processing batch 47 of 261 (symbols 460 to 470)
+2025-04-01 15:41:57,816 - main - DEBUG - [test_symbols.py:139] - Validating symbol APHBTUSDT
+2025-04-01 15:41:57,816 - main - DEBUG - [test_symbols.py:139] - Validating symbol GTAUSDT
+2025-04-01 15:41:57,816 - main - DEBUG - [test_symbols.py:139] - Validating symbol PCXUSDT
+2025-04-01 15:41:57,816 - main - DEBUG - [test_symbols.py:139] - Validating symbol VSGUSDT
+2025-04-01 15:41:57,817 - main - DEBUG - [test_symbols.py:139] - Validating symbol MRSUSDT
+2025-04-01 15:41:57,817 - main - DEBUG - [test_symbols.py:139] - Validating symbol BUBBLEUSDT
+2025-04-01 15:41:57,817 - main - DEBUG - [test_symbols.py:139] - Validating symbol ARTYUSDT
+2025-04-01 15:41:57,817 - main - DEBUG - [test_symbols.py:139] - Validating symbol ALPHAUSDT
+2025-04-01 15:41:57,818 - main - DEBUG - [test_symbols.py:139] - Validating symbol ZETAUSDT
+2025-04-01 15:41:57,818 - main - DEBUG - [test_symbols.py:139] - Validating symbol AIAUSDT
+2025-04-01 15:42:07,817 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol APHBTUSDT: 
+2025-04-01 15:42:07,817 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol GTAUSDT: 
+2025-04-01 15:42:07,818 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol PCXUSDT: 
+2025-04-01 15:42:07,818 - main - DEBUG - [test_symbols.py:181] - Error filtering symbol VSGUSDT: 
+2025-04-01 15:42:07,818 - main - DEBUG - [test_symbols.py:117] - Symbol MRSUSDT passed filtering and added to valid symbols
+2025-04-01 15:42:07,819 - main - DEBUG - [test_symbols.py:117] - Symbol BUBBLEUSDT passed filtering and added to valid symbols
+2025-04-01 15:42:07,819 - main - DEBUG - [test_symbols.py:117] - Symbol ARTYUSDT passed filtering and added to valid symbols
+2025-04-01 15:42:07,819 - main - DEBUG - [test_symbols.py:117] - Symbol ALPHAUSDT passed filtering and added to valid symbols
+2025-04-01 15:42:07,819 - main - DEBUG - [test_symbols.py:117] - Symbol ZETAUSDT passed filtering and added to valid symbols
+2025-04-01 15:42:07,819 - main - DEBUG - [test_symbols.py:117] - Symbol AIAUSDT passed filtering and added to valid symbols
+2025-04-01 15:42:07,819 - main - INFO - [test_symbols.py:93] - Processing batch 48 of 261 (symbols 470 to 480)
+2025-04-01 15:42:07,820 - main - DEBUG - [test_symbols.py:139] - Validating symbol POOHUSDT
+2025-04-01 15:42:07,820 - main - DEBUG - [test_symbols.py:139] - Validating symbol SCBUSDT
+2025-04-01 15:42:07,820 - main - DEBUG - [test_symbols.py:139] - Validating symbol BTFUSDT
+2025-04-01 15:42:07,821 - main - DEBUG - [test_symbols.py:139] - Validating symbol OCBUSDT
+2025-04-01 15:42:07,821 - main - DEBUG - [test_symbols.py:139] - Validating symbol CHEXUSDT
+2025-04-01 15:42:07,821 - main - DEBUG - [test_symbols.py:139] - Validating symbol TRUMPCOINUSDT
+2025-04-01 15:42:07,821 - main - DEBUG - [test_symbols.py:139] - Validating symbol ARBGPTUSDT
+2025-04-01 15:42:07,821 - main - DEBUG - [test_symbols.py:139] - Validating symbol SAFE4USDT
+2025-04-01 15:42:07,822 - main - DEBUG - [test_symbols.py:139] - Validating symbol SKLUSDT
+2025-04-01 15:42:07,822 - main - DEBUG - [test_symbols.py:139] - Validating symbol BOBOUSDT

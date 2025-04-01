@@ -1,25 +1,19 @@
 from logging_setup import logger_main
-from config_keys import API_KEYS, validate_api_keys
-from symbol_handler import validate_symbol
+from config_keys import SUPPORTED_EXCHANGES
 from exchange_factory import create_exchange
 from balance_manager import BalanceManager
+from symbol_handler import validate_symbol
 
 async def manage_deposit(exchange_id, user_id, symbol, amount, testnet=False):
-    """Manages deposits for a user on a specific exchange."""
+    """Manages deposits for a trade on a specific exchange."""
     try:
-        # Validate API keys
-        if user_id not in API_KEYS or exchange_id not in API_KEYS[user_id]:
-            logger_main.error(f"No API keys found for user {user_id} on {exchange_id}")
+        if exchange_id not in SUPPORTED_EXCHANGES:
+            logger_main.error(f"Exchange {exchange_id} not supported")
             return False
-        api_key = API_KEYS[user_id][exchange_id]["api_key"]
-        api_secret = API_KEYS[user_id][exchange_id]["api_secret"]
-        if not validate_api_keys(api_key, api_secret):
-            logger_main.error(f"Invalid API keys for user {user_id} on {exchange_id}")
+        if amount <= 0:
+            logger_main.error(f"Invalid deposit amount: {amount}")
             return False
-
-        # Validate symbol
         if not await validate_symbol(exchange_id, user_id, symbol, testnet=testnet):
-            logger_main.error(f"Invalid symbol: {symbol}")
             return False
 
         # Create exchange instance
@@ -38,29 +32,20 @@ async def manage_deposit(exchange_id, user_id, symbol, amount, testnet=False):
         # Determine currency
         currency = symbol.split('/')[1]  # e.g., USDT in BTC/USDT
         available_balance = balance.get(currency, {}).get('free', 0)
+        total_balance = balance.get(currency, {}).get('total', 0)
 
-        # Check if sufficient balance for deposit
+        # Check if sufficient balance is available
         if available_balance < amount:
-            logger_main.error(f"Insufficient balance for deposit: available={available_balance}, required={amount}")
+            logger_main.error(f"Insufficient available balance for deposit: available={available_balance}, required={amount}, total={total_balance}, currency={currency}")
             return False
 
-        # Transfer funds to trading account (e.g., futures or margin account)
+        # In test mode, just log the action
         if testnet:
-            logger_main.info(f"[Test Mode] Would transfer {amount} {currency} to trading account for user {user_id} on {exchange_id}")
-        else:
-            # Check if exchange supports transfer
-            if not hasattr(exchange, 'transfer'):
-                logger_main.error(f"Exchange {exchange_id} does not support transfer API")
-                return False
+            logger_main.info(f"[Test Mode] Would manage deposit for user {user_id} on {exchange_id}: symbol={symbol}, amount={amount}, currency={currency}")
+            return True
 
-            # Perform the transfer (example: to futures account)
-            transfer_result = await exchange.transfer(currency, amount, 'main', 'futures')
-            if not transfer_result or 'id' not in transfer_result:
-                logger_main.error(f"Failed to transfer {amount} {currency} to trading account for user {user_id} on {exchange_id}")
-                return False
-
-            logger_main.info(f"Transferred {amount} {currency} to trading account for user {user_id} on {exchange_id}: transfer_id={transfer_result['id']}")
-
+        # In live mode, we assume the deposit is already available (handled by the user)
+        logger_main.info(f"Managed deposit for user {user_id} on {exchange_id}: symbol={symbol}, amount={amount}, currency={currency}, available_balance={available_balance}, total_balance={total_balance}")
         return True
     except Exception as e:
         logger_main.error(f"Error managing deposit for user {user_id} on {exchange_id}: {e}")

@@ -1,19 +1,26 @@
 from logging_setup import logger_main
-from global_objects import SUPPORTED_SYMBOLS
 
-def generate_base_signal(price: float, avg_price: float, overbought_threshold=1.05, oversold_threshold=0.95) -> str:
-    """Generates a basic trading signal based on price comparison with configurable thresholds."""
+def generate_signal(rsi, overbought_threshold=70, oversold_threshold=30):
+    """Generates a trading signal based on RSI."""
     try:
-        if price > avg_price * overbought_threshold:  # Above average by threshold
-            signal = "sell"
-        elif price < avg_price * oversold_threshold:  # Below average by threshold
-            signal = "buy"
+        if rsi is None:
+            logger_main.error("RSI value is None")
+            return None
+        if overbought_threshold <= oversold_threshold:
+            logger_main.error(f"Invalid thresholds: overbought={overbought_threshold}, oversold={oversold_threshold}")
+            return None
+
+        if rsi > overbought_threshold:
+            signal = 'sell'
+        elif rsi < oversold_threshold:
+            signal = 'buy'
         else:
-            signal = None  # Neutral
-        logger_main.info(f"Generated base signal: price={price}, avg_price={avg_price}, signal={signal}")
+            signal = None
+
+        logger_main.info(f"Generated signal based on RSI={rsi}: {signal}")
         return signal
     except Exception as e:
-        logger_main.error(f"Error generating base signal: {e}")
+        logger_main.error(f"Error generating signal: {e}")
         return None
 
-__all__ = ['generate_base_signal']
+__all__ = ['generate_signal']

@@ -1,27 +1,29 @@
-from logging_setup import logger_main
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from logging_setup import logger_main
 
-def normalize_data(data, method='standard'):
-    """Normalizes data for ML models with a specified method."""
+def normalize_features(features):
+    """Normalizes features for ML training."""
     try:
-        if not isinstance(data, pd.DataFrame):
-            logger_main.error(f"Data must be a pandas DataFrame, got {type(data)}")
+        if not isinstance(features, pd.DataFrame):
+            logger_main.error(f"Features must be a pandas DataFrame, got {type(features)}")
             return None
-        if method not in ['standard', 'minmax']:
-            logger_main.error(f"Invalid normalization method {method}: must be 'standard' or 'minmax'")
+        if features.empty:
+            logger_main.error("Features DataFrame is empty")
             return None
 
-        if method == 'standard':
-            scaler = StandardScaler()
-        else:  # minmax
-            scaler = MinMaxScaler()
+        normalized_features = features.copy()
+        for column in normalized_features.columns:
+            col_min = normalized_features[column].min()
+            col_max = normalized_features[column].max()
+            if col_max != col_min:  # Avoid division by zero
+                normalized_features[column] = (normalized_features[column] - col_min) / (col_max - col_min)
+            else:
+                normalized_features[column] = 0  # If all values are the same, set to 0
 
-        normalized_data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns, index=data.index)
-        logger_main.info(f"Data normalized successfully using {method} method")
-        return normalized_data
+        logger_main.info("Normalized features successfully")
+        return normalized_features
     except Exception as e:
-        logger_main.error(f"Error normalizing data: {e}")
+        logger_main.error(f"Error normalizing features: {e}")
         return None
 
-__all__ = ['normalize_data']
+__all__ = ['normalize_features']

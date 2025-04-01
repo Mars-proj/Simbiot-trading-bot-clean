@@ -1,52 +1,53 @@
 from logging_setup import logger_main
-from config_keys import API_KEYS, validate_api_keys
-from symbol_handler import validate_symbol
+from config_keys import SUPPORTED_EXCHANGES
 from exchange_factory import create_exchange
 from trade_pool_core import TradePool
+from symbol_handler import validate_symbol
 
-async def check_all_trades(exchange_id, user_id, symbols, testnet=False, status_filter=None):
-    """Checks all trades for a user on a specific exchange, with optional status filter."""
+async def check_all_trades(exchange_id, user_id, status=None, testnet=False):
+    """Checks all trades for a user on a specific exchange, optionally filtering by status."""
     try:
-        # Validate API keys
-        if user_id not in API_KEYS or exchange_id not in API_KEYS[user_id]:
-            logger_main.error(f"No API keys found for user {user_id} on {exchange_id}")
-            return False
-        api_key = API_KEYS[user_id][exchange_id]["api_key"]
-        api_secret = API_KEYS[user_id][exchange_id]["api_secret"]
-        if not validate_api_keys(api_key, api_secret):
-            logger_main.error(f"Invalid API keys for user {user_id} on {exchange_id}")
-            return False
-
-        # Validate symbols
-        for symbol in symbols:
-            if not await validate_symbol(exchange_id, user_id, symbol, testnet=testnet):
-                logger_main.error(f"Invalid symbol: {symbol}")
-                return False
+        if exchange_id not in SUPPORTED_EXCHANGES:
+            logger_main.error(f"Exchange {exchange_id} not supported")
+            return None
 
         # Create exchange instance
         exchange = create_exchange(exchange_id, user_id, testnet=testnet)
         if not exchange:
             logger_main.error(f"Failed to create exchange instance for {exchange_id}")
-            return False
+            return None
 
-        # Fetch trades using trade_pool_core
+        # Fetch trades from trade pool
         trade_pool = TradePool(user_id, exchange_id)
         trades = await trade_pool.get_trades(exchange)
         if trades is None:
             logger_main.error(f"Failed to fetch trades for user {user_id} on {exchange_id}")
-            return False
+            return None
+
+        # Validate symbols in trades
+        for trade in trades:
+            symbol = trade.get('symbol')
+            if symbol and not await validate_symbol(exchange_id, user_id, symbol, testnet=testnet):
+                logger_main.warning(f"Invalid symbol in trade: {symbol}")
+                trade['status'] = 'invalid_symbol'
 
         # Filter trades by status if specified
-        if status_filter:
-            trades = [trade for trade in trades if trade.get('status', 'open') == status_filter]
+        if status:
+            trades = [trade for trade in trades if trade.get('status') == status]
 
+        # Log trade details
         for trade in trades:
-            logger_main.info(f"Trade for {trade.get('symbol', 'N/A')}: type={trade.get('type', 'N/A')}, amount={trade.get('amount', 'N/A')}, status={trade.get('status', 'open')}")
+            side = trade.get('side', 'N/A')
+            amount = trade.get('amount', 'N/A')
+            price = trade.get('price', 'N/A')
+            trade_status = trade.get('status', 'N/A')
+            logger_main.info(f"Trade for {trade['symbol']} on {exchange_id}: side={side}, amount={amount}, price={price}, status={trade_status}")
+
         logger_main.info(f"Checked {len(trades)} trades for user {user_id} on {exchange_id}")
-        return True
+        return trades
     except Exception as e:
         logger_main.error(f"Error checking trades for user {user_id} on {exchange_id}: {e}")
-        return False
+        return None
     finally:
         await exchange.close()
 

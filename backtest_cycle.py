@@ -2,42 +2,27 @@ import pandas as pd
 from logging_setup import logger_main
 from bot_trading import run_trading_bot
 from historical_data_fetcher import fetch_historical_data
-import json
 import os
 
-async def run_backtest(exchange_id, user_id, symbol, start_timestamp, end_timestamp, leverage=1.0, order_type='limit', trade_percentage=0.1, rsi_overbought=70, rsi_oversold=30, margin_multiplier=2.0, blacklisted_symbols=None, model_path=None):
-    """Runs a backtest for a specific symbol over a given time period."""
+async def run_backtest(exchange_id, user_id, symbol, start_timestamp, end_timestamp, timeframe='1d', leverage=1.0, order_type='limit', trade_percentage=0.1, rsi_overbought=70, rsi_oversold=30, margin_multiplier=2.0, model_path=None):
+    """Runs a backtest for a given symbol over a specified time period."""
     try:
         # Fetch historical data
-        historical_data = await fetch_historical_data(exchange_id, user_id, symbol, timeframe='1h', since=start_timestamp, limit=1000)
+        historical_data = await fetch_historical_data(exchange_id, user_id, symbol, timeframe=timeframe, since=start_timestamp, testnet=True)
         if historical_data is None or historical_data.empty:
             logger_main.error(f"Failed to fetch historical data for {symbol} on {exchange_id}")
-            return False
+            return None
 
         # Filter data within the specified time range
-        historical_data = historical_data[
-            (historical_data['timestamp'] >= pd.Timestamp.fromtimestamp(start_timestamp)) &
-            (historical_data['timestamp'] <= pd.Timestamp.fromtimestamp(end_timestamp))
-        ]
-
+        historical_data = historical_data[(historical_data['timestamp'] >= pd.Timestamp.fromtimestamp(start_timestamp)) & (historical_data['timestamp'] <= pd.Timestamp.fromtimestamp(end_timestamp))]
         if historical_data.empty:
-            logger_main.warning(f"No historical data available for {symbol} in the specified time range")
-            return False
+            logger_main.error(f"No historical data available for {symbol} between {start_timestamp} and {end_timestamp}")
+            return None
 
-        # Simulate trading over historical data
+        # Simulate trading
         trades = []
         for _, row in historical_data.iterrows():
-            # Simulate OHLCV data for the current timestamp
-            ohlcv = {
-                'timestamp': [row['timestamp'].timestamp() * 1000],
-                'open': [row['open']],
-                'high': [row['high']],
-                'low': [row['low']],
-                'close': [row['close']],
-                'volume': [row['volume']]
-            }
-
-            # Run trading bot with simulated data
+            # Simulate a single trading cycle at each timestamp
             result = await run_trading_bot(
                 exchange_id, user_id, symbol,
                 leverage=leverage,
@@ -46,30 +31,28 @@ async def run_backtest(exchange_id, user_id, symbol, start_timestamp, end_timest
                 rsi_overbought=rsi_overbought,
                 rsi_oversold=rsi_oversold,
                 margin_multiplier=margin_multiplier,
-                blacklisted_symbols=blacklisted_symbols,
                 model_path=model_path,
-                test_mode=True  # Always in test mode for backtesting
+                test_mode=True
             )
-
             if result:
                 trades.append({
-                    'timestamp': row['timestamp'].isoformat(),
-                    'price': float(row['close']),
-                    'action': 'buy' if result else 'sell'  # Simplified for backtesting
+                    'timestamp': row['timestamp'],
+                    'price': row['close'],
+                    'action': 'executed' if result else 'skipped'
                 })
 
-        # Save backtest results to a file
-        if trades:
-            os.makedirs('backtest_results', exist_ok=True)
-            result_file = f"backtest_results/{exchange_id}_{user_id}_{symbol}_{start_timestamp}_{end_timestamp}.json"
-            with open(result_file, 'w') as f:
-                json.dump(trades, f, indent=4)
-            logger_main.info(f"Saved backtest results to {result_file}")
+        # Convert trades to DataFrame
+        trades_df = pd.DataFrame(trades)
+        
+        # Save results to a file
+        os.makedirs('backtest_results', exist_ok=True)
+        result_file = f"backtest_results/{exchange_id}_{symbol}_{start_timestamp}_{end_timestamp}.csv"
+        trades_df.to_csv(result_file, index=False)
+        logger_main.info(f"Backtest completed for {symbol} on {exchange_id}. Results saved to {result_file}")
 
-        logger_main.info(f"Backtest completed for {symbol} on {exchange_id}: {len(trades)} trades executed")
-        return trades
+        return trades_df
     except Exception as e:
         logger_main.error(f"Error running backtest for {symbol} on {exchange_id}: {e}")
-        return False
+        return None
 
 __all__ = ['run_backtest']

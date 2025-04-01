@@ -1,30 +1,20 @@
 from logging_setup import logger_main
 
-class Monetization:
-    def __init__(self):
-        # Уровни пользователей и комиссии
-        self.levels = {
-            "Новичок": {"deposit_range": (0, 1000), "commission": 0.30},
-            "Профессионал": {"deposit_range": (1000, 5000), "commission": 0.25},
-            "VIP": {"deposit_range": (5000, float("inf")), "commission": 0.20}
-        }
+def calculate_fee(trade_value, fee_rate=0.001):
+    """Calculates the fee for a trade based on the trade value and fee rate."""
+    try:
+        if trade_value < 0:
+            logger_main.error(f"Invalid trade value: {trade_value}")
+            return None
+        if fee_rate < 0:
+            logger_main.error(f"Invalid fee rate: {fee_rate}")
+            return None
 
-    def get_user_level(self, deposit):
-        """Определяет уровень пользователя на основе депозита."""
-        for level, info in self.levels.items():
-            min_deposit, max_deposit = info["deposit_range"]
-            if min_deposit <= deposit < max_deposit:
-                return level
-        return "Новичок"  # По умолчанию
+        fee = trade_value * fee_rate
+        logger_main.info(f"Calculated fee for trade value {trade_value}: fee={fee}")
+        return fee
+    except Exception as e:
+        logger_main.error(f"Error calculating fee: {e}")
+        return None
 
-    def calculate_commission(self, deposit, profit):
-        """Рассчитывает комиссию на основе депозита и прибыли."""
-        level = self.get_user_level(deposit)
-        commission_rate = self.levels[level]["commission"]
-        commission = profit * commission_rate
-        logger_main.info(f"User level: {level}, Deposit: ${deposit}, Profit: ${profit}, Commission rate: {commission_rate*100}%, Commission: ${commission}")
-        return commission
-
-monetization = Monetization()
-
-__all__ = ['monetization']
+__all__ = ['calculate_fee']

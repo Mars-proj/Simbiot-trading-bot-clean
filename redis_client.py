@@ -1,49 +1,65 @@
-import aioredis
-from logging_setup import logger_main
 import os
+import redis.asyncio as redis
+from logging_setup import logger_main
 
 class RedisClient:
-    """Manages Redis client operations."""
-    def __init__(self, redis_url=None):
-        self.redis_url = redis_url if redis_url else os.getenv("REDIS_URL", "redis://localhost")
-        self.redis_client = None
-        self.initialized = False
+    def __init__(self):
+        self.redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        self.client = None
+        self._initialize()
 
-    async def init_redis(self):
-        """Initializes the Redis client if not already initialized."""
-        if self.initialized:
-            return
+    def _initialize(self):
         try:
-            self.redis_client = await aioredis.create_redis_pool(self.redis_url)
-            logger_main.info(f"Redis client initialized successfully at {self.redis_url}")
-            self.initialized = True
+            self.client = redis.from_url(self.redis_url)
+            logger_main.info(f"Initialized Redis client with URL: {self.redis_url}")
         except Exception as e:
             logger_main.error(f"Error initializing Redis client: {e}")
-            self.redis_client = None
-            self.initialized = False
+            raise
+
+    async def set(self, key, value):
+        try:
+            await self.client.set(key, value)
+            return True
+        except Exception as e:
+            logger_main.error(f"Error setting key {key} in Redis: {e}")
+            return False
 
     async def get(self, key):
-        """Gets a value from Redis by key."""
         try:
-            await self.init_redis()
-            if self.redis_client is None:
-                raise ValueError("Redis client not initialized")
-            return await self.redis_client.get(key, encoding='utf-8')
+            value = await self.client.get(key)
+            return value
         except Exception as e:
             logger_main.error(f"Error getting key {key} from Redis: {e}")
             return None
 
-    async def set(self, key, value, ex=None):
-        """Sets a value in Redis with an optional expiration time."""
+    async def setex(self, key, ttl, value):
         try:
-            await self.init_redis()
-            if self.redis_client is None:
-                raise ValueError("Redis client not initialized")
-            await self.redis_client.set(key, value, expire=ex)
-            logger_main.info(f"Set key {key} in Redis")
+            await self.client.setex(key, ttl, value)
+            return True
         except Exception as e:
-            logger_main.error(f"Error setting key {key} in Redis: {e}")
+            logger_main.error(f"Error setting key {key} with TTL in Redis: {e}")
+            return False
 
-redis_client = RedisClient()
+    async def delete(self, key):
+        try:
+            await self.client.delete(key)
+            return True
+        except Exception as e:
+            logger_main.error(f"Error deleting key {key} from Redis: {e}")
+            return False
 
-__all__ = ['redis_client']
+    async def keys(self, pattern):
+        try:
+            return await self.client.keys(pattern)
+        except Exception as e:
+            logger_main.error(f"Error fetching keys with pattern {pattern} from Redis: {e}")
+            return []
+
+    async def ttl(self, key):
+        try:
+            return await self.client.ttl(key)
+        except Exception as e:
+            logger_main.error(f"Error getting TTL for key {key} from Redis: {e}")
+            return -1
+
+__all__ = ['RedisClient']

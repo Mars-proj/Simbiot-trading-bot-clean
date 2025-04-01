@@ -1,57 +1,43 @@
-from utils import logger_main, logger_debug, log_exception
-import asyncio
 import pandas as pd
-import ccxt.async_support as ccxt
-import redis.asyncio as redis
-import json
-import time
+from logging_setup import logger_main
 
-async def fetch_and_prepare_ohlcv(exchange, symbol, timeframe="1h", limit=72):
+def validate_data(data):
+    """Validates that the data is a non-empty DataFrame with required columns."""
     try:
-        # Подключение к Redis
-        redis_client = redis.Redis(host='localhost', port=6379, db=0)
-        
-        # Ключ для хранения OHLCV в Redis
-        cache_key = f"ohlcv:{exchange.id}:{symbol}:{timeframe}"
-        
-        # Проверяем, есть ли данные в кэше
-        cached_data = await redis_client.get(cache_key)
-        if cached_data:
-            ohlcv_data = json.loads(cached_data)
-            df = pd.DataFrame(ohlcv_data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            logger_main.debug(f"OHLCV для {symbol} загружен из кэша: строк={len(df)}")
-        else:
-            # Загружаем данные с биржи
-            logger_main.debug(f"OHLCV загружен для {symbol} с {timeframe}, строк: {limit}")
-            ohlcv = await exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
-            if not ohlcv or len(ohlcv) < limit:
-                logger_main.warning(f"Недостаточно данных OHLCV для {symbol}, получено {len(ohlcv)} строк")
-                await redis_client.close()
-                return None
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            
-            # Конвертируем timestamp в строку для JSON-сериализации
-            df_for_cache = df.copy()
-            df_for_cache['timestamp'] = df_for_cache['timestamp'].astype(str)
-            
-            # Сохраняем в кэш с TTL 1 час
-            ohlcv_json = df_for_cache.to_dict(orient='records')
-            await redis_client.setex(cache_key, 3600, json.dumps(ohlcv_json))
-            logger_main.debug(f"OHLCV для {symbol} сохранён в кэш")
-
-        # Добавляем технические индикаторы
-        df['returns'] = df['close'].pct_change()
-        df['ma_short'] = df['close'].rolling(window=10).mean()
-        df['ma_long'] = df['close'].rolling(window=20).mean()
-        df['bb_upper'] = df['close'].rolling(window=20).mean() + 2 * df['close'].rolling(window=20).std()
-        df['bb_lower'] = df['close'].rolling(window=20).mean() - 2 * df['close'].rolling(window=20).std()
-        logger_main.debug(f"OHLCV для {symbol}: строк={len(df)}, колонки={df.columns.tolist()}")
-        
-        await redis_client.close()
-        return df
+        if not isinstance(data, pd.DataFrame):
+            logger_main.error(f"Data must be a pandas DataFrame, got {type(data)}")
+            return False
+        if data.empty:
+            logger_main.error("DataFrame is empty")
+            return False
+        required_columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+        if not all(col in data.columns for col in required_columns):
+            missing = [col for col in required_columns if col not in data.columns]
+            logger_main.error(f"DataFrame missing required columns: {missing}")
+            return False
+        return True
     except Exception as e:
-        log_exception(f"Ошибка загрузки OHLCV для {symbol}", e)
-        await redis_client.close()
+        logger_main.error(f"Error validating data: {e}")
+        return False
+
+def normalize_data(data):
+    """Normalizes numerical columns in the DataFrame."""
+    try:
+        if not validate_data(data):
+            return None
+        numerical_columns = ['open', 'high', 'low', 'close', 'volume']
+        normalized_data = data.copy()
+        for col in numerical_columns:
+            col_min = data[col].min()
+            col_max = data[col].max()
+            if col_max != col_min:  # Avoid division by zero
+                normalized_data[col] = (data[col] - col_min) / (col_max - col_min)
+            else:
+                normalized_data[col] = 0  # If all values are the same, set to 0
+        logger_main.info("Data normalized successfully")
+        return normalized_data
+    except Exception as e:
+        logger_main.error(f"Error normalizing data: {e}")
         return None
+
+__all__ = ['validate_data', 'normalize_data']

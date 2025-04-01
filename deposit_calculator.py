@@ -1,5 +1,4 @@
 from logging_setup import logger_main
-import os
 
 def calculate_deposit(symbol, amount, margin_multiplier=2.0):
     """Calculates the required deposit for a trade."""
@@ -7,11 +6,12 @@ def calculate_deposit(symbol, amount, margin_multiplier=2.0):
         if amount <= 0:
             logger_main.error(f"Invalid amount for {symbol}: {amount}")
             return None
-
-        # Minimum deposit requirement (example value, can be made configurable)
-        min_deposit = float(os.getenv("MIN_DEPOSIT", 10.0))  # e.g., 10 USDT minimum
+        if margin_multiplier <= 0:
+            logger_main.error(f"Invalid margin multiplier for {symbol}: {margin_multiplier}")
+            return None
 
         required_deposit = amount * margin_multiplier
+        min_deposit = 10.0  # Example minimum deposit in USDT
         if required_deposit < min_deposit:
             logger_main.warning(f"Required deposit {required_deposit} for {symbol} is below minimum {min_deposit}, adjusting")
             required_deposit = min_deposit
