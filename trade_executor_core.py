@@ -66,7 +66,10 @@ async def execute_trade(exchange_id, user_id, symbol, signal, amount, leverage, 
         if not ticker:
             logger_main.error(f"Failed to fetch ticker for {symbol} on {exchange_id}")
             return None
-        price = ticker['last']
+        price = ticker.get('last')
+        if price is None or price <= 0:
+            logger_main.error(f"Invalid price for {symbol} on {exchange_id}: {price}")
+            return None
 
         # Calculate stop-loss and take-profit levels
         stop_loss, take_profit = calculate_exit_points(symbol, price, stop_loss_percent, take_profit_percent)
@@ -163,7 +166,10 @@ async def close_partial_position(exchange_id, user_id, symbol, position_size, cl
         if not ticker:
             logger_main.error(f"Failed to fetch ticker for {symbol} on {exchange_id}")
             return None
-        price = ticker['last']
+        price = ticker.get('last')
+        if price is None or price <= 0:
+            logger_main.error(f"Invalid price for {symbol} on {exchange_id}: {price}")
+            return None
 
         # Calculate fee
         fee = calculate_fee(close_amount * price, fee_rate=fee_rate)

@@ -3,22 +3,10 @@ from exchange_factory import create_exchange
 from trade_pool_core import TradePool
 from trade_executor_core import close_partial_position
 from symbol_handler import validate_symbol
-from config_keys import SUPPORTED_EXCHANGES
 
-async def monitor_positions(exchange_id, user_id, symbol, testnet=False):
-    """Monitors open positions for a user and triggers actions based on stop-loss/take-profit."""
+async def monitor_positions(exchange_id, user_id, testnet=False):
+    """Monitors open positions and triggers stop-loss/take-profit if conditions are met."""
     try:
-        # Validate inputs
-        if exchange_id not in SUPPORTED_EXCHANGES:
-            logger_main.error(f"Exchange {exchange_id} not supported")
-            return False
-        if not user_id or not isinstance(user_id, str):
-            logger_main.error(f"Invalid user_id: {user_id}")
-            return False
-        if not await validate_symbol(exchange_id, user_id, symbol, testnet=testnet):
-            logger_main.error(f"Invalid symbol: {symbol}")
-            return False
-
         # Create exchange instance
         exchange = create_exchange(exchange_id, user_id, testnet=testnet)
         if not exchange:
@@ -32,47 +20,53 @@ async def monitor_positions(exchange_id, user_id, symbol, testnet=False):
             logger_main.error(f"Failed to fetch open trades for user {user_id} on {exchange_id}")
             return False
 
-        # Find position for the symbol
-        position = next((trade for trade in open_trades if trade['symbol'] == symbol), None)
-        if not position:
-            logger_main.info(f"No open position found for {symbol} for user {user_id} on {exchange_id}")
+        if not open_trades:
+            logger_main.info(f"No open positions for user {user_id} on {exchange_id}")
             return True
 
-        # Fetch current price
-        ticker = await exchange.fetch_ticker(symbol)
-        if not ticker:
-            logger_main.error(f"Failed to fetch ticker for {symbol} on {exchange_id}")
-            return False
-        current_price = ticker['last']
+        for trade in open_trades:
+            symbol = trade.get('symbol')
+            if not symbol:
+                logger_main.error(f"Trade missing symbol: {trade}")
+                continue
 
-        # Check stop-loss and take-profit
-        stop_loss = position.get('stop_loss')
-        take_profit = position.get('take_profit')
-        position_size = position['amount']
-        side = position['side']
+            # Validate symbol
+            if not await validate_symbol(exchange_id, user_id, symbol, testnet=testnet):
+                logger_main.error(f"Invalid symbol: {symbol}")
+                continue
 
-        action_taken = False
-        if stop_loss and ((side == 'buy' and current_price <= stop_loss) or (side == 'sell' and current_price >= stop_loss)):
-            logger_main.info(f"Stop-loss triggered for {symbol}: current_price={current_price}, stop_loss={stop_loss}")
-            # Close the entire position
-            order = await close_partial_position(exchange_id, user_id, symbol, position_size, close_percentage=1.0, test_mode=testnet)
-            if not order:
-                logger_main.error(f"Failed to close position at stop-loss for {symbol}")
-                return False
-            action_taken = True
+            # Fetch current price
+            ticker = await exchange.fetch_ticker(symbol)
+            if not ticker:
+                logger_main.error(f"Failed to fetch ticker for {symbol} on {exchange_id}")
+                continue
+            current_price = ticker.get('last')
+            if current_price is None or current_price <= 0:
+                logger_main.error(f"Invalid price for {symbol} on {exchange_id}: {current_price}")
+                continue
 
-        elif take_profit and ((side == 'buy' and current_price >= take_profit) or (side == 'sell' and current_price <= take_profit)):
-            logger_main.info(f"Take-profit triggered for {symbol}: current_price={current_price}, take_profit={take_profit}")
-            # Close the entire position
-            order = await close_partial_position(exchange_id, user_id, symbol, position_size, close_percentage=1.0, test_mode=testnet)
-            if not order:
-                logger_main.error(f"Failed to close position at take-profit for {symbol}")
-                return False
-            action_taken = True
+            # Check stop-loss and take-profit
+            stop_loss = trade.get('stop_loss')
+            take_profit = trade.get('take_profit')
+            position_size = trade.get('amount', 0)
 
-        if not action_taken:
-            logger_main.info(f"No action taken for {symbol}: current_price={current_price}, stop_loss={stop_loss}, take_profit={take_profit}")
+            if stop_loss and current_price <= stop_loss:
+                logger_main.info(f"Stop-loss triggered for {symbol} on {exchange_id}: current_price={current_price}, stop_loss={stop_loss}")
+                if testnet:
+                    logger_main.info(f"[Test Mode] Would close position for {symbol} at stop-loss")
+                else:
+                    await close_partial_position(exchange_id, user_id, symbol, position_size, close_percentage=1.0, testnet=testnet)
+                continue
 
+            if take_profit and current_price >= take_profit:
+                logger_main.info(f"Take-profit triggered for {symbol} on {exchange_id}: current_price={current_price}, take_profit={take_profit}")
+                if testnet:
+                    logger_main.info(f"[Test Mode] Would close position for {symbol} at take-profit")
+                else:
+                    await close_partial_position(exchange_id, user_id, symbol, position_size, close_percentage=1.0, testnet=testnet)
+                continue
+
+        logger_main.info(f"Monitored {len(open_trades)} open positions for user {user_id} on {exchange_id}")
         return True
     except Exception as e:
         logger_main.error(f"Error monitoring positions for user {user_id} on {exchange_id}: {e}")

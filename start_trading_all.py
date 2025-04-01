@@ -103,7 +103,7 @@ async def start_trading_all(exchange_id, user_id, symbols, leverage=1.0, order_t
             if isinstance(result, Exception):
                 logger_main.error(f"Failed trading for {symbol} on {exchange_id}: {result}")
             else:
-                status = "success" if result else "failed"
+                status = "success" if result else "failed (no signal or execution error)"
                 logger_main.info(f"Trading result for {symbol} on {exchange_id} ({'test mode' if test_mode else 'live'}): {status}")
 
         successful = sum(1 for r in results if r is True)

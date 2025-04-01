@@ -1,46 +1,46 @@
 from logging_setup import logger_main
-from global_objects import SUPPORTED_SYMBOLS
-from ml_data_preparer import prepare_data
-from ml_model_trainer import train_model
+import os
+import time
+import asyncio
 
 class RetrainingManager:
-    """Manages the retraining of ML models."""
-    def __init__(self, model_path):
-        self.model_path = model_path
-        logger_main.info(f"Initialized RetrainingManager with model_path={self.model_path}")
+    def __init__(self, retrain_interval=86400):  # Default: 24 hours
+        self.retrain_interval = int(os.getenv("RETRAIN_INTERVAL", retrain_interval))
+        self.last_retrain = 0
 
-    async def retrain_model(self, data):
-        """Retrains the ML model with new data."""
+    async def retrain_model(self, data_loader, trainer, model_path):
+        """Retrain the model with new data."""
         try:
-            logger_main.info(f"Starting retraining with data type={type(data)}, len={len(data) if data is not None else 'None'}")
-            if data is None or len(data) == 0:
-                raise ValueError("Data for retraining is empty or None")
-
-            # Prepare data for retraining
-            logger_main.info("Preparing data for retraining...")
-            prepared_data = await prepare_data(data, for_retraining=True)
-            if prepared_data is None:
-                logger_main.error("Failed to prepare data for retraining")
+            # Load data
+            X_train, y_train, X_val, y_val = data_loader()
+            if X_train is None or y_train is None or X_val is None or y_val is None:
+                logger_main.error("Failed to load data for retraining")
                 return False
-            logger_main.info(f"Prepared data shape: {prepared_data.shape}")
 
             # Train the model
-            logger_main.info("Training model...")
-            model = await train_model(prepared_data, self.model_path)
-            if model is None:
-                logger_main.error("Failed to retrain model")
+            success = trainer(X_train, y_train, X_val, y_val, input_size=X_train.shape[1], model_path=model_path)
+            if not success:
+                logger_main.error("Model retraining failed")
                 return False
 
-            logger_main.info(f"Successfully retrained model at {self.model_path}")
+            self.last_retrain = int(time.time())
+            logger_main.info(f"Model retrained successfully, saved to {model_path}")
             return True
-        except FileNotFoundError as e:
-            logger_main.error(f"Model file not found at {self.model_path}: {e}")
-            return False
-        except ValueError as e:
-            logger_main.error(f"Invalid data for retraining: {e}")
-            return False
         except Exception as e:
             logger_main.error(f"Error retraining model: {e}")
+            return False
+
+    async def schedule_retraining(self, data_loader, trainer, model_path):
+        """Schedules periodic retraining of the model."""
+        try:
+            while True:
+                current_time = int(time.time())
+                if current_time - self.last_retrain >= self.retrain_interval:
+                    logger_main.info("Starting scheduled model retraining")
+                    await self.retrain_model(data_loader, trainer, model_path)
+                await asyncio.sleep(3600)  # Check every hour
+        except Exception as e:
+            logger_main.error(f"Error in scheduled retraining: {e}")
             return False
 
 __all__ = ['RetrainingManager']

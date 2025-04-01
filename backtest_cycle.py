@@ -1,6 +1,9 @@
+import pandas as pd
 from logging_setup import logger_main
 from bot_trading import run_trading_bot
 from historical_data_fetcher import fetch_historical_data
+import json
+import os
 
 async def run_backtest(exchange_id, user_id, symbol, start_timestamp, end_timestamp, leverage=1.0, order_type='limit', trade_percentage=0.1, rsi_overbought=70, rsi_oversold=30, margin_multiplier=2.0, blacklisted_symbols=None, model_path=None):
     """Runs a backtest for a specific symbol over a given time period."""
@@ -50,10 +53,18 @@ async def run_backtest(exchange_id, user_id, symbol, start_timestamp, end_timest
 
             if result:
                 trades.append({
-                    'timestamp': row['timestamp'],
-                    'price': row['close'],
+                    'timestamp': row['timestamp'].isoformat(),
+                    'price': float(row['close']),
                     'action': 'buy' if result else 'sell'  # Simplified for backtesting
                 })
+
+        # Save backtest results to a file
+        if trades:
+            os.makedirs('backtest_results', exist_ok=True)
+            result_file = f"backtest_results/{exchange_id}_{user_id}_{symbol}_{start_timestamp}_{end_timestamp}.json"
+            with open(result_file, 'w') as f:
+                json.dump(trades, f, indent=4)
+            logger_main.info(f"Saved backtest results to {result_file}")
 
         logger_main.info(f"Backtest completed for {symbol} on {exchange_id}: {len(trades)} trades executed")
         return trades

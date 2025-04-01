@@ -4,8 +4,8 @@ from symbol_handler import validate_symbol
 from exchange_factory import create_exchange
 from trade_pool_core import TradePool
 
-async def check_all_trades(exchange_id, user_id, symbols, testnet=False):
-    """Checks all trades for a user on a specific exchange."""
+async def check_all_trades(exchange_id, user_id, symbols, testnet=False, status_filter=None):
+    """Checks all trades for a user on a specific exchange, with optional status filter."""
     try:
         # Validate API keys
         if user_id not in API_KEYS or exchange_id not in API_KEYS[user_id]:
@@ -36,8 +36,12 @@ async def check_all_trades(exchange_id, user_id, symbols, testnet=False):
             logger_main.error(f"Failed to fetch trades for user {user_id} on {exchange_id}")
             return False
 
+        # Filter trades by status if specified
+        if status_filter:
+            trades = [trade for trade in trades if trade.get('status', 'open') == status_filter]
+
         for trade in trades:
-            logger_main.info(f"Trade for {trade.get('symbol', 'N/A')}: type={trade.get('type', 'N/A')}, amount={trade.get('amount', 'N/A')}")
+            logger_main.info(f"Trade for {trade.get('symbol', 'N/A')}: type={trade.get('type', 'N/A')}, amount={trade.get('amount', 'N/A')}, status={trade.get('status', 'open')}")
         logger_main.info(f"Checked {len(trades)} trades for user {user_id} on {exchange_id}")
         return True
     except Exception as e:

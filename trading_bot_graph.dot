@@ -11,7 +11,7 @@ digraph trading_bot {
     trade_executor_core -> risk_manager;
     trade_executor_core -> balance_manager;
     trade_executor_core -> symbol_handler;
-    trade_executor_core -> notification_manager;  // Added 2025-04-01
+    trade_executor_core -> notification_manager;
 
     trade_executor_signals -> signal_generator_indicators;
     trade_executor_signals -> ohlcv_fetcher;
@@ -39,6 +39,15 @@ digraph trading_bot {
     start_trading_all -> signal_blacklist;
     start_trading_all -> symbol_handler;
 
+    // Entry Point
+    main -> start_trading_all;
+    main -> bot_user_data;
+    main -> test_symbols;
+    main -> trade_pool_manager;
+    main -> position_monitor;
+    main -> retraining_manager;
+    main -> ml_model_trainer;
+
     // Supporting Modules
     check_all_trades -> config_keys;
     check_all_trades -> exchange_factory;
@@ -64,6 +73,8 @@ digraph trading_bot {
     ml_data_preparer -> features;
     ml_data_preparer -> ml_data_preparer_utils;
 
+    ml_predictor -> ml_model_trainer;
+
     ohlcv_fetcher -> exchange_factory;
     ohlcv_fetcher -> symbol_handler;
 
@@ -76,8 +87,11 @@ digraph trading_bot {
     position_monitor -> trade_executor_core;
     position_monitor -> symbol_handler;
 
+    retraining_manager -> ml_model_trainer;
+
     symbol_data_fetcher -> exchange_factory;
     symbol_data_fetcher -> symbol_handler;
+    symbol_data_fetcher -> cache_utils;
 
     symbol_handler -> exchange_factory;
 
@@ -102,10 +116,14 @@ digraph trading_bot {
     trade_pool_manager -> trade_pool_core;
 
     backtest_cycle -> bot_trading;
-    backtest_cycle -> historical_data_fetcher;  // Added 2025-04-01
+    backtest_cycle -> historical_data_fetcher;
 
-    historical_data_fetcher -> exchange_factory;  // Added 2025-04-01
-    historical_data_fetcher -> symbol_handler;  // Added 2025-04-01
+    bot_user_data -> redis_client;
 
-    notification_manager -> None;  // Added 2025-04-01
+    cache_utils -> redis_client;
+
+    historical_data_fetcher -> exchange_factory;
+    historical_data_fetcher -> symbol_handler;
+
+    notification_manager -> None;
 }

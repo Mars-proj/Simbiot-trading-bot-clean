@@ -73,7 +73,7 @@ async def run_trading_bot(exchange_id, user_id, symbol, leverage=1.0, order_type
         # Get signal from trade_executor_signals
         signal = await process_signals(exchange_id, user_id, symbol, model_path=model_path, rsi_overbought=rsi_overbought, rsi_oversold=rsi_oversold)
         if not signal:
-            logger_main.error(f"Failed to process signal for {symbol} on {exchange_id}")
+            logger_main.info(f"No trading signal generated for {symbol} on {exchange_id}, skipping trade")
             return False
 
         # Execute trade

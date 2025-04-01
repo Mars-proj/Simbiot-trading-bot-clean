@@ -1,76 +1,90 @@
-from logging_setup import logger_main
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn.model_selection import train_test_split
+from logging_setup import logger_main
+import os
+import json
 
-async def train_model(data, model_path, num_epochs=100, learning_rate=0.01, train_split=0.8):
-    """Trains an ML model with the provided data."""
+class SimpleNN(nn.Module):
+    def __init__(self, input_size, hidden_size=64):
+        super(SimpleNN, self).__init__()
+        self.layer1 = nn.Linear(input_size, hidden_size)
+        self.relu = nn.ReLU()
+        self.layer2 = nn.Linear(hidden_size, hidden_size)
+        self.output = nn.Linear(hidden_size, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.relu(x)
+        x = self.layer2(x)
+        x = self.relu(x)
+        x = self.output(x)
+        x = self.sigmoid(x)
+        return x
+
+def train_model(X_train, y_train, X_val, y_val, input_size, model_path, epochs=100, batch_size=32, learning_rate=0.001):
+    """Trains a simple neural network model and saves it."""
     try:
-        if not isinstance(data, pd.DataFrame):
-            logger_main.error(f"Data must be a pandas DataFrame, got {type(data)}")
-            return None
-        if 'label' not in data.columns:
-            logger_main.error("Data must contain a 'label' column for training")
-            return None
+        # Convert data to tensors
+        X_train_tensor = torch.FloatTensor(X_train)
+        y_train_tensor = torch.FloatTensor(y_train).view(-1, 1)
+        X_val_tensor = torch.FloatTensor(X_val)
+        y_val_tensor = torch.FloatTensor(y_val).view(-1, 1)
 
-        # Define a more complex model
-        class DeepModel(nn.Module):
-            def __init__(self, input_size):
-                super(DeepModel, self).__init__()
-                self.layer1 = nn.Linear(input_size, 64)
-                self.relu1 = nn.ReLU()
-                self.layer2 = nn.Linear(64, 32)
-                self.relu2 = nn.ReLU()
-                self.layer3 = nn.Linear(32, 1)
-                self.sigmoid = nn.Sigmoid()
-
-            def forward(self, x):
-                x = self.layer1(x)
-                x = self.relu1(x)
-                x = self.layer2(x)
-                x = self.relu2(x)
-                x = self.layer3(x)
-                x = self.sigmoid(x)
-                return x
-
-        # Split data into training and validation sets
-        train_data, val_data = train_test_split(data, train_size=train_split, random_state=42)
-        X_train = torch.tensor(train_data.drop(columns=['label']).values, dtype=torch.float32)
-        y_train = torch.tensor(train_data['label'].values, dtype=torch.float32).unsqueeze(1)
-        X_val = torch.tensor(val_data.drop(columns=['label']).values, dtype=torch.float32)
-        y_val = torch.tensor(val_data['label'].values, dtype=torch.float32).unsqueeze(1)
-
-        # Initialize model
-        model = DeepModel(input_size=X_train.shape[1])
+        # Initialize model, loss, and optimizer
+        model = SimpleNN(input_size)
         criterion = nn.BCELoss()
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
         # Training loop
-        for epoch in range(num_epochs):
+        metrics = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': []}
+        for epoch in range(epochs):
             model.train()
-            optimizer.zero_grad()
-            outputs = model(X_train)
-            loss = criterion(outputs, y_train)
-            loss.backward()
-            optimizer.step()
+            for i in range(0, len(X_train_tensor), batch_size):
+                batch_X = X_train_tensor[i:i + batch_size]
+                batch_y = y_train_tensor[i:i + batch_size]
 
-            # Validation
+                optimizer.zero_grad()
+                outputs = model(batch_X)
+                loss = criterion(outputs, batch_y)
+                loss.backward()
+                optimizer.step()
+
+            # Calculate training metrics
             model.eval()
             with torch.no_grad():
-                val_outputs = model(X_val)
-                val_loss = criterion(val_outputs, y_val)
+                train_outputs = model(X_train_tensor)
+                train_loss = criterion(train_outputs, y_train_tensor).item()
+                train_pred = (train_outputs > 0.5).float()
+                train_acc = (train_pred == y_train_tensor).float().mean().item()
 
-            if (epoch + 1) % 10 == 0:
-                logger_main.info(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}")
+                val_outputs = model(X_val_tensor)
+                val_loss = criterion(val_outputs, y_val_tensor).item()
+                val_pred = (val_outputs > 0.5).float()
+                val_acc = (val_pred == y_val_tensor).float().mean().item()
 
-        # Save model
-        torch.save(model, model_path)
-        logger_main.info(f"Model trained and saved to {model_path}")
-        return model
+            metrics['train_loss'].append(train_loss)
+            metrics['val_loss'].append(val_loss)
+            metrics['train_acc'].append(train_acc)
+            metrics['val_acc'].append(val_acc)
+
+            logger_main.info(f"Epoch {epoch+1}/{epochs}: train_loss={train_loss:.4f}, val_loss={val_loss:.4f}, train_acc={train_acc:.4f}, val_acc={val_acc:.4f}")
+
+        # Save the model
+        torch.save(model.state_dict(), model_path)
+        logger_main.info(f"Saved model to {model_path}")
+
+        # Save metrics to a file
+        os.makedirs('training_metrics', exist_ok=True)
+        metrics_file = f"training_metrics/{os.path.basename(model_path)}_metrics.json"
+        with open(metrics_file, 'w') as f:
+            json.dump(metrics, f, indent=4)
+        logger_main.info(f"Saved training metrics to {metrics_file}")
+
+        return True
     except Exception as e:
         logger_main.error(f"Error training model: {e}")
-        return None
+        return False
 
 __all__ = ['train_model']

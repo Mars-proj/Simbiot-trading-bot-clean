@@ -1,18 +1,12 @@
 from logging_setup import logger_main
 from exchange_factory import create_exchange
 from symbol_handler import validate_symbol
-from config_keys import SUPPORTED_EXCHANGES
+from cache_utils import CacheUtils
 
 async def fetch_symbol_data(exchange_id, user_id, symbol, testnet=False):
-    """Fetches data for a specific symbol."""
+    """Fetches symbol data with caching support."""
     try:
-        # Validate inputs
-        if exchange_id not in SUPPORTED_EXCHANGES:
-            logger_main.error(f"Exchange {exchange_id} not supported")
-            return None
-        if not user_id or not isinstance(user_id, str):
-            logger_main.error(f"Invalid user_id: {user_id}")
-            return None
+        # Validate symbol
         if not await validate_symbol(exchange_id, user_id, symbol, testnet=testnet):
             logger_main.error(f"Invalid symbol: {symbol}")
             return None
@@ -23,22 +17,33 @@ async def fetch_symbol_data(exchange_id, user_id, symbol, testnet=False):
             logger_main.error(f"Failed to create exchange instance for {exchange_id}")
             return None
 
-        # Load markets to get symbol data
-        await exchange.load_markets()
-        if symbol not in exchange.markets:
-            logger_main.error(f"Symbol {symbol} not found on {exchange_id}")
+        # Check cache first
+        cache = CacheUtils()
+        cached_data = await cache.get_symbol_data(symbol)
+        if cached_data:
+            return cached_data
+
+        # Fetch symbol data from exchange
+        symbol_info = await exchange.fetch_ticker(symbol)
+        if not symbol_info:
+            logger_main.error(f"Failed to fetch symbol data for {symbol} on {exchange_id}")
             return None
 
-        market = exchange.markets[symbol]
-        symbol_data = {
+        # Extract relevant data
+        data = {
             'symbol': symbol,
-            'precision': market.get('precision', {}),
-            'limits': market.get('limits', {}),
-            'fees': market.get('fees', {}),
-            'active': market.get('active', True)
+            'price': symbol_info.get('last', 0),
+            'volume': symbol_info.get('baseVolume', 0),
+            'bid': symbol_info.get('bid', 0),
+            'ask': symbol_info.get('ask', 0),
+            'timestamp': symbol_info.get('timestamp', 0)
         }
-        logger_main.info(f"Fetched symbol data for {symbol} on {exchange_id}: {symbol_data}")
-        return symbol_data
+
+        # Cache the data
+        await cache.cache_symbol_data(symbol, data)
+
+        logger_main.info(f"Fetched symbol data for {symbol} on {exchange_id}: {data}")
+        return data
     except Exception as e:
         logger_main.error(f"Error fetching symbol data for {symbol} on {exchange_id}: {e}")
         return None
