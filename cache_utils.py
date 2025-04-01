@@ -56,4 +56,44 @@ class CacheUtils:
             logger_main.error(f"Error retrieving invalid symbols for {exchange_id}: {e}")
             return None
 
+    async def append_to_list(self, key, data):
+        """Appends data to a Redis list."""
+        try:
+            await self.redis.rpush(key, json.dumps(data))
+            logger_main.debug(f"Appended data to list {key}")
+            return True
+        except Exception as e:
+            logger_main.error(f"Error appending to list {key}: {e}")
+            return False
+
+    async def get_list(self, key):
+        """Retrieves all items from a Redis list."""
+        try:
+            items = await self.redis.lrange(key, 0, -1)
+            return [json.loads(item) for item in items]
+        except Exception as e:
+            logger_main.error(f"Error retrieving list {key}: {e}")
+            return []
+
+    async def setex(self, key, ttl, value):
+        """Sets a key with expiration in Redis."""
+        try:
+            await self.redis.setex(key, ttl, json.dumps(value))
+            logger_main.debug(f"Set key {key} with TTL {ttl}")
+            return True
+        except Exception as e:
+            logger_main.error(f"Error setting key {key}: {e}")
+            return False
+
+    async def get(self, key):
+        """Gets a value from Redis."""
+        try:
+            value = await self.redis.get(key)
+            if value:
+                return json.loads(value)
+            return None
+        except Exception as e:
+            logger_main.error(f"Error getting key {key}: {e}")
+            return None
+
 __all__ = ['CacheUtils']
