@@ -166,7 +166,7 @@ async def get_test_symbols(exchange_id, user_id, testnet=False):
             logger_main.error(f"No valid symbols found after filtering for {exchange_id}, stopping")
             return []
 
-        logger_main.info(f"Fetched {len(valid_symbols)} test symbols for {exchange_id}: {valid_symbols[:5]}...")
+        logger_main.info(f"Total valid symbols after filtering for {exchange_id}: {len(valid_symbols)} symbols: {valid_symbols[:5]}...")
         return valid_symbols
 
     except Exception as e:

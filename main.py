@@ -66,6 +66,7 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
 
         # Run backtest for each symbol
         valid_symbols = []
+        backtests_completed = 0
         for symbol in symbols:
             logger_main.info(f"Running backtest for {symbol} on {exchange_id} for user {user_id}")
             backtest_result = await run_backtest(
@@ -77,6 +78,8 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
                 rsi_oversold=30,
                 test_mode=testnet
             )
+            backtests_completed += 1
+            logger_main.info(f"Backtest completed for {symbol}. Total backtests completed: {backtests_completed}/{len(symbols)}")
             if backtest_result is None:
                 logger_main.warning(f"Backtest failed for {symbol} for user {user_id}, skipping")
                 continue
