@@ -156,6 +156,12 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             logger_main.error(f"Failed to get exchange instance for user {user_id} on {exchange_id}")
             return
 
+        # Debug symbols and backtest_results before processing
+        logger_main.debug(f"Symbols type: {type(symbols)}, length: {len(symbols)}")
+        logger_main.debug(f"First few symbols: {symbols[:5]}")
+        logger_main.debug(f"Backtest results type: {type(backtest_results)}, length: {len(backtest_results)}")
+        logger_main.debug(f"Backtest results keys: {list(backtest_results.keys())[:5]}...")
+
         logger_main.info(f"Using {len(symbols)} pre-filtered symbols for user {user_id}: {symbols[:5]}...")
         logger_main.debug(f"Backtest results keys: {list(backtest_results.keys())[:5]}...")
 
