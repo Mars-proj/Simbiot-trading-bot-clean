@@ -95,10 +95,18 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
             tasks.append(asyncio.create_task(run_trading_for_user(
                 user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results
             )))
-        await asyncio.gather(*tasks)
+        logger_main.info(f"Created {len(tasks)} tasks for processing users")
+        # Wait for all tasks to complete and handle exceptions
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for user, result in zip(users, results):
+            if isinstance(result, Exception):
+                logger_main.error(f"Task for user {user['user_id']} failed with exception: {result}")
+            else:
+                logger_main.info(f"Task for user {user['user_id']} completed successfully")
     except Exception as e:
         logger_main.error(f"Error in process_users: {e}")
     finally:
+        logger_main.info("Closing all exchange instances in ExchangePool")
         await exchange_pool.close_all()
 
 async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
