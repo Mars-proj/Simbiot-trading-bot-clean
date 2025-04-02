@@ -146,17 +146,18 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         testnet = user['testnet']
         logger_main.info(f"Starting trading for user {user_id} on {exchange_id}")
 
-        # Get exchange instance from pool
-        logger_main.info(f"Fetching exchange instance for {exchange_id}:{user_id} (testnet: {testnet})")
+        # Step 1: Get exchange instance from pool
+        logger_main.info(f"Step 1: Fetching exchange instance for {exchange_id}:{user_id} (testnet: {testnet})")
         exchange = await exchange_pool.get_exchange(exchange_id, user_id, testnet)
         if not exchange:
             logger_main.error(f"Failed to get exchange instance for user {user_id} on {exchange_id}")
             return
 
+        # Step 2: Filter symbols based on backtest results
+        logger_main.info(f"Step 2: Filtering symbols for user {user_id}")
         logger_main.info(f"Using {len(symbols)} pre-filtered symbols for user {user_id}: {symbols[:5]}...")
         logger_main.debug(f"Backtest results keys: {list(backtest_results.keys())[:5]}...")
 
-        # Filter symbols based on backtest results
         valid_symbols = []
         for symbol in symbols:
             result = backtest_results.get(symbol)
@@ -176,9 +177,8 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             logger_main.error(f"No symbols passed backtest for user {user_id}, stopping")
             return
 
-        logger_main.info(f"Starting trading with {len(valid_symbols)} symbols for user {user_id}: {valid_symbols[:5]}...")
-
-        # Start trading
+        # Step 3: Start trading
+        logger_main.info(f"Step 3: Starting trading with {len(valid_symbols)} symbols for user {user_id}: {valid_symbols[:5]}...")
         trade_task = asyncio.create_task(start_trading_all(
             exchange_id, user_id, valid_symbols,
             leverage=1.0,
@@ -192,19 +192,23 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             test_mode=testnet
         ))
 
-        # Schedule trade pool cleanup
+        # Step 4: Schedule trade pool cleanup
+        logger_main.info(f"Step 4: Scheduling trade pool cleanup for user {user_id}")
         cleanup_task = asyncio.create_task(schedule_trade_pool_cleanup(
             exchange_id, user_id, max_age_seconds=86400, interval=3600
         ))
 
-        # Monitor positions
+        # Step 5: Monitor positions
+        logger_main.info(f"Step 5: Starting position monitoring for user {user_id}")
         monitor_task = asyncio.create_task(monitor_positions(
             exchange_id, user_id, testnet=testnet
         ))
 
-        # Schedule model retraining
+        # Step 6: Schedule model retraining
+        logger_main.info(f"Step 6: Scheduling model retraining for user {user_id}")
         retraining_manager = RetrainingManager(retrain_interval=86400)
         async def data_loader():
+            logger_main.info(f"Inside data_loader for user {user_id}")
             # Load data for retraining
             from ml_data_preparer import prepare_ml_data
             from historical_data_fetcher import fetch_historical_data
@@ -228,12 +232,13 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             data_loader, train_model, model_path
         ))
 
-        # Wait for tasks to complete
-        logger_main.info(f"Starting tasks for user {user_id}: trade, cleanup, monitor, retrain")
+        # Step 7: Wait for tasks to complete
+        logger_main.info(f"Step 7: Starting tasks for user {user_id}: trade, cleanup, monitor, retrain")
         await asyncio.gather(trade_task, cleanup_task, monitor_task, retrain_task)
-        logger_main.info(f"All tasks completed for user {user_id}")
+        logger_main.info(f"Step 8: All tasks completed for user {user_id}")
     except Exception as e:
         logger_main.error(f"Error in run_trading_for_user for user {user_id} on {exchange_id}: {e}")
+        raise  # Перебрасываем исключение, чтобы asyncio.gather его поймал
 
 if __name__ == "__main__":
     asyncio.run(main())
