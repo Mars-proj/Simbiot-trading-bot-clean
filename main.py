@@ -23,7 +23,7 @@ async def main():
             # Add more users for scalability testing
         ]
         model_path = "models/trading_model.pth"  # Example model path
-        backtest_days = 30  # Number of days for backtest
+        backtest_days = 7  # Reduced number of days for backtest (was 30)
         min_profit_threshold = 0.05  # Minimum profit threshold for backtest (5%)
 
         # Process all users asynchronously
@@ -57,19 +57,64 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
                 json.dump(symbols, f)
             logger_main.info(f"Saved {len(symbols)} selected pairs to {selected_pairs_file}: {symbols[:5]}...")
 
-        # Process each user with the selected symbols
+        # Check if backtest results file exists
+        backtest_results_file = "backtest_results.json"
+        if os.path.exists(backtest_results_file):
+            with open(backtest_results_file, 'r') as f:
+                backtest_results = json.load(f)
+            logger_main.info(f"Loaded backtest results for {len(backtest_results)} symbols from {backtest_results_file}")
+        else:
+            # Run backtest for all symbols (once for all users)
+            first_user = users[0]
+            user_id = first_user['user_id']
+            testnet = first_user['testnet']
+            logger_main.info(f"Running backtest for all symbols (will be cached for all users)")
+            backtest_results = await run_backtests(exchange_id, user_id, symbols, backtest_days, testnet)
+            # Save backtest results to a file
+            with open(backtest_results_file, 'w') as f:
+                json.dump(backtest_results, f)
+            logger_main.info(f"Saved backtest results for {len(backtest_results)} symbols to {backtest_results_file}")
+
+        # Process each user with the backtest results
         tasks = []
         for user in users:
             logger_main.info(f"Starting processing for user {user['user_id']}")
             tasks.append(asyncio.create_task(run_trading_for_user(
-                user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols
+                user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results
             )))
         await asyncio.gather(*tasks)
     finally:
         await exchange_pool.close_all()
 
-async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols):
-    """Runs trading for a single user."""
+async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
+    """Runs backtests for all symbols in parallel and returns results."""
+    backtest_results = {}
+    batch_size = 10  # Process 10 symbols at a time
+    for i in range(0, len(symbols), batch_size):
+        batch = symbols[i:i + batch_size]
+        logger_main.info(f"Processing backtest batch {i//batch_size + 1} of {len(symbols)//batch_size + 1} (symbols {i} to {min(i + batch_size, len(symbols))})")
+        tasks = []
+        for symbol in batch:
+            tasks.append(asyncio.create_task(run_backtest(
+                exchange_id, user_id, symbol,
+                days=backtest_days,
+                leverage=1.0,
+                trade_percentage=0.1,
+                rsi_overbought=70,
+                rsi_oversold=30,
+                test_mode=testnet
+            )))
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for symbol, result in zip(batch, results):
+            if isinstance(result, Exception):
+                logger_main.warning(f"Backtest failed for {symbol}: {result}")
+                backtest_results[symbol] = None
+            else:
+                backtest_results[symbol] = result
+    return backtest_results
+
+async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results):
+    """Runs trading for a single user using pre-computed backtest results."""
     try:
         user_id = user['user_id']
         testnet = user['testnet']
@@ -83,32 +128,18 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
 
         logger_main.info(f"Using {len(symbols)} pre-filtered symbols for user {user_id}: {symbols[:5]}...")
 
-        # Run backtest for each symbol
+        # Filter symbols based on backtest results
         valid_symbols = []
-        backtests_completed = 0
         for symbol in symbols:
-            logger_main.info(f"Running backtest for {symbol} on {exchange_id} for user {user_id}")
-            backtest_result = await run_backtest(
-                exchange_id, user_id, symbol,
-                days=backtest_days,
-                leverage=1.0,
-                trade_percentage=0.1,
-                rsi_overbought=70,
-                rsi_oversold=30,
-                test_mode=testnet
-            )
-            backtests_completed += 1
-            logger_main.info(f"Backtest completed for {symbol}. Total backtests completed: {backtests_completed}/{len(symbols)}")
-            if backtest_result is None:
-                logger_main.warning(f"Backtest failed for {symbol} for user {user_id}, skipping")
+            result = backtest_results.get(symbol)
+            if result is None:
+                logger_main.warning(f"No backtest result for {symbol} for user {user_id}, skipping")
                 continue
-
-            profit = backtest_result.get('profit', 0)
+            profit = result.get('profit', 0)
             logger_main.debug(f"Backtest profit for {symbol}: {profit:.2%}, threshold: {min_profit_threshold:.2%}")
             if profit < min_profit_threshold:
                 logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below threshold ({min_profit_threshold:.2%}) for user {user_id}, skipping")
                 continue
-
             valid_symbols.append(symbol)
             logger_main.info(f"Backtest successful for {symbol} for user {user_id}: profit={profit:.2%}")
 
