@@ -7,6 +7,7 @@ from trade_pool_manager import schedule_trade_pool_cleanup
 from position_monitor import monitor_positions
 from retraining_manager import RetrainingManager
 from exchange_pool import ExchangePool
+from cache_utils import CacheUtils
 import time
 
 async def main():
@@ -33,16 +34,38 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
     """Processes trading for all users asynchronously."""
     exchange_pool = ExchangePool()
     try:
+        # Cache symbols to avoid duplicate filtering for multiple users
+        cache = CacheUtils()
+        cache_key = f"filtered_symbols:{exchange_id}:{'testnet' if users[0]['testnet'] else 'live'}"
+        cached_symbols = await cache.get(cache_key)
+        if cached_symbols:
+            logger_main.info(f"Loaded {len(cached_symbols)} filtered symbols from cache for {exchange_id}")
+            symbols = cached_symbols
+        else:
+            # Fetch test symbols for the first user
+            first_user = users[0]
+            user_id = first_user['user_id']
+            testnet = first_user['testnet']
+            logger_main.info(f"Fetching test symbols for user {user_id} (will be cached for all users)")
+            symbols = await get_test_symbols(exchange_id, user_id, testnet=testnet)
+            if not symbols:
+                logger_main.error(f"No valid symbols found for trading, stopping")
+                return
+            # Cache the symbols
+            await cache.setex(cache_key, 86400, symbols)  # Cache for 24 hours
+            logger_main.info(f"Cached {len(symbols)} filtered symbols for {exchange_id}")
+
+        # Process each user with the cached symbols
         tasks = []
         for user in users:
             tasks.append(asyncio.create_task(run_trading_for_user(
-                user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool
+                user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols
             )))
         await asyncio.gather(*tasks)
     finally:
         await exchange_pool.close_all()
 
-async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool):
+async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols):
     """Runs trading for a single user."""
     try:
         user_id = user['user_id']
@@ -55,14 +78,7 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             logger_main.error(f"Failed to get exchange instance for user {user_id} on {exchange_id}")
             return
 
-        # Fetch test symbols
-        logger_main.info(f"Fetching test symbols for user {user_id}")
-        symbols = await get_test_symbols(exchange_id, user_id, testnet=testnet)
-        if not symbols:
-            logger_main.error(f"No valid symbols found for trading for user {user_id}, stopping")
-            return
-
-        logger_main.info(f"Selected symbols for backtesting for user {user_id}: {symbols[:5]}...")
+        logger_main.info(f"Using {len(symbols)} pre-filtered symbols for user {user_id}: {symbols[:5]}...")
 
         # Run backtest for each symbol
         valid_symbols = []
