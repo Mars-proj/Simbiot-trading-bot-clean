@@ -36,13 +36,17 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
     """Processes trading for all users asynchronously."""
     exchange_pool = ExchangePool()
     try:
+        logger_main.info("Starting process_users")
         # Check if selected pairs file exists
         selected_pairs_file = "selected_pairs.json"
+        logger_main.info(f"Checking for selected pairs file: {selected_pairs_file}")
         if os.path.exists(selected_pairs_file):
+            logger_main.info("Selected pairs file exists, loading symbols")
             with open(selected_pairs_file, 'r') as f:
                 symbols = json.load(f)
             logger_main.info(f"Loaded {len(symbols)} selected pairs from {selected_pairs_file}: {symbols[:5]}...")
         else:
+            logger_main.info("Selected pairs file does not exist, fetching test symbols")
             # Fetch test symbols for the first user
             first_user = users[0]
             user_id = first_user['user_id']
@@ -59,37 +63,59 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
 
         # Check if backtest results file exists
         backtest_results_file = "backtest_results.json"
+        logger_main.info(f"Checking for backtest results file: {backtest_results_file}")
         if os.path.exists(backtest_results_file):
-            with open(backtest_results_file, 'r') as f:
-                backtest_results = json.load(f)
-            logger_main.info(f"Loaded backtest results for {len(backtest_results)} symbols from {backtest_results_file}")
+            logger_main.info("Backtest results file exists, loading results")
+            try:
+                with open(backtest_results_file, 'r') as f:
+                    backtest_results = json.load(f)
+                logger_main.info(f"Loaded backtest results for {len(backtest_results)} symbols from {backtest_results_file}")
+            except Exception as e:
+                logger_main.error(f"Failed to load backtest results from {backtest_results_file}: {e}")
+                backtest_results = None
         else:
+            logger_main.info("Backtest results file does not exist, running backtest")
             # Run backtest for all symbols (once for all users)
             first_user = users[0]
             user_id = first_user['user_id']
             testnet = first_user['testnet']
             logger_main.info(f"Running backtest for all symbols (will be cached for all users)")
             backtest_results = await run_backtests(exchange_id, user_id, symbols, backtest_days, testnet)
+            logger_main.info(f"Backtest completed, results: {len(backtest_results)} symbols")
             # Save backtest results to a file
             with open(backtest_results_file, 'w') as f:
                 json.dump(backtest_results, f)
             logger_main.info(f"Saved backtest results for {len(backtest_results)} symbols to {backtest_results_file}")
 
         # Process each user with the backtest results
+        logger_main.info("Processing users with backtest results")
         tasks = []
         for user in users:
             logger_main.info(f"Starting processing for user {user['user_id']}")
-            tasks.append(asyncio.create_task(run_trading_for_user(
+            task = asyncio.create_task(run_trading_for_user(
                 user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results
-            )))
-        await asyncio.gather(*tasks)
+            ))
+            tasks.append((user, task))
+        logger_main.info(f"Created {len(tasks)} tasks for processing users")
+
+        # Wait for all tasks to complete and handle exceptions
+        for user, task in tasks:
+            try:
+                result = await task
+                logger_main.info(f"Task for user {user['user_id']} completed successfully with result: {result}")
+            except Exception as e:
+                logger_main.error(f"Task for user {user['user_id']} failed with exception: {e}")
+    except Exception as e:
+        logger_main.error(f"Error in process_users: {e}")
     finally:
+        logger_main.info("Closing all exchange instances in ExchangePool")
         await exchange_pool.close_all()
 
 async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
     """Runs backtests for all symbols in parallel and returns results."""
     backtest_results = {}
     batch_size = 10  # Process 10 symbols at a time
+    logger_main.info(f"Starting backtest for {len(symbols)} symbols in batches of {batch_size}")
     for i in range(0, len(symbols), batch_size):
         batch = symbols[i:i + batch_size]
         logger_main.info(f"Processing backtest batch {i//batch_size + 1} of {len(symbols)//batch_size + 1} (symbols {i} to {min(i + batch_size, len(symbols))})")
@@ -112,27 +138,32 @@ async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
             else:
                 backtest_results[symbol] = result
                 logger_main.debug(f"Backtest result for {symbol}: {result}")
+    logger_main.info(f"Backtest completed for {len(backtest_results)} symbols")
     return backtest_results
 
 async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results):
     """Runs trading for a single user using pre-computed backtest results."""
+    logger_main.info(f"Entering run_trading_for_user for user {user['user_id']} on {exchange_id}")
     try:
         user_id = user['user_id']
         testnet = user['testnet']
         logger_main.info(f"Starting trading for user {user_id} on {exchange_id}")
 
         # Get exchange instance from pool
+        logger_main.info(f"Fetching exchange instance for {exchange_id}:{user_id} (testnet: {testnet})")
         exchange = await exchange_pool.get_exchange(exchange_id, user_id, testnet)
         if not exchange:
             logger_main.error(f"Failed to get exchange instance for user {user_id} on {exchange_id}")
             return
 
         logger_main.info(f"Using {len(symbols)} pre-filtered symbols for user {user_id}: {symbols[:5]}...")
+        logger_main.debug(f"Backtest results keys: {list(backtest_results.keys())[:5]}...")
 
         # Filter symbols based on backtest results
         valid_symbols = []
         for symbol in symbols:
             result = backtest_results.get(symbol)
+            logger_main.debug(f"Processing symbol {symbol}, backtest result: {result}")
             if result is None:
                 logger_main.warning(f"No backtest result for {symbol} for user {user_id}, skipping")
                 continue
@@ -201,9 +232,12 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         ))
 
         # Wait for tasks to complete
+        logger_main.info(f"Starting tasks for user {user_id}: trade, cleanup, monitor, retrain")
         await asyncio.gather(trade_task, cleanup_task, monitor_task, retrain_task)
+        logger_main.info(f"All tasks completed for user {user_id}")
     except Exception as e:
         logger_main.error(f"Error in run_trading_for_user for user {user_id} on {exchange_id}: {e}")
+        raise  # Перебрасываем исключение, чтобы asyncio.gather его поймал
 
 if __name__ == "__main__":
     asyncio.run(main())
