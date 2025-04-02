@@ -95,16 +95,16 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
             task = asyncio.create_task(run_trading_for_user(
                 user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results
             ))
-            tasks.append((user, task))
+            tasks.append(task)
         logger_main.info(f"Created {len(tasks)} tasks for processing users")
 
         # Wait for all tasks to complete and handle exceptions
-        for user, task in tasks:
-            try:
-                result = await task
-                logger_main.info(f"Task for user {user['user_id']} completed successfully with result: {result}")
-            except Exception as e:
-                logger_main.error(f"Task for user {user['user_id']} failed with exception: {e}")
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for idx, (user, result) in enumerate(zip(users, results)):
+            if isinstance(result, Exception):
+                logger_main.error(f"Task {idx} for user {user['user_id']} failed with exception: {result}")
+            else:
+                logger_main.info(f"Task {idx} for user {user['user_id']} completed successfully with result: {result}")
     except Exception as e:
         logger_main.error(f"Error in process_users: {e}")
     finally:
