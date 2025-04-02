@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 from logging_setup import logger_main
-from start_trading_all import start_trading_all, run_backtest  # Import run_backtest from start_trading_all
+from start_trading_all import start_trading_all, run_backtest
 from bot_user_data import BotUserData
 from test_symbols import get_test_symbols
 from trade_pool_manager import schedule_trade_pool_cleanup
@@ -24,7 +24,7 @@ async def main():
         ]
         model_path = "models/trading_model.pth"  # Example model path
         backtest_days = 7  # Reduced number of days for backtest (was 30)
-        min_profit_threshold = 0.05  # Minimum profit threshold for backtest (5%)
+        min_profit_threshold = 0.01  # Reduced threshold (was 0.05)
 
         # Process all users asynchronously
         await process_users(users, exchange_id, model_path, backtest_days, min_profit_threshold)
@@ -111,6 +111,7 @@ async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
                 backtest_results[symbol] = None
             else:
                 backtest_results[symbol] = result
+                logger_main.debug(f"Backtest result for {symbol}: {result}")
     return backtest_results
 
 async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results):
