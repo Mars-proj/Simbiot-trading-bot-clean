@@ -167,9 +167,11 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
 
         # Filter symbols based on backtest results
         valid_symbols = []
-        for symbol in symbols:
+        logger_main.info(f"Starting symbol filtering for {len(symbols)} symbols")
+        for idx, symbol in enumerate(symbols):
+            logger_main.debug(f"Processing symbol {idx}/{len(symbols)}: {symbol}, type: {type(symbol)}")
             result = backtest_results.get(symbol)
-            logger_main.debug(f"Processing symbol {symbol}, backtest result: {result}")
+            logger_main.debug(f"Backtest result for {symbol}: {result}")
             if result is None:
                 logger_main.warning(f"No backtest result for {symbol} for user {user_id}, skipping")
                 continue
