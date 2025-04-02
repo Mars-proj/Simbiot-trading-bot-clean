@@ -1,4 +1,6 @@
 import asyncio
+import json
+import os
 from logging_setup import logger_main
 from start_trading_all import start_trading_all
 from bot_user_data import BotUserData
@@ -34,30 +36,31 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
     """Processes trading for all users asynchronously."""
     exchange_pool = ExchangePool()
     try:
-        # Cache symbols to avoid duplicate filtering for multiple users
-        cache = CacheUtils()
-        cache_key = f"filtered_symbols:{exchange_id}:{'testnet' if users[0]['testnet'] else 'live'}"
-        cached_symbols = await cache.get(cache_key)
-        if cached_symbols:
-            logger_main.info(f"Loaded {len(cached_symbols)} filtered symbols from cache for {exchange_id}")
-            symbols = cached_symbols
+        # Check if selected pairs file exists
+        selected_pairs_file = "selected_pairs.json"
+        if os.path.exists(selected_pairs_file):
+            with open(selected_pairs_file, 'r') as f:
+                symbols = json.load(f)
+            logger_main.info(f"Loaded {len(symbols)} selected pairs from {selected_pairs_file}: {symbols[:5]}...")
         else:
             # Fetch test symbols for the first user
             first_user = users[0]
             user_id = first_user['user_id']
             testnet = first_user['testnet']
-            logger_main.info(f"Fetching test symbols for user {user_id} (will be cached for all users)")
+            logger_main.info(f"Fetching test symbols for user {user_id} (will be saved to {selected_pairs_file})")
             symbols = await get_test_symbols(exchange_id, user_id, testnet=testnet)
             if not symbols:
                 logger_main.error(f"No valid symbols found for trading, stopping")
                 return
-            # Cache the symbols
-            await cache.setex(cache_key, 86400, symbols)  # Cache for 24 hours
-            logger_main.info(f"Cached {len(symbols)} filtered symbols for {exchange_id}")
+            # Save the selected pairs to a file
+            with open(selected_pairs_file, 'w') as f:
+                json.dump(symbols, f)
+            logger_main.info(f"Saved {len(symbols)} selected pairs to {selected_pairs_file}: {symbols[:5]}...")
 
-        # Process each user with the cached symbols
+        # Process each user with the selected symbols
         tasks = []
         for user in users:
+            logger_main.info(f"Starting processing for user {user['user_id']}")
             tasks.append(asyncio.create_task(run_trading_for_user(
                 user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols
             )))
@@ -101,6 +104,7 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
                 continue
 
             profit = backtest_result.get('profit', 0)
+            logger_main.debug(f"Backtest profit for {symbol}: {profit:.2%}, threshold: {min_profit_threshold:.2%}")
             if profit < min_profit_threshold:
                 logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below threshold ({min_profit_threshold:.2%}) for user {user_id}, skipping")
                 continue
@@ -112,7 +116,7 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             logger_main.error(f"No symbols passed backtest for user {user_id}, stopping")
             return
 
-        logger_main.info(f"Starting trading with symbols for user {user_id}: {valid_symbols[:5]}...")
+        logger_main.info(f"Starting trading with {len(valid_symbols)} symbols for user {user_id}: {valid_symbols[:5]}...")
 
         # Start trading
         trade_task = asyncio.create_task(start_trading_all(
