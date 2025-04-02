@@ -36,17 +36,13 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
     """Processes trading for all users asynchronously."""
     exchange_pool = ExchangePool()
     try:
-        logger_main.info("Starting process_users")
         # Check if selected pairs file exists
         selected_pairs_file = "selected_pairs.json"
-        logger_main.info(f"Checking for selected pairs file: {selected_pairs_file}")
         if os.path.exists(selected_pairs_file):
-            logger_main.info("Selected pairs file exists, loading symbols")
             with open(selected_pairs_file, 'r') as f:
                 symbols = json.load(f)
             logger_main.info(f"Loaded {len(symbols)} selected pairs from {selected_pairs_file}: {symbols[:5]}...")
         else:
-            logger_main.info("Selected pairs file does not exist, fetching test symbols")
             # Fetch test symbols for the first user
             first_user = users[0]
             user_id = first_user['user_id']
@@ -63,57 +59,37 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
 
         # Check if backtest results file exists
         backtest_results_file = "backtest_results.json"
-        logger_main.info(f"Checking for backtest results file: {backtest_results_file}")
         if os.path.exists(backtest_results_file):
-            logger_main.info("Backtest results file exists, loading results")
-            try:
-                with open(backtest_results_file, 'r') as f:
-                    backtest_results = json.load(f)
-                logger_main.info(f"Loaded backtest results for {len(backtest_results)} symbols from {backtest_results_file}")
-            except Exception as e:
-                logger_main.error(f"Failed to load backtest results from {backtest_results_file}: {e}")
-                backtest_results = None
+            with open(backtest_results_file, 'r') as f:
+                backtest_results = json.load(f)
+            logger_main.info(f"Loaded backtest results for {len(backtest_results)} symbols from {backtest_results_file}")
         else:
-            logger_main.info("Backtest results file does not exist, running backtest")
             # Run backtest for all symbols (once for all users)
             first_user = users[0]
             user_id = first_user['user_id']
             testnet = first_user['testnet']
             logger_main.info(f"Running backtest for all symbols (will be cached for all users)")
             backtest_results = await run_backtests(exchange_id, user_id, symbols, backtest_days, testnet)
-            logger_main.info(f"Backtest completed, results: {len(backtest_results)} symbols")
             # Save backtest results to a file
             with open(backtest_results_file, 'w') as f:
                 json.dump(backtest_results, f)
             logger_main.info(f"Saved backtest results for {len(backtest_results)} symbols to {backtest_results_file}")
 
         # Process each user with the backtest results
-        logger_main.info("Processing users with backtest results")
         tasks = []
         for user in users:
             logger_main.info(f"Starting processing for user {user['user_id']}")
             tasks.append(asyncio.create_task(run_trading_for_user(
                 user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results
             )))
-        logger_main.info(f"Created {len(tasks)} tasks for processing users")
-        # Wait for all tasks to complete and handle exceptions
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        for user, result in zip(users, results):
-            if isinstance(result, Exception):
-                logger_main.error(f"Task for user {user['user_id']} failed with exception: {result}")
-            else:
-                logger_main.info(f"Task for user {user['user_id']} completed successfully")
-    except Exception as e:
-        logger_main.error(f"Error in process_users: {e}")
+        await asyncio.gather(*tasks)
     finally:
-        logger_main.info("Closing all exchange instances in ExchangePool")
         await exchange_pool.close_all()
 
 async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
     """Runs backtests for all symbols in parallel and returns results."""
     backtest_results = {}
     batch_size = 10  # Process 10 symbols at a time
-    logger_main.info(f"Starting backtest for {len(symbols)} symbols in batches of {batch_size}")
     for i in range(0, len(symbols), batch_size):
         batch = symbols[i:i + batch_size]
         logger_main.info(f"Processing backtest batch {i//batch_size + 1} of {len(symbols)//batch_size + 1} (symbols {i} to {min(i + batch_size, len(symbols))})")
@@ -136,7 +112,6 @@ async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
             else:
                 backtest_results[symbol] = result
                 logger_main.debug(f"Backtest result for {symbol}: {result}")
-    logger_main.info(f"Backtest completed for {len(backtest_results)} symbols")
     return backtest_results
 
 async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results):
@@ -146,22 +121,18 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         testnet = user['testnet']
         logger_main.info(f"Starting trading for user {user_id} on {exchange_id}")
 
-        # Step 1: Get exchange instance from pool
-        logger_main.info(f"Step 1: Fetching exchange instance for {exchange_id}:{user_id} (testnet: {testnet})")
+        # Get exchange instance from pool
         exchange = await exchange_pool.get_exchange(exchange_id, user_id, testnet)
         if not exchange:
             logger_main.error(f"Failed to get exchange instance for user {user_id} on {exchange_id}")
             return
 
-        # Step 2: Filter symbols based on backtest results
-        logger_main.info(f"Step 2: Filtering symbols for user {user_id}")
         logger_main.info(f"Using {len(symbols)} pre-filtered symbols for user {user_id}: {symbols[:5]}...")
-        logger_main.debug(f"Backtest results keys: {list(backtest_results.keys())[:5]}...")
 
+        # Filter symbols based on backtest results
         valid_symbols = []
         for symbol in symbols:
             result = backtest_results.get(symbol)
-            logger_main.debug(f"Processing symbol {symbol}, backtest result: {result}")
             if result is None:
                 logger_main.warning(f"No backtest result for {symbol} for user {user_id}, skipping")
                 continue
@@ -177,8 +148,9 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             logger_main.error(f"No symbols passed backtest for user {user_id}, stopping")
             return
 
-        # Step 3: Start trading
-        logger_main.info(f"Step 3: Starting trading with {len(valid_symbols)} symbols for user {user_id}: {valid_symbols[:5]}...")
+        logger_main.info(f"Starting trading with {len(valid_symbols)} symbols for user {user_id}: {valid_symbols[:5]}...")
+
+        # Start trading
         trade_task = asyncio.create_task(start_trading_all(
             exchange_id, user_id, valid_symbols,
             leverage=1.0,
@@ -192,23 +164,19 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             test_mode=testnet
         ))
 
-        # Step 4: Schedule trade pool cleanup
-        logger_main.info(f"Step 4: Scheduling trade pool cleanup for user {user_id}")
+        # Schedule trade pool cleanup
         cleanup_task = asyncio.create_task(schedule_trade_pool_cleanup(
             exchange_id, user_id, max_age_seconds=86400, interval=3600
         ))
 
-        # Step 5: Monitor positions
-        logger_main.info(f"Step 5: Starting position monitoring for user {user_id}")
+        # Monitor positions
         monitor_task = asyncio.create_task(monitor_positions(
             exchange_id, user_id, testnet=testnet
         ))
 
-        # Step 6: Schedule model retraining
-        logger_main.info(f"Step 6: Scheduling model retraining for user {user_id}")
+        # Schedule model retraining
         retraining_manager = RetrainingManager(retrain_interval=86400)
         async def data_loader():
-            logger_main.info(f"Inside data_loader for user {user_id}")
             # Load data for retraining
             from ml_data_preparer import prepare_ml_data
             from historical_data_fetcher import fetch_historical_data
@@ -232,13 +200,10 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             data_loader, train_model, model_path
         ))
 
-        # Step 7: Wait for tasks to complete
-        logger_main.info(f"Step 7: Starting tasks for user {user_id}: trade, cleanup, monitor, retrain")
+        # Wait for tasks to complete
         await asyncio.gather(trade_task, cleanup_task, monitor_task, retrain_task)
-        logger_main.info(f"Step 8: All tasks completed for user {user_id}")
     except Exception as e:
         logger_main.error(f"Error in run_trading_for_user for user {user_id} on {exchange_id}: {e}")
-        raise  # Перебрасываем исключение, чтобы asyncio.gather его поймал
 
 if __name__ == "__main__":
     asyncio.run(main())
