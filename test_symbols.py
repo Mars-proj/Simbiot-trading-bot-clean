@@ -99,7 +99,7 @@ async def get_test_symbols(exchange_id, user_id, testnet=False):
                         volume_data = {item['symbol']: float(item['volume']) for item in data}
                         symbols = [
                             symbol for symbol in symbols
-                            if volume_data.get(symbol, 0) >= 50  # Минимальный объём для предварительной фильтрации
+                            if volume_data.get(symbol, 0) >= 10  # Сниженный порог для предварительной фильтрации
                         ]
                         logger_main.info(f"Pre-filtered {len(symbols)} symbols by volume: {symbols[:5]}...")
             except Exception as e:
@@ -119,11 +119,11 @@ async def get_test_symbols(exchange_id, user_id, testnet=False):
             market_volatility = market_conditions['market_volatility']
             market_volume = market_conditions['market_volume']
             # Динамические пороговые значения
-            min_volume_threshold = max(50, market_volume * 0.1)  # 10% от среднего объёма
-            min_volatility_threshold = max(0.05, market_volatility * 0.5)  # 50% от волатильности рынка
+            min_volume_threshold = max(10, market_volume * 0.05)  # Сниженный порог: 5% от среднего объёма
+            min_volatility_threshold = max(0.01, market_volatility * 0.2)  # Сниженный порог: 20% от волатильности рынка
         else:
-            min_volume_threshold = 100
-            min_volatility_threshold = 0.1
+            min_volume_threshold = 10  # Сниженный порог
+            min_volatility_threshold = 0.01  # Сниженный порог
 
         logger_main.info(f"Using dynamic thresholds: min_volume_threshold={min_volume_threshold}, min_volatility_threshold={min_volatility_threshold}%")
 
@@ -208,19 +208,20 @@ async def filter_symbol(exchange_id, user_id, symbol, testnet, exchange, min_vol
             logger_main.debug(f"Failed to fetch OHLCV data for {symbol}")
             return False
 
-        # Calculate RSI and generate signal
+        # Calculate RSI (for logging purposes)
         rsi = calculate_rsi(ohlcv_data['close'])
         if rsi is None:
             logger_main.debug(f"Failed to calculate RSI for {symbol}")
             return False
 
         latest_rsi = rsi.iloc[-1]
-        signal = await generate_dynamic_signals(exchange_id, user_id, symbol, timeframe, limit, testnet, exchange)
-        if signal is None:
-            logger_main.debug(f"No trading signal for {symbol} (RSI: {latest_rsi})")
-            return False
+        # Temporarily disable signal filter to allow more symbols to pass
+        # signal = await generate_dynamic_signals(exchange_id, user_id, symbol, timeframe, limit, testnet, exchange)
+        # if signal is None:
+        #     logger_main.debug(f"No trading signal for {symbol} (RSI: {latest_rsi})")
+        #     return False
 
-        logger_main.debug(f"Symbol {symbol} passed filtering (volume: {volume}, volatility: {volatility}%, RSI: {latest_rsi}, signal: {signal})")
+        logger_main.debug(f"Symbol {symbol} passed filtering (volume: {volume}, volatility: {volatility}%, RSI: {latest_rsi})")
         return True
     except Exception as e:
         logger_main.debug(f"Error filtering symbol {symbol}: {e}")

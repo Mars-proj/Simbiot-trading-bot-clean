@@ -51,7 +51,7 @@ async def validate_symbol(exchange_id, user_id, symbol, testnet=False, exchange=
             if exchange_id == "mexc":
                 url = "https://api.mexc.com/api/v3/exchangeInfo"
             else:
-                logger_main.error(f"No fallback API check implemented for {exchange_id}")
+                logger_main.error(f"No fallback API fetch implemented for {exchange_id}")
                 return False
 
             try:
@@ -61,11 +61,16 @@ async def validate_symbol(exchange_id, user_id, symbol, testnet=False, exchange=
                         return False
                     data = await response.json()
                     symbols = data.get('symbols', [])
+                    logger_main.debug(f"Fetched exchange info for {exchange_id}: {len(symbols)} symbols")
                     for market in symbols:
-                        if market['symbol'] == symbol and market['status'] == "1":
-                            logger_main.info(f"Symbol {symbol} validated via API on {exchange_id}")
-                            return True
-                    logger_main.error(f"Symbol {symbol} not found or not enabled on {exchange_id} via API")
+                        if market['symbol'] == symbol:
+                            if market['status'] == "1":
+                                logger_main.info(f"Symbol {symbol} validated via API on {exchange_id}")
+                                return True
+                            else:
+                                logger_main.debug(f"Symbol {symbol} not enabled on {exchange_id}: status={market['status']}")
+                                return False
+                    logger_main.debug(f"Symbol {symbol} not found in exchange info on {exchange_id}")
                     return False
             except Exception as e:
                 logger_main.error(f"Error validating symbol {symbol} via API on {exchange_id}: {e}")
