@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 from logging_setup import logger_main
-from start_trading_all import start_trading_all
+from start_trading_all import start_trading_all, run_backtest  # Import run_backtest from start_trading_all
 from bot_user_data import BotUserData
 from test_symbols import get_test_symbols
 from trade_pool_manager import schedule_trade_pool_cleanup
