@@ -142,6 +142,34 @@ async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
     logger_main.info(f"Backtest completed for {len(backtest_results)} symbols")
     return backtest_results
 
+async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshold):
+    """Filters symbols based on backtest results."""
+    valid_symbols = []
+    logger_main.info(f"Starting symbol filtering for {len(symbols)} symbols")
+    for idx, symbol in enumerate(symbols):
+        logger_main.debug(f"Processing symbol {idx}/{len(symbols)}: {symbol}, type: {type(symbol)}")
+        try:
+            # Additional debug logging
+            logger_main.debug(f"Attempting to access backtest_results for symbol: {symbol}")
+            result = backtest_results.get(symbol)
+            logger_main.debug(f"Backtest result for {symbol}: {result}")
+            if result is None:
+                logger_main.warning(f"No backtest result for {symbol} for user {user_id}, skipping")
+                continue
+            # Additional debug logging
+            logger_main.debug(f"Attempting to access 'profit' in result: {result}")
+            profit = result.get('profit', 0)
+            logger_main.debug(f"Backtest profit for {symbol}: {profit:.2%}, threshold: {min_profit_threshold:.2%}")
+            if profit < min_profit_threshold:
+                logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below threshold ({min_profit_threshold:.2%}) for user {user_id}, skipping")
+                continue
+            valid_symbols.append(symbol)
+            logger_main.info(f"Backtest successful for {symbol} for user {user_id}: profit={profit:.2%}")
+        except Exception as e:
+            logger_main.error(f"Error processing symbol {symbol} for user {user_id}: {e}\n{traceback.format_exc()}")
+            continue
+    return valid_symbols
+
 async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results):
     """Runs trading for a single user using pre-computed backtest results."""
     logger_main.info(f"Entering run_trading_for_user for user {user['user_id']} on {exchange_id}")
@@ -167,30 +195,7 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         logger_main.debug(f"Backtest results keys: {list(backtest_results.keys())[:5]}...")
 
         # Filter symbols based on backtest results
-        valid_symbols = []
-        logger_main.info(f"Starting symbol filtering for {len(symbols)} symbols")
-        for idx, symbol in enumerate(symbols):
-            logger_main.debug(f"Processing symbol {idx}/{len(symbols)}: {symbol}, type: {type(symbol)}")
-            try:
-                # Additional debug logging
-                logger_main.debug(f"Attempting to access backtest_results for symbol: {symbol}")
-                result = backtest_results.get(symbol)
-                logger_main.debug(f"Backtest result for {symbol}: {result}")
-                if result is None:
-                    logger_main.warning(f"No backtest result for {symbol} for user {user_id}, skipping")
-                    continue
-                # Additional debug logging
-                logger_main.debug(f"Attempting to access 'profit' in result: {result}")
-                profit = result.get('profit', 0)
-                logger_main.debug(f"Backtest profit for {symbol}: {profit:.2%}, threshold: {min_profit_threshold:.2%}")
-                if profit < min_profit_threshold:
-                    logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below threshold ({min_profit_threshold:.2%}) for user {user_id}, skipping")
-                    continue
-                valid_symbols.append(symbol)
-                logger_main.info(f"Backtest successful for {symbol} for user {user_id}: profit={profit:.2%}")
-            except Exception as e:
-                logger_main.error(f"Error processing symbol {symbol} for user {user_id}: {e}\n{traceback.format_exc()}")
-                continue
+        valid_symbols = await filter_symbols(symbols, backtest_results, user_id, min_profit_threshold)
 
         if not valid_symbols:
             logger_main.error(f"No symbols passed backtest for user {user_id}, stopping")
