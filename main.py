@@ -11,6 +11,7 @@ from retraining_manager import RetrainingManager
 from exchange_pool import ExchangePool
 from cache_utils import CacheUtils
 import time
+import traceback
 
 async def main():
     """Main entry point for the trading bot system."""
@@ -30,7 +31,7 @@ async def main():
         await process_users(users, exchange_id, model_path, backtest_days, min_profit_threshold)
 
     except Exception as e:
-        logger_main.error(f"Error in main loop: {e}")
+        logger_main.error(f"Error in main loop: {e}\n{traceback.format_exc()}")
 
 async def process_users(users, exchange_id, model_path, backtest_days, min_profit_threshold):
     """Processes trading for all users asynchronously."""
@@ -71,7 +72,7 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
                     backtest_results = json.load(f)
                 logger_main.info(f"Loaded backtest results for {len(backtest_results)} symbols from {backtest_results_file}")
             except Exception as e:
-                logger_main.error(f"Failed to load backtest results from {backtest_results_file}: {e}")
+                logger_main.error(f"Failed to load backtest results from {backtest_results_file}: {e}\n{traceback.format_exc()}")
                 backtest_results = None
         else:
             logger_main.info("Backtest results file does not exist, running backtest")
@@ -102,11 +103,11 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
         results = await asyncio.gather(*tasks, return_exceptions=True)
         for idx, (user, result) in enumerate(zip(users, results)):
             if isinstance(result, Exception):
-                logger_main.error(f"Task {idx} for user {user['user_id']} failed with exception: {result}")
+                logger_main.error(f"Task {idx} for user {user['user_id']} failed with exception: {result}\n{traceback.format_exc()}")
             else:
                 logger_main.info(f"Task {idx} for user {user['user_id']} completed successfully with result: {result}")
     except Exception as e:
-        logger_main.error(f"Error in process_users: {e}")
+        logger_main.error(f"Error in process_users: {e}\n{traceback.format_exc()}")
     finally:
         logger_main.info("Closing all exchange instances in ExchangePool")
         await exchange_pool.close_all()
@@ -170,18 +171,26 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         logger_main.info(f"Starting symbol filtering for {len(symbols)} symbols")
         for idx, symbol in enumerate(symbols):
             logger_main.debug(f"Processing symbol {idx}/{len(symbols)}: {symbol}, type: {type(symbol)}")
-            result = backtest_results.get(symbol)
-            logger_main.debug(f"Backtest result for {symbol}: {result}")
-            if result is None:
-                logger_main.warning(f"No backtest result for {symbol} for user {user_id}, skipping")
+            try:
+                # Additional debug logging
+                logger_main.debug(f"Attempting to access backtest_results for symbol: {symbol}")
+                result = backtest_results.get(symbol)
+                logger_main.debug(f"Backtest result for {symbol}: {result}")
+                if result is None:
+                    logger_main.warning(f"No backtest result for {symbol} for user {user_id}, skipping")
+                    continue
+                # Additional debug logging
+                logger_main.debug(f"Attempting to access 'profit' in result: {result}")
+                profit = result.get('profit', 0)
+                logger_main.debug(f"Backtest profit for {symbol}: {profit:.2%}, threshold: {min_profit_threshold:.2%}")
+                if profit < min_profit_threshold:
+                    logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below threshold ({min_profit_threshold:.2%}) for user {user_id}, skipping")
+                    continue
+                valid_symbols.append(symbol)
+                logger_main.info(f"Backtest successful for {symbol} for user {user_id}: profit={profit:.2%}")
+            except Exception as e:
+                logger_main.error(f"Error processing symbol {symbol} for user {user_id}: {e}\n{traceback.format_exc()}")
                 continue
-            profit = result.get('profit', 0)
-            logger_main.debug(f"Backtest profit for {symbol}: {profit:.2%}, threshold: {min_profit_threshold:.2%}")
-            if profit < min_profit_threshold:
-                logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below threshold ({min_profit_threshold:.2%}) for user {user_id}, skipping")
-                continue
-            valid_symbols.append(symbol)
-            logger_main.info(f"Backtest successful for {symbol} for user {user_id}: profit={profit:.2%}")
 
         if not valid_symbols:
             logger_main.error(f"No symbols passed backtest for user {user_id}, stopping")
@@ -244,7 +253,7 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         await asyncio.gather(trade_task, cleanup_task, monitor_task, retrain_task)
         logger_main.info(f"All tasks completed for user {user_id}")
     except Exception as e:
-        logger_main.error(f"Error in run_trading_for_user for user {user_id} on {exchange_id}: {e}")
+        logger_main.error(f"Error in run_trading_for_user for user {user_id} on {exchange_id}: {e}\n{traceback.format_exc()}")
         raise  # Перебрасываем исключение, чтобы asyncio.gather его поймал
 
 if __name__ == "__main__":
