@@ -150,6 +150,10 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
         logger_main.debug(f"Processing symbol {idx}/{len(symbols)}: {symbol}, type: {type(symbol)}")
         try:
             # Additional debug logging
+            logger_main.debug(f"Checking if symbol {symbol} exists in backtest_results")
+            if symbol not in backtest_results:
+                logger_main.warning(f"Symbol {symbol} not found in backtest_results for user {user_id}, skipping")
+                continue
             logger_main.debug(f"Attempting to access backtest_results for symbol: {symbol}")
             result = backtest_results.get(symbol)
             logger_main.debug(f"Backtest result for {symbol}: {result}")
@@ -168,6 +172,9 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
         except Exception as e:
             logger_main.error(f"Error processing symbol {symbol} for user {user_id}: {e}\n{traceback.format_exc()}")
             continue
+        finally:
+            logger_main.debug(f"Finished processing symbol {idx}/{len(symbols)}: {symbol}")
+    logger_main.info(f"Completed symbol filtering, found {len(valid_symbols)} valid symbols")
     return valid_symbols
 
 async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results):
@@ -195,7 +202,9 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         logger_main.debug(f"Backtest results keys: {list(backtest_results.keys())[:5]}...")
 
         # Filter symbols based on backtest results
+        logger_main.info(f"Calling filter_symbols for user {user_id}")
         valid_symbols = await filter_symbols(symbols, backtest_results, user_id, min_profit_threshold)
+        logger_main.info(f"filter_symbols returned {len(valid_symbols)} valid symbols for user {user_id}")
 
         if not valid_symbols:
             logger_main.error(f"No symbols passed backtest for user {user_id}, stopping")
