@@ -9,7 +9,7 @@ from trade_pool_manager import schedule_trade_pool_cleanup
 from position_monitor import monitor_positions
 from retraining_manager import RetrainingManager
 from exchange_pool import ExchangePool
-from cache_utils import CacheUtils
+from cache_utils import RedisClient
 import time
 import traceback
 
@@ -53,7 +53,7 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
             user_id = first_user['user_id']
             testnet = first_user['testnet']
             logger_main.info(f"Fetching test symbols for user {user_id} (will be saved to {selected_pairs_file})")
-            symbols = await get_test_symbols(exchange_id, user_id, testnet=testnet)
+            symbols = await get_test_symbols(exchange_pool, exchange_id, user_id, testnet=testnet)
             if not symbols:
                 logger_main.error(f"No valid symbols found for trading, stopping")
                 return
@@ -155,6 +155,7 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
                 logger_main.warning(f"Symbol {symbol} not found in backtest_results for user {user_id}, skipping")
                 continue
             logger_main.debug(f"Attempting to access backtest_results for symbol: {symbol}")
+            logger_main.debug(f"Backtest results keys before access: {list(backtest_results.keys())[:5]}...")
             result = backtest_results.get(symbol)
             logger_main.debug(f"Backtest result for {symbol}: {result}")
             if result is None:
@@ -171,6 +172,7 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
             logger_main.info(f"Backtest successful for {symbol} for user {user_id}: profit={profit:.2%}")
         except Exception as e:
             logger_main.error(f"Error processing symbol {symbol} for user {user_id}: {e}\n{traceback.format_exc()}")
+            logger_main.error(f"Backtest results content for debugging: {backtest_results.get(symbol)}")
             continue
         finally:
             logger_main.debug(f"Finished processing symbol {idx}/{len(symbols)}: {symbol}")
@@ -233,7 +235,7 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
 
         # Monitor positions
         monitor_task = asyncio.create_task(monitor_positions(
-            exchange_id, user_id, testnet=testnet
+            exchange_id, user_id, exchange, testnet=testnet
         ))
 
         # Schedule model retraining
@@ -244,12 +246,12 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             from historical_data_fetcher import fetch_historical_data
             from data_collector import collect_training_data
             # Получить данные из пула сделок
-            trade_data = await collect_training_data(exchange_id, user_id)
+            trade_data = await collect_training_data(exchange_id, user_id, testnet=testnet)
             # Получить исторические данные
             if not valid_symbols:
                 logger_main.error(f"No valid symbols available for retraining for user {user_id}")
                 return None, None, None, None
-            data = await fetch_historical_data(exchange_id, user_id, valid_symbols[0], since=int(time.time()) - 30*24*60*60, testnet=testnet)
+            data = await fetch_historical_data(exchange_id, user_id, valid_symbols[0], since=int(time.time()) - 30*24*60*60, testnet=testnet, exchange=exchange)
             if data is None:
                 logger_main.error(f"Failed to fetch historical data for retraining for user {user_id}")
                 return None, None, None, None

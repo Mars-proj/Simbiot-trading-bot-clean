@@ -1,0 +1,6 @@
+aiohttp
+pandas
+numpy
+redis
+scikit-learn
+joblib

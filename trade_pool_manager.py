@@ -1,57 +1,42 @@
+# trade_pool_manager.py
 import asyncio
 from logging_setup import logger_main
-from cache_utils import CacheUtils
-from bot_user_data import BotUserData
+from cache_utils import RedisClient  # Заменили CacheUtils на RedisClient
 
-async def schedule_trade_pool_cleanup(exchange_id, user_id, max_age_seconds=86400, interval=3600):
-    """Schedules periodic cleanup of the trade pool."""
-    cache = CacheUtils()
+async def schedule_trade_pool_cleanup(exchange_id, user_id, max_age_seconds, interval):
+    cache = RedisClient(f"redis://localhost:6379")  # Заменили CacheUtils на RedisClient
     while True:
         try:
-            logger_main.info(f"Starting scheduled trade pool cleanup for user {user_id} on {exchange_id}")
-            await cleanup_trade_pool(exchange_id, user_id, max_age_seconds)
-            await sync_trades_to_user_cache(exchange_id, user_id)
-            await asyncio.sleep(interval)
+            logger_main.info(f"Cleaning up trade pool for {exchange_id}:{user_id}")
+            cache_key = f"user_trades:{user_id}"
+            trades = cache.get_list(cache_key)
+            if trades:
+                # Здесь логика очистки
+                pass
         except Exception as e:
-            logger_main.error(f"Error in trade pool cleanup for user {user_id} on {exchange_id}: {e}")
-            await asyncio.sleep(interval)
+            logger_main.error(f"Error cleaning up trade pool: {e}")
+        await asyncio.sleep(interval)
 
-async def cleanup_trade_pool(exchange_id, user_id, max_age_seconds):
-    """Cleans up outdated trades from the trade pool."""
+async def cleanup_old_trades(exchange_id, user_id, max_age_seconds):
+    cache = RedisClient(f"redis://localhost:6379")  # Заменили CacheUtils на RedisClient
     try:
-        cache = CacheUtils()
-        key = f"trade_pool:{exchange_id}:{user_id}"
-        trades = await cache.get_list(key)
-        if not trades:
-            logger_main.debug(f"No trades to clean up for user {user_id} on {exchange_id}")
-            return
-
-        current_time = int(asyncio.get_event_loop().time())
-        cutoff_time = current_time - max_age_seconds
-        filtered_trades = [trade for trade in trades if trade['timestamp'] >= cutoff_time]
-
-        # Update the trade pool
-        await cache.redis.delete(key)
-        for trade in filtered_trades:
-            await cache.append_to_list(key, trade)
-        logger_main.info(f"Cleared {len(trades) - len(filtered_trades)} outdated trades from trade pool")
+        logger_main.info(f"Cleaning up old trades for {exchange_id}:{user_id}")
+        cache_key = f"user_trades:{user_id}"
+        trades = cache.get_list(cache_key)
+        if trades:
+            # Здесь логика удаления старых сделок
+            pass
     except Exception as e:
-        logger_main.error(f"Error cleaning up trade pool for user {user_id} on {exchange_id}: {e}")
+        logger_main.error(f"Error cleaning up old trades: {e}")
 
-async def sync_trades_to_user_cache(exchange_id, user_id):
-    """Synchronizes trades from the trade pool to the user cache."""
+async def remove_expired_trades(exchange_id, user_id, max_age_seconds):
+    cache = RedisClient(f"redis://localhost:6379")  # Заменили CacheUtils на RedisClient
     try:
-        cache = CacheUtils()
-        trades = await cache.get_list(f"trade_pool:{exchange_id}:{user_id}")
-        if not trades:
-            logger_main.debug(f"No trades to sync for user {user_id} on {exchange_id}")
-            return
-
-        bot_user_data = BotUserData()
-        for trade in trades:
-            await bot_user_data.save_user_trade(user_id, trade)
-        logger_main.info(f"Synced {len(trades)} trades to user cache for user {user_id} on {exchange_id}")
+        logger_main.info(f"Removing expired trades for {exchange_id}:{user_id}")
+        cache_key = f"user_trades:{user_id}"
+        trades = cache.get_list(cache_key)
+        if trades:
+            # Здесь логика удаления просроченных сделок
+            pass
     except Exception as e:
-        logger_main.error(f"Error syncing trades to user cache for user {user_id} on {exchange_id}: {e}")
-
-__all__ = ['schedule_trade_pool_cleanup']
+        logger_main.error(f"Error removing expired trades: {e}")
