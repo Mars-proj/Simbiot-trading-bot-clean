@@ -17,19 +17,24 @@ import traceback
 async def main():
     """Main entry point for the trading bot system."""
     try:
+        logger_main.info("Starting main function")
         # Configuration
         exchange_id = "mexc"  # Use MEXC for real trading
         users = [
             {"user_id": "user1", "testnet": False},
             {"user_id": "user2", "testnet": False},
-            {"user_id": "user3", "testnet": False},  # Добавляем user3
+            {"user_id": "user3", "testnet": False},
         ]
         model_path = "models/trading_model.pth"  # Example model path
         backtest_days = 7  # Reduced number of days for backtest (was 30)
         min_profit_threshold = 0.01  # Reduced threshold (was 0.05)
 
+        logger_main.info(f"Configuration: exchange_id={exchange_id}, users={users}, model_path={model_path}, backtest_days={backtest_days}, min_profit_threshold={min_profit_threshold}")
+
         # Process all users asynchronously
+        logger_main.info("Calling process_users")
         await process_users(users, exchange_id, model_path, backtest_days, min_profit_threshold)
+        logger_main.info("Finished process_users")
 
     except Exception as e:
         logger_main.error(f"Error in main loop: {e}\n{traceback.format_exc()}")
@@ -72,6 +77,7 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
                 with open(backtest_results_file, 'r') as f:
                     backtest_results = json.load(f)
                 logger_main.info(f"Loaded backtest results for {len(backtest_results)} symbols from {backtest_results_file}")
+                logger_main.debug(f"Backtest results structure: {backtest_results}")
             except Exception as e:
                 logger_main.error(f"Failed to load backtest results from {backtest_results_file}: {e}\n{traceback.format_exc()}")
                 backtest_results = None
@@ -88,6 +94,15 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
             with open(backtest_results_file, 'w') as f:
                 json.dump(backtest_results, f)
             logger_main.info(f"Saved backtest results for {len(backtest_results)} symbols to {backtest_results_file}")
+            logger_main.debug(f"Backtest results structure after backtest: {backtest_results}")
+
+        # Debug: Check if backtest_results is None or empty
+        if backtest_results is None:
+            logger_main.error("Backtest results are None, cannot proceed with trading")
+            return
+        if not backtest_results:
+            logger_main.error("Backtest results are empty, cannot proceed with trading")
+            return
 
         # Process each user with the backtest results
         logger_main.info("Processing users with backtest results")
@@ -153,6 +168,8 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
     """Filters symbols based on backtest results."""
     valid_symbols = []
     logger_main.info(f"Starting symbol filtering for {len(symbols)} symbols")
+    # Debug: Log the entire backtest_results to see its structure
+    logger_main.debug(f"Backtest results structure: {backtest_results}")
     for idx, symbol in enumerate(symbols):
         logger_main.debug(f"Processing symbol {idx}/{len(symbols)}: {symbol}, type: {type(symbol)}")
         try:
@@ -193,7 +210,7 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
         except Exception as e:
             logger_main.error(f"Error processing symbol {symbol} for user {user_id}: {e}\n{traceback.format_exc()}")
             logger_main.error(f"Backtest results content for debugging: {backtest_results.get(symbol)}")
-            raise  # Добавляем raise, чтобы увидеть полный стек вызовов
+            continue  # Продолжаем цикл, даже если произошла ошибка
         finally:
             logger_main.debug(f"Finished processing symbol {idx}/{len(symbols)}: {symbol}")
     logger_main.info(f"Completed symbol filtering, found {len(valid_symbols)} valid symbols")
@@ -312,7 +329,7 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             await asyncio.gather(trade_task, cleanup_task, monitor_task, retrain_task)
         except Exception as e:
             logger_main.error(f"Error in asyncio.gather for user {user_id}: {e}\n{traceback.format_exc()}")
-            raise  # Перебрасываем исключение, чтобы увидеть полный стек вызовов
+            raise  # Перебрасываем исключение, чтобы asyncio.gather его поймал
         logger_main.info(f"All tasks completed for user {user_id}")
     except Exception as e:
         logger_main.error(f"Error in run_trading_for_user for user {user_id} on {exchange_id}: {e}\n{traceback.format_exc()}")

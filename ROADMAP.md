@@ -1,5 +1,8 @@
 # Roadmap for Trading Bot Project
 
+## Main Goal
+Create a self-learning, self-evolving market X-ray system capable of scaling to 1000+ users, with deep machine learning integration for advanced market analysis and trading automation.
+
 ## Current Modules (67)
 - main.py
 - data_collector.py
