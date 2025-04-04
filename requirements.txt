@@ -1,4 +1,7 @@
-aiohttp
+# requirements.txt
+ccxt
+pandas
+python-dotenvaiohttp
 pandas
 numpy
 redis

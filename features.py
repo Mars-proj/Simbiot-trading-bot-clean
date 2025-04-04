@@ -1,43 +1,44 @@
+# features.py
 import pandas as pd
+import numpy as np
 from logging_setup import logger_main
-import os
 
-def extract_features(data, rsi_period=14):
-    """Extracts features from OHLCV data for ML models."""
+def extract_features(df, rsi_period=14):
+    """
+    Extracts features from historical OHLCV data.
+    Args:
+        df (pd.DataFrame): Historical OHLCV data with columns ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+        rsi_period (int): Period for RSI calculation
+    Returns:
+        pd.DataFrame: DataFrame with features including RSI and original 'close' column
+    """
     try:
-        if not isinstance(data, pd.DataFrame):
-            logger_main.error(f"Data must be a pandas DataFrame, got {type(data)}")
-            return None
-        if data.empty:
-            logger_main.error("DataFrame is empty")
-            return None
+        logger_main.info(f"Extracting features for {len(df)} data points with RSI period {rsi_period}")
+        
+        # Проверяем наличие необходимых столбцов
+        required_columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            logger_main.error(f"Missing required columns in DataFrame: {missing_columns}")
+            return pd.DataFrame()
 
-        # Calculate price changes
-        features = pd.DataFrame(index=data.index)
-        features['price_change'] = data['close'].pct_change()
-        features['price_change_5'] = data['close'].pct_change(5)
-        features['price_change_10'] = data['close'].pct_change(10)
+        # Копируем DataFrame, чтобы сохранить исходные данные
+        features_df = df.copy()
 
-        # Calculate moving averages
-        features['ma_20'] = data['close'].rolling(window=20).mean()
-        features['ma_50'] = data['close'].rolling(window=50).mean()
-
-        # Calculate RSI
-        delta = data['close'].diff()
+        # Рассчитываем RSI
+        delta = features_df['close'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=rsi_period).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=rsi_period).mean()
         rs = gain / loss
-        features['rsi'] = 100 - (100 / (1 + rs))
+        features_df['rsi'] = 100 - (100 / (1 + rs))
 
-        # Calculate volatility
-        features['volatility'] = data['close'].rolling(window=20).std()
+        # Удаляем строки с NaN, которые появились из-за rolling
+        features_df = features_df.dropna()
 
-        # Drop NaN values
-        features = features.dropna()
-        logger_main.info(f"Extracted features for {len(features)} data points with RSI period {rsi_period}")
-        return features
+        logger_main.info(f"Extracted features for {len(features_df)} data points with RSI period {rsi_period}")
+        logger_main.debug(f"Features DataFrame columns: {list(features_df.columns)}")
+        return features_df
+
     except Exception as e:
         logger_main.error(f"Error extracting features: {e}")
-        return None
-
-__all__ = ['extract_features']
+        return pd.DataFrame()

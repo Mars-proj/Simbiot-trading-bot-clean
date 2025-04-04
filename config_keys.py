@@ -1,47 +1,57 @@
+# config_keys.py
 from logging_setup import logger_main
+from dotenv import load_dotenv
+import os
 
-# API keys for users
+# Load environment variables from .env file
+load_dotenv()
+
+# Supported exchanges
+SUPPORTED_EXCHANGES = ['mexc', 'binance', 'bybit']  # Список поддерживаемых бирж
+
+# API keys for users (loaded from .env)
 API_KEYS = {
     "user1": {
-        "mexc": {"api_key": "mx0vglGRsaFvzo2b0j", "api_secret": "794defd4ae1f47c08cefd4d1c0a4bd41"},
+        "mexc": {
+            "api_key": os.getenv("USER1_MEXC_API_KEY", "your_mexc_api_key_for_user1"),
+            "api_secret": os.getenv("USER1_MEXC_API_SECRET", "your_mexc_api_secret_for_user1")
+        }
     },
     "user2": {
-        "mexc": {"api_key": "mx0vgl99fkHYT0VQ27", "api_secret": "07b2e5086e334472ad35513b2dc45dd9"},
+        "mexc": {
+            "api_key": os.getenv("USER2_MEXC_API_KEY", "your_mexc_api_key_for_user2"),
+            "api_secret": os.getenv("USER2_MEXC_API_SECRET", "your_mexc_api_secret_for_user2")
+        }
+    },
+    "user3": {
+        "mexc": {
+            "api_key": os.getenv("USER3_MEXC_API_KEY", "your_mexc_api_key_for_user3"),
+            "api_secret": os.getenv("USER3_MEXC_API_SECRET", "your_mexc_api_secret_for_user3")
+        }
     }
 }
 
-# Preferred exchanges for users
-PREFERRED_EXCHANGES = {
-    "user1": "mexc",  # Use MEXC for real trading
-    "user2": "mexc"
-}
-
-# Supported exchanges
-SUPPORTED_EXCHANGES = ['mexc', 'binance', 'bybit', 'kucoin', 'okx']
-
-# General settings
-MAX_OPEN_TRADES = 10
-MIN_TRADE_AMOUNT = 0.01
-MAX_LEVERAGE = 5
-MAX_POSITION_SIZE = 10000.0  # Maximum total position size in USDT
-MAX_POSITION_SIZE_PER_SYMBOL = 5000.0  # Maximum position size per symbol in USDT
-
 def validate_api_keys(api_key, api_secret):
-    """Validates API keys with strict checks."""
-    try:
-        if not api_key or not api_secret:
-            logger_main.error("API key or secret is empty")
-            return False
-        if len(api_key) < 10 or len(api_secret) < 10:  # Minimum length check
-            logger_main.error("API key or secret is too short (minimum length: 10 characters)")
-            return False
-        if not api_key.isalnum() or not api_secret.isalnum():  # Alphanumeric check
-            logger_main.error("API key or secret contains invalid characters (must be alphanumeric)")
-            return False
-        logger_main.info("API keys validated successfully")
-        return True
-    except Exception as e:
-        logger_main.error(f"Error validating API keys: {e}")
+    """
+    Validates API keys.
+    Args:
+        api_key (str): API key
+        api_secret (str): API secret
+    Returns:
+        bool: True if keys are valid, False otherwise
+    """
+    if not api_key or not api_secret:
+        logger_main.error("API key or secret is empty")
         return False
+    if not isinstance(api_key, str) or not isinstance(api_secret, str):
+        logger_main.error("API key or secret is not a string")
+        return False
+    # Additional validation can be added here (e.g., length checks)
+    logger_main.info("API keys validated successfully")
+    return True
 
-__all__ = ['API_KEYS', 'PREFERRED_EXCHANGES', 'SUPPORTED_EXCHANGES', 'MAX_OPEN_TRADES', 'MIN_TRADE_AMOUNT', 'MAX_LEVERAGE', 'MAX_POSITION_SIZE', 'MAX_POSITION_SIZE_PER_SYMBOL', 'validate_api_keys']
+# Validate API keys at startup
+for user_id, exchanges in API_KEYS.items():
+    for exchange_id, keys in exchanges.items():
+        if not validate_api_keys(keys.get("api_key"), keys.get("api_secret")):
+            logger_main.error(f"Invalid API keys for user {user_id} on {exchange_id}")

@@ -1,4 +1,9 @@
-# Python
+# .gitignore
+.env
+*.log
+*.log.bak
+__pycache__/
+venv/# Python
 __pycache__/
 *.pyc
 *.pyo

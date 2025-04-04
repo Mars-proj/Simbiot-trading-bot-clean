@@ -1,5 +1,7 @@
 # data_collector.py
 import asyncio
+import time
+import traceback
 from logging_setup import logger_main
 from exchange_pool import ExchangePool
 
@@ -23,13 +25,28 @@ async def collect_training_data(exchange_id, user_id, testnet=False):
             logger_main.error(f"Failed to get exchange instance for {exchange_id}:{user_id}")
             return []
 
-        # Запрашиваем недавние сделки пользователя
-        logger_main.debug(f"Fetching trades for user {user_id} on {exchange_id}")
-        trades = await exchange.fetch_my_trades(symbol=None, since=None, limit=100)
-        logger_main.debug(f"Fetched {len(trades)} trades for user {user_id} on {exchange_id}")
+        # Пробуем получить недавние сделки пользователя для BTCUSDT
+        symbol = "BTCUSDT"  # Указываем конкретный символ
+        logger_main.debug(f"Fetching user trades for user {user_id} on {exchange_id} for symbol {symbol}")
+        since = int((time.time() - 30*24*60*60) * 1000)  # Последние 30 дней в миллисекундах
+        logger_main.debug(f"Calling fetch_my_trades with symbol={symbol}, since={since}, limit=100")
+        trades = await exchange.fetch_my_trades(symbol=symbol, since=since, limit=100)
+        logger_main.debug(f"Fetched {len(trades)} user trades for user {user_id} on {exchange_id}: {trades[:5] if trades else '[]'}")
+
+        # Если сделки пользователя не найдены, пробуем получить исторические сделки для BTCUSDT
+        if not trades:
+            logger_main.warning(f"No user trades found for user {user_id} on {exchange_id}, falling back to historical trades for {symbol}")
+            try:
+                logger_main.debug(f"Calling fetch_trades for {symbol} with since={since}, limit=100")
+                historical_trades = await exchange.fetch_trades(symbol=symbol, since=since, limit=100)
+                logger_main.debug(f"Fetched {len(historical_trades)} historical trades for {symbol} on {exchange_id}: {historical_trades[:5] if historical_trades else '[]'}")
+                trades = historical_trades
+            except Exception as e:
+                logger_main.error(f"Failed to fetch historical trades for {symbol} on {exchange_id}: {e}\n{traceback.format_exc()}")
+                return []
 
         if not trades:
-            logger_main.warning(f"No trades found for user {user_id} on {exchange_id}")
+            logger_main.warning(f"No trades (user or historical) found for user {user_id} on {exchange_id}")
             return []
 
         # Форматируем данные о сделках

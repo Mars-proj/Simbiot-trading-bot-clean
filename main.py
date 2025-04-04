@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import pandas as pd
 from logging_setup import logger_main
 from start_trading_all import start_trading_all, run_backtest
 from bot_user_data import BotUserData
@@ -21,7 +22,7 @@ async def main():
         users = [
             {"user_id": "user1", "testnet": False},
             {"user_id": "user2", "testnet": False},
-            # Add more users for scalability testing
+            {"user_id": "user3", "testnet": False},  # Добавляем user3
         ]
         model_path = "models/trading_model.pth"  # Example model path
         backtest_days = 7  # Reduced number of days for backtest (was 30)
@@ -93,13 +94,18 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
         tasks = []
         for user in users:
             logger_main.info(f"Starting processing for user {user['user_id']}")
-            task = asyncio.create_task(run_trading_for_user(
-                user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results
-            ))
-            tasks.append(task)
+            try:
+                task = asyncio.create_task(run_trading_for_user(
+                    user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results
+                ))
+                tasks.append(task)
+            except Exception as e:
+                logger_main.error(f"Error creating task for user {user['user_id']}: {e}\n{traceback.format_exc()}")
+                continue
         logger_main.info(f"Created {len(tasks)} tasks for processing users")
 
         # Wait for all tasks to complete and handle exceptions
+        logger_main.debug("Waiting for all tasks to complete")
         results = await asyncio.gather(*tasks, return_exceptions=True)
         for idx, (user, result) in enumerate(zip(users, results)):
             if isinstance(result, Exception):
@@ -108,6 +114,7 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
                 logger_main.info(f"Task {idx} for user {user['user_id']} completed successfully with result: {result}")
     except Exception as e:
         logger_main.error(f"Error in process_users: {e}\n{traceback.format_exc()}")
+        raise  # Добавляем raise, чтобы увидеть полный стек вызовов
     finally:
         logger_main.info("Closing all exchange instances in ExchangePool")
         await exchange_pool.close_all()
@@ -156,14 +163,27 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
                 continue
             logger_main.debug(f"Attempting to access backtest_results for symbol: {symbol}")
             logger_main.debug(f"Backtest results keys before access: {list(backtest_results.keys())[:5]}...")
+            logger_main.debug(f"Backtest results type: {type(backtest_results)}")
+            logger_main.debug(f"Backtest results length: {len(backtest_results)}")
+            logger_main.debug(f"Backtest results content for {symbol}: {backtest_results.get(symbol)}")
             result = backtest_results.get(symbol)
-            logger_main.debug(f"Backtest result for {symbol}: {result}")
+            logger_main.debug(f"Backtest result for {symbol}: {result}, type: {type(result)}")
             if result is None:
                 logger_main.warning(f"No backtest result for {symbol} for user {user_id}, skipping")
                 continue
             # Additional debug logging
             logger_main.debug(f"Attempting to access 'profit' in result: {result}")
+            if not isinstance(result, dict):
+                logger_main.error(f"Backtest result for {symbol} is not a dictionary: {result}")
+                continue
+            if 'profit' not in result:
+                logger_main.error(f"Key 'profit' not found in backtest result for {symbol}: {result}")
+                continue
             profit = result.get('profit', 0)
+            logger_main.debug(f"Backtest profit for {symbol}: {profit}, type: {type(profit)}")
+            if not isinstance(profit, (int, float)):
+                logger_main.error(f"Profit for {symbol} is not a number: {profit}, type: {type(profit)}")
+                continue
             logger_main.debug(f"Backtest profit for {symbol}: {profit:.2%}, threshold: {min_profit_threshold:.2%}")
             if profit < min_profit_threshold:
                 logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below threshold ({min_profit_threshold:.2%}) for user {user_id}, skipping")
@@ -173,7 +193,7 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
         except Exception as e:
             logger_main.error(f"Error processing symbol {symbol} for user {user_id}: {e}\n{traceback.format_exc()}")
             logger_main.error(f"Backtest results content for debugging: {backtest_results.get(symbol)}")
-            continue
+            raise  # Добавляем raise, чтобы увидеть полный стек вызовов
         finally:
             logger_main.debug(f"Finished processing symbol {idx}/{len(symbols)}: {symbol}")
     logger_main.info(f"Completed symbol filtering, found {len(valid_symbols)} valid symbols")
@@ -205,7 +225,11 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
 
         # Filter symbols based on backtest results
         logger_main.info(f"Calling filter_symbols for user {user_id}")
-        valid_symbols = await filter_symbols(symbols, backtest_results, user_id, min_profit_threshold)
+        try:
+            valid_symbols = await filter_symbols(symbols, backtest_results, user_id, min_profit_threshold)
+        except Exception as e:
+            logger_main.error(f"Error in filter_symbols for user {user_id}: {e}\n{traceback.format_exc()}")
+            raise  # Перебрасываем исключение, чтобы увидеть полный стек вызовов
         logger_main.info(f"filter_symbols returned {len(valid_symbols)} valid symbols for user {user_id}")
 
         if not valid_symbols:
@@ -215,6 +239,7 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         logger_main.info(f"Starting trading with {len(valid_symbols)} symbols for user {user_id}: {valid_symbols[:5]}...")
 
         # Start trading
+        logger_main.debug(f"Creating trade_task for user {user_id}")
         trade_task = asyncio.create_task(start_trading_all(
             exchange_id, user_id, valid_symbols,
             leverage=1.0,
@@ -229,16 +254,19 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         ))
 
         # Schedule trade pool cleanup
+        logger_main.debug(f"Creating cleanup_task for user {user_id}")
         cleanup_task = asyncio.create_task(schedule_trade_pool_cleanup(
             exchange_id, user_id, max_age_seconds=86400, interval=3600
         ))
 
         # Monitor positions
+        logger_main.debug(f"Creating monitor_task for user {user_id}")
         monitor_task = asyncio.create_task(monitor_positions(
             exchange_id, user_id, exchange, testnet=testnet
         ))
 
         # Schedule model retraining
+        logger_main.debug(f"Creating retrain_task for user {user_id}")
         retraining_manager = RetrainingManager(retrain_interval=86400)
         async def data_loader():
             # Load data for retraining
@@ -251,13 +279,27 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             if not valid_symbols:
                 logger_main.error(f"No valid symbols available for retraining for user {user_id}")
                 return None, None, None, None
-            data = await fetch_historical_data(exchange_id, user_id, valid_symbols[0], since=int(time.time()) - 30*24*60*60, testnet=testnet, exchange=exchange)
+            # Используем BTCUSDT для переобучения и увеличиваем временной диапазон до 90 дней
+            retrain_symbol = "BTCUSDT"
+            logger_main.info(f"Fetching historical data for retraining using symbol {retrain_symbol}")
+            data = await fetch_historical_data(exchange_id, user_id, retrain_symbol, since=int(time.time()) - 90*24*60*60, testnet=testnet, exchange=exchange)
             if data is None:
                 logger_main.error(f"Failed to fetch historical data for retraining for user {user_id}")
                 return None, None, None, None
+            # Преобразуем данные в pandas DataFrame
+            df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             # Подготовить данные для обучения
-            X, y = prepare_ml_data(data, trade_data)
-            return X, y, None, None
+            result = prepare_ml_data(df, trade_data)
+            if len(result) == 2:
+                X, y = result
+                return X, y, None, None
+            elif len(result) == 3:
+                X, y, _ = result
+                return X, y, None, None
+            else:
+                logger_main.error(f"Unexpected return value from prepare_ml_data: {result}")
+                return None, None, None, None
 
         from ml_model_trainer import train_model
         retrain_task = asyncio.create_task(retraining_manager.schedule_retraining(
@@ -266,7 +308,11 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
 
         # Wait for tasks to complete
         logger_main.info(f"Starting tasks for user {user_id}: trade, cleanup, monitor, retrain")
-        await asyncio.gather(trade_task, cleanup_task, monitor_task, retrain_task)
+        try:
+            await asyncio.gather(trade_task, cleanup_task, monitor_task, retrain_task)
+        except Exception as e:
+            logger_main.error(f"Error in asyncio.gather for user {user_id}: {e}\n{traceback.format_exc()}")
+            raise  # Перебрасываем исключение, чтобы увидеть полный стек вызовов
         logger_main.info(f"All tasks completed for user {user_id}")
     except Exception as e:
         logger_main.error(f"Error in run_trading_for_user for user {user_id} on {exchange_id}: {e}\n{traceback.format_exc()}")
