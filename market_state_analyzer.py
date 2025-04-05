@@ -7,7 +7,7 @@ import time
 from historical_data_fetcher import fetch_historical_data
 
 async def analyze_market_state(exchange_pool, exchange_id):
-    """Analyzes the current market state (trending, sideways, etc.) using BTC/USDT as a reference."""
+    """Analyzes the current market state (trending, sideways, etc.) using major symbols as a reference."""
     logger_main.info("Analyzing market state")
     exchange = await exchange_pool.get_exchange(exchange_id, "user1", testnet=False)
     if not exchange:
@@ -15,27 +15,26 @@ async def analyze_market_state(exchange_pool, exchange_id):
         return "unknown"
 
     try:
-        # Fetch historical data for BTC/USDT (last 90 days)
+        # List of major symbols to try for market state analysis
+        major_symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]  # Use format without slash
+        ohlcv = None
+        used_symbol = None
+
+        # Fetch historical data for major symbols (last 90 days)
         since = int(time.time()) - 90 * 24 * 60 * 60  # 90 days ago
-        logger_main.debug(f"Fetching historical data for BTC/USDT with since={since}")
-        ohlcv = await fetch_historical_data(exchange_id, "user1", "BTC/USDT", since, testnet=False, exchange=exchange, limit=2000)
-        if not ohlcv:
-            logger_main.error("Failed to fetch historical data for BTC/USDT, trying fallback symbol ETH/USDT")
-            # Fallback to ETH/USDT if BTC/USDT fails
-            ohlcv = await fetch_historical_data(exchange_id, "user1", "ETH/USDT", since, testnet=False, exchange=exchange, limit=2000)
-            if not ohlcv:
-                logger_main.error("Failed to fetch historical data for ETH/USDT as well")
-                # Try one more fallback: BNB/USDT
-                logger_main.debug("Trying fallback symbol BNB/USDT")
-                ohlcv = await fetch_historical_data(exchange_id, "user1", "BNB/USDT", since, testnet=False, exchange=exchange, limit=2000)
-                if not ohlcv:
-                    logger_main.error("Failed to fetch historical data for BNB/USDT as well")
-                    return "unknown"
-                logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for BNB/USDT as second fallback")
+        for symbol in major_symbols:
+            logger_main.debug(f"Fetching historical data for {symbol} with since={since}")
+            ohlcv = await fetch_historical_data(exchange_id, "user1", symbol, since, testnet=False, exchange=exchange, limit=2000)
+            if ohlcv:
+                used_symbol = symbol
+                logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for {symbol}")
+                break
             else:
-                logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for ETH/USDT as fallback")
-        else:
-            logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for BTC/USDT")
+                logger_main.error(f"Failed to fetch historical data for {symbol}")
+
+        if not ohlcv:
+            logger_main.error("Failed to fetch historical data for all major symbols (BTCUSDT, ETHUSDT, BNBUSDT)")
+            return "unknown"
 
         # Convert to DataFrame
         df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
