@@ -25,8 +25,15 @@ async def analyze_market_state(exchange_pool, exchange_id):
             ohlcv = await fetch_historical_data(exchange_id, "user1", "ETH/USDT", since, testnet=False, exchange=exchange, limit=2000)
             if not ohlcv:
                 logger_main.error("Failed to fetch historical data for ETH/USDT as well")
-                return "unknown"
-            logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for ETH/USDT as fallback")
+                # Try one more fallback: BNB/USDT
+                logger_main.debug("Trying fallback symbol BNB/USDT")
+                ohlcv = await fetch_historical_data(exchange_id, "user1", "BNB/USDT", since, testnet=False, exchange=exchange, limit=2000)
+                if not ohlcv:
+                    logger_main.error("Failed to fetch historical data for BNB/USDT as well")
+                    return "unknown"
+                logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for BNB/USDT as second fallback")
+            else:
+                logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for ETH/USDT as fallback")
         else:
             logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for BTC/USDT")
 
@@ -70,7 +77,7 @@ async def analyze_market_state(exchange_pool, exchange_id):
         return market_state
 
     except Exception as e:
-        logger_main.error(f"Error analyzing market state: {e}")
+        logger_main.error(f"Error analyzing market state: {e}\n{traceback.format_exc()}")
         return "unknown"
 
 async def calculate_dynamic_thresholds(exchange_pool, exchange_id, backtest_results, market_state):
