@@ -1,3 +1,4 @@
+import asyncio
 import pandas as pd
 from logging_setup import logger_main
 from market_analyzer import MarketAnalyzer
