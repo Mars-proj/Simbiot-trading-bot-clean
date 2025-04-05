@@ -20,9 +20,15 @@ async def analyze_market_state(exchange_pool, exchange_id):
         logger_main.debug(f"Fetching historical data for BTC/USDT with since={since}")
         ohlcv = await fetch_historical_data(exchange_id, "user1", "BTC/USDT", since, testnet=False, exchange=exchange, limit=2000)
         if not ohlcv:
-            logger_main.error("Failed to fetch historical data for BTC/USDT")
-            return "unknown"
-        logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for BTC/USDT")
+            logger_main.error("Failed to fetch historical data for BTC/USDT, trying fallback symbol ETH/USDT")
+            # Fallback to ETH/USDT if BTC/USDT fails
+            ohlcv = await fetch_historical_data(exchange_id, "user1", "ETH/USDT", since, testnet=False, exchange=exchange, limit=2000)
+            if not ohlcv:
+                logger_main.error("Failed to fetch historical data for ETH/USDT as well")
+                return "unknown"
+            logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for ETH/USDT as fallback")
+        else:
+            logger_main.debug(f"Fetched {len(ohlcv)} OHLCV data points for BTC/USDT")
 
         # Convert to DataFrame
         df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])

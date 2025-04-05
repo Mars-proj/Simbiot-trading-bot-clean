@@ -86,7 +86,8 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
     """Filters symbols based on backtest results, dynamic market analysis, and market state."""
     valid_symbols = []
     skipped_symbols = []  # Store symbols that pass profit threshold but fail data fetch
-    logger_main.info(f"Starting symbol filtering for {len(symbols)} symbols with dynamic thresholds and market state: {market_state}")
+    total_symbols = len(symbols)  # Total number of symbols passed to the function
+    logger_main.info(f"Starting symbol filtering for {total_symbols} symbols with dynamic thresholds and market state: {market_state}")
 
     # Initialize market analysis tools
     market_analyzer = MarketAnalyzer()
@@ -136,7 +137,7 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
         await save_symbol_cache("problematic_symbols.json", {'timestamp': int(current_time), 'symbols': list(problematic_symbols)})
         await save_symbol_cache("working_symbols.json", {'timestamp': int(current_time), 'symbols': list(working_symbols)})
     else:
-        logger_main.info("Using cached symbol lists, fetching historical data for working symbols")
+        logger_main.info(f"Using cached symbol lists with {len(working_symbols)} working symbols, fetching historical data")
         since = int(current_time) - 90 * 24 * 60 * 60  # 90 days ago
         # Parallel fetching of historical data for all working symbols
         tasks = []
