@@ -5,6 +5,7 @@ from market_analyzer import MarketAnalyzer
 from market_rentgen_core import MarketRentgenCore
 import time
 from historical_data_fetcher import fetch_historical_data
+from cache_manager import load_symbol_cache
 
 async def analyze_market_state(exchange_pool, exchange_id):
     """Analyzes the current market state (trending, sideways, etc.) using major symbols as a reference."""
@@ -87,8 +88,19 @@ async def calculate_dynamic_thresholds(exchange_pool, exchange_id, backtest_resu
         logger_main.error("Failed to get exchange instance for dynamic threshold calculation")
         return {"min_profit": 0.005, "min_volatility": 0.1, "min_sentiment": 0.5, "volume_spike_threshold": 1.5}
 
-    # Sample a subset of symbols for threshold calculation (limit to 100 symbols)
-    sampled_symbols = list(backtest_results.keys())[:100]  # Use first 100 symbols for simplicity
+    # Load working symbols to filter backtest results
+    working_cache = await load Ascendingload_symbol_cache("working_symbols.json")
+    working_symbols = working_cache['symbols']
+    logger_main.debug(f"Loaded {len(working_symbols)} working symbols for threshold calculation")
+
+    # Sample a subset of symbols for threshold calculation (limit to 100 symbols, only those in working_symbols)
+    sampled_symbols = [symbol for symbol in list(backtest_results.keys())[:100] if symbol in working_symbols]
+    logger_main.info(f"Sampled {len(sampled_symbols)} symbols for threshold calculation: {sampled_symbols[:5]}...")
+
+    if not sampled_symbols:
+        logger_main.warning("No valid symbols available for threshold calculation after filtering with working symbols")
+        return {"min_profit": 0.005, "min_volatility": 0.1, "min_sentiment": 0.5, "volume_spike_threshold": 1.5}
+
     ohlcv_data = {}
     batch_size = 20
     for i in range(0, len(sampled_symbols), batch_size):
