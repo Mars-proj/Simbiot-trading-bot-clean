@@ -1,5 +1,6 @@
 import asyncio
 import pandas as pd
+import time
 from logging_setup import logger_main
 from market_analyzer import MarketAnalyzer
 from market_rentgen_core import MarketRentgenCore
@@ -105,13 +106,16 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
     logger_main.debug(f"Loaded {len(problematic_symbols)} problematic symbols and {len(working_symbols)} working symbols")
 
     # Check if symbol lists need to be updated (once every 24 hours)
-    if time.time() - problematic_cache['timestamp'] > 24 * 60 * 60 or time.time() - working_cache['timestamp'] > 24 * 60 * 60:
+    current_time = time.time()
+    cache_is_stale = (current_time - problematic_cache['timestamp'] > 24 * 60 * 60) or (current_time - working_cache['timestamp'] > 24 * 60 * 60)
+    ohlcv_data = {}
+
+    if cache_is_stale:
         logger_main.info("Symbol caches are stale, reprocessing all symbols with CoinGecko")
         problematic_symbols = set()
         working_symbols = set()
-        ohlcv_data = {}
         batch_size = 50  # Increased batch size for faster processing
-        since = int(time.time()) - 90 * 24 * 60 * 60  # 90 days ago
+        since = int(current_time) - 90 * 24 * 60 * 60  # 90 days ago
         for i in range(0, len(symbols), batch_size):
             batch = symbols[i:i + batch_size]
             logger_main.info(f"Fetching historical data from CoinGecko for batch {i//batch_size + 1} of {len(symbols)//batch_size + 1}")
@@ -129,12 +133,11 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
                     logger_main.info(f"Added {symbol} to working symbols with {len(result)} OHLCV data points")
 
         # Save updated caches
-        await save_symbol_cache("problematic_symbols.json", {'timestamp': int(time.time()), 'symbols': list(problematic_symbols)})
-        await save_symbol_cache("working_symbols.json", {'timestamp': int(time.time()), 'symbols': list(working_symbols)})
+        await save_symbol_cache("problematic_symbols.json", {'timestamp': int(current_time), 'symbols': list(problematic_symbols)})
+        await save_symbol_cache("working_symbols.json", {'timestamp': int(current_time), 'symbols': list(working_symbols)})
     else:
-        logger_main.info("Using cached symbol lists")
-        ohlcv_data = {}
-        since = int(time.time()) - 90 * 24 * 60 * 60  # 90 days ago
+        logger_main.info("Using cached symbol lists, fetching historical data for working symbols")
+        since = int(current_time) - 90 * 24 * 60 * 60  # 90 days ago
         # Parallel fetching of historical data for all working symbols
         tasks = []
         for symbol in working_symbols:
@@ -144,11 +147,15 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
         for symbol, result in zip(working_symbols.copy(), results):  # Use copy to avoid RuntimeError
             if isinstance(result, Exception) or result is None:
                 problematic_symbols.add(symbol)
-                working_symbols.remove(symbol)
+                working_symbols.discard(symbol)  # Use discard to avoid KeyError
                 logger_main.warning(f"Moved {symbol} from working to problematic symbols: {result}")
             else:
                 ohlcv_data[symbol] = result
                 logger_main.info(f"Fetched {len(result)} OHLCV data points for {symbol}")
+
+        # Save updated caches after fetching new data
+        await save_symbol_cache("problematic_symbols.json", {'timestamp': int(current_time), 'symbols': list(problematic_symbols)})
+        await save_symbol_cache("working_symbols.json", {'timestamp': int(current_time), 'symbols': list(working_symbols)})
 
     # Get active symbols from the exchange
     try:
