@@ -102,17 +102,22 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
     # Load cached symbol lists
     problematic_cache = await load_symbol_cache("problematic_symbols.json")
     working_cache = await load_symbol_cache("working_symbols.json")
-    problematic_symbols = problematic_cache['symbols']
-    working_symbols = working_cache['symbols']
-    logger_main.debug(f"Loaded {len(problematic_symbols)} problematic symbols and {len(working_symbols)} working symbols")
+    
+    # Validate cache
+    if problematic_cache['timestamp'] == 0 or working_cache['timestamp'] == 0:
+        logger_main.warning("Cache is invalid or empty, forcing reprocessing of all symbols")
+        cache_is_stale = True
+    else:
+        problematic_symbols = problematic_cache['symbols']
+        working_symbols = working_cache['symbols']
+        logger_main.debug(f"Loaded {len(problematic_symbols)} problematic symbols and {len(working_symbols)} working symbols")
+        current_time = time.time()
+        cache_is_stale = (current_time - problematic_cache['timestamp'] > 24 * 60 * 60) or (current_time - working_cache['timestamp'] > 24 * 60 * 60)
 
-    # Check if symbol lists need to be updated (once every 24 hours)
-    current_time = time.time()
-    cache_is_stale = (current_time - problematic_cache['timestamp'] > 24 * 60 * 60) or (current_time - working_cache['timestamp'] > 24 * 60 * 60)
     ohlcv_data = {}
 
     if cache_is_stale:
-        logger_main.info("Symbol caches are stale, reprocessing all symbols with CoinGecko")
+        logger_main.info("Symbol caches are stale or invalid, reprocessing all symbols with CoinGecko")
         problematic_symbols = set()
         working_symbols = set()
         batch_size = 50  # Increased batch size for faster processing
