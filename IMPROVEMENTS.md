@@ -1,14 +1,15 @@
-# Improvements for Trading Bot Project
+# Improvements for Simbiot Trading Bot
 
 ## Implemented Improvements
-- Added support for three users (April 2025)
-- Implemented secure API key storage using .env file (April 2025)
-- Added python-dotenv dependency for loading environment variables (April 2025)
-- Improved error handling in run_trading_for_user with additional logging (April 2025)
+- Added RSI-based trading logic in `start_trading_all.py`.
+- Integrated MEXC API for real trading.
+- Added logging setup for better debugging.
+- Implemented async processing for user handling in `main.py` (users processed in parallel using `asyncio.gather`).
+- Added background retraining in `retraining_manager.py` to avoid blocking trading tasks.
+- Integrated market analysis modules (`market_analyzer.py`, `market_rentgen_core.py`) for filtering symbols based on volatility, trend, volume spikes, and sentiment.
+- Fixed import errors for `MarketAnalyzer` and `MarketRentgenCore` by correcting `market_analyzer.py` and `market_rentgen_core.py`.
 
 ## Planned Improvements
-- Add support for more advanced trading strategies
-- Optimize backtesting performance for faster processing
-- Integrate real-time market sentiment analysis
-- Implement dynamic risk management based on market volatility
-- Add support for multi-exchange arbitrage
+- Optimize for 1000+ users (e.g., connection pooling, rate limiting).
+- Add risk management module.
+- Enhance market analysis with AI-based predictions.

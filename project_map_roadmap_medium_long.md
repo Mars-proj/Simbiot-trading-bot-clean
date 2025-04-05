@@ -1,14 +1,11 @@
-# Medium and Long-Term Roadmap
+# Project Map and Roadmap (Medium to Long Term)
 
-## Medium-Term Goals
-- Add support for more exchanges (e.g., Binance, Bybit)
-- Implement advanced machine learning models
-- Scale to support more users (In Progress: Added support for three users in April 2025)
-- Optimize backtesting performance for faster processing
-- Integrate real-time market sentiment analysis
+## Medium-Term Roadmap (1-2 months)
+- **Scalability**: Scale system to handle 1000+ users (async processing implemented, next steps: connection pooling, rate limiting).
+- **Market Analysis**: Add advanced market analysis for better symbol selection (implemented volatility, trend, volume spikes, sentiment analysis).
+- **Risk Management**: Implement risk management module.
 
-## Long-Term Goals
-- Scale to support thousands of users
-- Integrate with DeFi protocols
-- Develop a mobile app for monitoring and managing trades
-- Implement a decentralized trading pool for community-driven strategies
+## Long-Term Roadmap (3-6 months)
+- **AI Integration**: Integrate AI-based prediction models.
+- **Multi-Exchange Support**: Add support for Binance and Bybit.
+- **Portfolio Management**: Implement portfolio management features.
