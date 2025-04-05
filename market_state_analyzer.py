@@ -89,12 +89,15 @@ async def calculate_dynamic_thresholds(exchange_pool, exchange_id, backtest_resu
         return {"min_profit": 0.005, "min_volatility": 0.1, "min_sentiment": 0.5, "volume_spike_threshold": 1.5}
 
     # Load working symbols to filter backtest results
-    working_cache = await load Ascendingload_symbol_cache("working_symbols.json")
-    working_symbols = working_cache['symbols']
-    logger_main.debug(f"Loaded {len(working_symbols)} working symbols for threshold calculation")
+    working_cache = await load_symbol_cache("working_symbols.json")
+    logger_main.debug(f"Loaded working symbols cache: {working_cache}")
+    working_symbols = set(working_cache['symbols'])
+    logger_main.debug(f"Loaded {len(working_symbols)} working symbols for threshold calculation: {list(working_symbols)[:5]}...")
 
     # Sample a subset of symbols for threshold calculation (limit to 100 symbols, only those in working_symbols)
-    sampled_symbols = [symbol for symbol in list(backtest_results.keys())[:100] if symbol in working_symbols]
+    all_symbols = list(backtest_results.keys())
+    logger_main.debug(f"All symbols from backtest_results: {len(all_symbols)} symbols, first 5: {all_symbols[:5]}...")
+    sampled_symbols = [symbol for symbol in all_symbols[:100] if symbol in working_symbols]
     logger_main.info(f"Sampled {len(sampled_symbols)} symbols for threshold calculation: {sampled_symbols[:5]}...")
 
     if not sampled_symbols:
