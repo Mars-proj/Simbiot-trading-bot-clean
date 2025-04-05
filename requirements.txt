@@ -1,9 +1,5 @@
 # requirements.txt
 ccxt
 pandas
-python-dotenvaiohttp
-pandas
-numpy
+python-dotenv
 redis
-scikit-learn
-joblib

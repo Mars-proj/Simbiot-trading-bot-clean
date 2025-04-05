@@ -1,18 +1,72 @@
+print("Starting imports in main.py")
+
+print("Importing asyncio")
 import asyncio
+print("Imported asyncio")
+
+print("Importing json")
 import json
+print("Imported json")
+
+print("Importing os")
 import os
+print("Imported os")
+
+print("Importing pandas")
 import pandas as pd
+print("Imported pandas")
+
+print("Importing from logging_setup")
 from logging_setup import logger_main
+print("Imported from logging_setup")
+
+print("Importing from start_trading_all")
 from start_trading_all import start_trading_all, run_backtest
+print("Imported from start_trading_all")
+
+print("Importing from bot_user_data")
 from bot_user_data import BotUserData
+print("Imported from bot_user_data")
+
+print("Importing from test_symbols")
 from test_symbols import get_test_symbols
+print("Imported from test_symbols")
+
+print("Importing from trade_pool_manager")
 from trade_pool_manager import schedule_trade_pool_cleanup
+print("Imported from trade_pool_manager")
+
+print("Importing from position_monitor")
 from position_monitor import monitor_positions
+print("Imported from position_monitor")
+
+print("Importing from retraining_manager")
 from retraining_manager import RetrainingManager
+print("Imported from retraining_manager")
+
+print("Importing from exchange_pool")
 from exchange_pool import ExchangePool
+print("Imported from exchange_pool")
+
+print("Importing from cache_utils")
 from cache_utils import RedisClient
+print("Imported from cache_utils")
+
+print("Importing from market_analyzer")
+from market_analyzer import MarketAnalyzer
+print("Imported from market_analyzer")
+
+print("Importing from market_rentgen_core")
+from market_rentgen_core import MarketRentgenCore
+print("Imported from market_rentgen_core")
+
+print("Importing time")
 import time
+print("Imported time")
+
+print("Importing traceback")
 import traceback
+print("Imported traceback")
 
 async def main():
     """Main entry point for the trading bot system."""
@@ -164,12 +218,23 @@ async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
     logger_main.info(f"Backtest completed for {len(backtest_results)} symbols")
     return backtest_results
 
-async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshold):
-    """Filters symbols based on backtest results."""
+async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshold, exchange_pool, exchange_id):
+    """Filters symbols based on backtest results and market analysis."""
     valid_symbols = []
     logger_main.info(f"Starting symbol filtering for {len(symbols)} symbols")
     # Debug: Log the entire backtest_results to see its structure
     logger_main.debug(f"Backtest results structure: {backtest_results}")
+
+    # Initialize market analysis tools
+    market_analyzer = MarketAnalyzer()
+    market_rentgen = MarketRentgenCore()
+
+    # Fetch historical data for market analysis
+    exchange = await exchange_pool.get_exchange(exchange_id, user_id, testnet=False)
+    if not exchange:
+        logger_main.error(f"Failed to get exchange instance for {exchange_id}:{user_id}")
+        return []
+
     for idx, symbol in enumerate(symbols):
         logger_main.debug(f"Processing symbol {idx}/{len(symbols)}: {symbol}, type: {type(symbol)}")
         try:
@@ -205,8 +270,58 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
             if profit < min_profit_threshold:
                 logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below threshold ({min_profit_threshold:.2%}) for user {user_id}, skipping")
                 continue
+
+            # Fetch historical data for market analysis
+            since = int(time.time()) - 30 * 24 * 60 * 60  # 30 days ago
+            from historical_data_fetcher import fetch_historical_data
+            ohlcv = await fetch_historical_data(exchange_id, user_id, symbol, since, testnet=False, exchange=exchange)
+            if not ohlcv:
+                logger_main.warning(f"No historical data for {symbol}, skipping market analysis")
+                continue
+
+            # Load data into market analysis tools
+            market_analyzer.load_data(ohlcv)
+            market_rentgen.load_data(ohlcv)
+
+            # Analyze volatility
+            volatility = market_analyzer.calculate_volatility(window=14)
+            if volatility is None:
+                logger_main.warning(f"Failed to calculate volatility for {symbol}, skipping")
+                continue
+            if volatility < 0.2:  # Example threshold: skip symbols with low volatility
+                logger_main.warning(f"Volatility for {symbol} ({volatility:.2%}) is below threshold (0.2), skipping")
+                continue
+
+            # Detect trend
+            trend = market_analyzer.detect_trend(window=20)
+            if trend is None:
+                logger_main.warning(f"Failed to detect trend for {symbol}, skipping")
+                continue
+            if trend != 'up':  # Example: only trade symbols in an uptrend
+                logger_main.warning(f"Trend for {symbol} is {trend}, not 'up', skipping")
+                continue
+
+            # Analyze volume spikes
+            volume_spike = market_rentgen.analyze_volume_spikes(threshold=2.0)
+            if volume_spike is None:
+                logger_main.warning(f"Failed to analyze volume spikes for {symbol}, skipping")
+                continue
+            if not volume_spike:  # Example: only trade symbols with recent volume spikes
+                logger_main.warning(f"No recent volume spike for {symbol}, skipping")
+                continue
+
+            # Calculate market sentiment
+            sentiment = market_rentgen.calculate_market_sentiment()
+            if sentiment is None:
+                logger_main.warning(f"Failed to calculate market sentiment for {symbol}, skipping")
+                continue
+            if sentiment < 0.6:  # Example: only trade symbols with positive sentiment (>60% positive days)
+                logger_main.warning(f"Market sentiment for {symbol} ({sentiment:.2%}) is below threshold (0.6), skipping")
+                continue
+
             valid_symbols.append(symbol)
-            logger_main.info(f"Backtest successful for {symbol} for user {user_id}: profit={profit:.2%}")
+            logger_main.info(f"Symbol {symbol} passed all filters for user {user_id}: profit={profit:.2%}, volatility={volatility:.2%}, trend={trend}, volume_spike={volume_spike}, sentiment={sentiment:.2%}")
+
         except Exception as e:
             logger_main.error(f"Error processing symbol {symbol} for user {user_id}: {e}\n{traceback.format_exc()}")
             logger_main.error(f"Backtest results content for debugging: {backtest_results.get(symbol)}")
@@ -240,10 +355,10 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         logger_main.info(f"Using {len(symbols)} pre-filtered symbols for user {user_id}: {symbols[:5]}...")
         logger_main.debug(f"Backtest results keys: {list(backtest_results.keys())[:5]}...")
 
-        # Filter symbols based on backtest results
+        # Filter symbols based on backtest results and market analysis
         logger_main.info(f"Calling filter_symbols for user {user_id}")
         try:
-            valid_symbols = await filter_symbols(symbols, backtest_results, user_id, min_profit_threshold)
+            valid_symbols = await filter_symbols(symbols, backtest_results, user_id, min_profit_threshold, exchange_pool, exchange_id)
         except Exception as e:
             logger_main.error(f"Error in filter_symbols for user {user_id}: {e}\n{traceback.format_exc()}")
             raise  # Перебрасываем исключение, чтобы увидеть полный стек вызовов
@@ -282,7 +397,7 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
             exchange_id, user_id, exchange, testnet=testnet
         ))
 
-        # Schedule model retraining
+        # Schedule model retraining in the background
         logger_main.debug(f"Creating retrain_task for user {user_id}")
         retraining_manager = RetrainingManager(retrain_interval=86400)
         async def data_loader():
@@ -319,21 +434,29 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
                 return None, None, None, None
 
         from ml_model_trainer import train_model
+        # Запускаем переобучение в фоновом режиме
         retrain_task = asyncio.create_task(retraining_manager.schedule_retraining(
             data_loader, train_model, model_path
         ))
 
-        # Wait for tasks to complete
-        logger_main.info(f"Starting tasks for user {user_id}: trade, cleanup, monitor, retrain")
+        # Wait for trading, cleanup, and monitoring tasks to complete
+        logger_main.info(f"Starting tasks for user {user_id}: trade, cleanup, monitor")
         try:
-            await asyncio.gather(trade_task, cleanup_task, monitor_task, retrain_task)
+            await asyncio.gather(trade_task, cleanup_task, monitor_task, return_exceptions=True)
         except Exception as e:
             logger_main.error(f"Error in asyncio.gather for user {user_id}: {e}\n{traceback.format_exc()}")
             raise  # Перебрасываем исключение, чтобы asyncio.gather его поймал
+
+        # Stop retraining task
+        retraining_manager.stop()
+        await retrain_task  # Ждём завершения переобучения
         logger_main.info(f"All tasks completed for user {user_id}")
+
     except Exception as e:
         logger_main.error(f"Error in run_trading_for_user for user {user_id} on {exchange_id}: {e}\n{traceback.format_exc()}")
         raise  # Перебрасываем исключение, чтобы asyncio.gather его поймал
 
 if __name__ == "__main__":
+    print("Starting asyncio.run(main())")
     asyncio.run(main())
+    print("Finished asyncio.run(main())")

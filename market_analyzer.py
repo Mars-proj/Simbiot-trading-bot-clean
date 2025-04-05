@@ -1,28 +1,53 @@
 from logging_setup import logger_main
-from ohlcv_fetcher import fetch_ohlcv
+import pandas as pd
 
-async def analyze_market_conditions(exchange_id, user_id, timeframe='1h', limit=100, testnet=False, exchange=None):
-    """Analyzes market conditions to adjust filtering thresholds."""
-    try:
-        # Получить данные по основным символам (например, BTCUSDT)
-        ohlcv_data = await fetch_ohlcv(exchange_id, "BTCUSDT", user_id, timeframe, limit, testnet, exchange)
-        if ohlcv_data is None or ohlcv_data.empty:
-            logger_main.warning(f"Failed to fetch market data for BTCUSDT on {exchange_id}")
+class MarketAnalyzer:
+    """Analyzes market data for trading decisions."""
+    def __init__(self):
+        self.data = None
+        logger_main.info("Initialized MarketAnalyzer")
+
+    def load_data(self, ohlcv_data):
+        """Loads OHLCV data for analysis."""
+        try:
+            self.data = pd.DataFrame(ohlcv_data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            self.data['timestamp'] = pd.to_datetime(self.data['timestamp'], unit='ms')
+            logger_main.debug(f"Loaded {len(self.data)} data points for analysis")
+        except Exception as e:
+            logger_main.error(f"Error loading data: {e}")
+            self.data = None
+
+    def calculate_volatility(self, window=14):
+        """Calculates volatility based on historical data."""
+        if self.data is None:
+            logger_main.error("No data loaded for volatility calculation")
+            return None
+        try:
+            returns = self.data['close'].pct_change()
+            volatility = returns.rolling(window=window).std() * (252 ** 0.5)  # Annualized volatility
+            logger_main.debug(f"Calculated volatility with window {window}")
+            return volatility.iloc[-1]
+        except Exception as e:
+            logger_main.error(f"Error calculating volatility: {e}")
             return None
 
-        # Рассчитать общую волатильность рынка
-        market_volatility = ohlcv_data['close'].pct_change().std() * 100
-        # Рассчитать средний объём торгов
-        market_volume = ohlcv_data['volume'].mean()
-
-        result = {
-            'market_volatility': market_volatility,
-            'market_volume': market_volume
-        }
-        logger_main.info(f"Market conditions for {exchange_id}: volatility={market_volatility}%, volume={market_volume}")
-        return result
-    except Exception as e:
-        logger_main.error(f"Error analyzing market conditions for {exchange_id}: {e}")
-        return None
-
-__all__ = ['analyze_market_conditions']
+    def detect_trend(self, window=20):
+        """Detects the current market trend."""
+        if self.data is None:
+            logger_main.error("No data loaded for trend detection")
+            return None
+        try:
+            self.data['sma'] = self.data['close'].rolling(window=window).mean()
+            latest_price = self.data['close'].iloc[-1]
+            latest_sma = self.data['sma'].iloc[-1]
+            if latest_price > latest_sma:
+                trend = 'up'
+            elif latest_price < latest_sma:
+                trend = 'down'
+            else:
+                trend = 'sideways'
+            logger_main.debug(f"Detected trend: {trend}")
+            return trend
+        except Exception as e:
+            logger_main.error(f"Error detecting trend: {e}")
+            return None

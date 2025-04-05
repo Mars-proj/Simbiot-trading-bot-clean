@@ -1,51 +1,50 @@
-import pandas as pd
 from logging_setup import logger_main
-from exchange_utils import fetch_ticker
-from ohlcv_fetcher import fetch_ohlcv
-from symbol_handler import validate_symbol
+import pandas as pd
 
-async def analyze_market(exchange, symbol, timeframe='1h', limit=100):
-    """Analyzes market conditions for a symbol, including trend and volatility."""
-    try:
-        if not await validate_symbol(exchange.id, exchange.user_id, symbol, testnet=exchange.testnet):
-            logger_main.error(f"Invalid symbol: {symbol}")
+class MarketRentgenCore:
+    """Core market analysis module for deep insights."""
+    def __init__(self):
+        self.data = None
+        logger_main.info("Initialized MarketRentgenCore")
+
+    def load_data(self, ohlcv_data):
+        """Loads OHLCV data for deep analysis."""
+        try:
+            self.data = pd.DataFrame(ohlcv_data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            self.data['timestamp'] = pd.to_datetime(self.data['timestamp'], unit='ms')
+            logger_main.debug(f"Loaded {len(self.data)} data points for deep analysis")
+        except Exception as e:
+            logger_main.error(f"Error loading data: {e}")
+            self.data = None
+
+    def analyze_volume_spikes(self, threshold=2.0):
+        """Detects volume spikes in the market data."""
+        if self.data is None:
+            logger_main.error("No data loaded for volume spike analysis")
+            return None
+        try:
+            avg_volume = self.data['volume'].rolling(window=20).mean()
+            volume_spike = self.data['volume'] / avg_volume
+            spikes = volume_spike > threshold
+            latest_spike = spikes.iloc[-1]
+            logger_main.debug(f"Volume spike detected: {latest_spike}")
+            return latest_spike
+        except Exception as e:
+            logger_main.error(f"Error analyzing volume spikes: {e}")
             return None
 
-        # Fetch OHLCV data
-        ohlcv_data = await fetch_ohlcv(exchange.id, symbol, exchange.user_id, timeframe=timeframe, limit=limit, as_dataframe=True)
-        if ohlcv_data is None or ohlcv_data.empty:
-            logger_main.error(f"Failed to fetch OHLCV data for {symbol} on {exchange.id}")
+    def calculate_market_sentiment(self):
+        """Calculates market sentiment based on price movements."""
+        if self.data is None:
+            logger_main.error("No data loaded for sentiment analysis")
             return None
-
-        # Calculate trend (using simple moving averages)
-        short_ma = ohlcv_data['close'].rolling(window=20).mean()
-        long_ma = ohlcv_data['close'].rolling(window=50).mean()
-        latest_short_ma = short_ma.iloc[-1]
-        latest_long_ma = long_ma.iloc[-1]
-        trend = 'bullish' if latest_short_ma > latest_long_ma else 'bearish' if latest_short_ma < latest_long_ma else 'neutral'
-
-        # Calculate volatility
-        volatility = ohlcv_data['close'].pct_change().rolling(window=20).std().iloc[-1] * 100  # in percentage
-
-        # Fetch current ticker
-        ticker = await fetch_ticker(exchange, symbol)
-        if not ticker:
-            logger_main.error(f"Failed to fetch ticker for {symbol} on {exchange.id}")
+        try:
+            returns = self.data['close'].pct_change()
+            positive_days = (returns > 0).sum()
+            total_days = len(returns)
+            sentiment = positive_days / total_days if total_days > 0 else 0
+            logger_main.debug(f"Market sentiment: {sentiment}")
+            return sentiment
+        except Exception as e:
+            logger_main.error(f"Error calculating market sentiment: {e}")
             return None
-
-        analysis = {
-            'symbol': symbol,
-            'trend': trend,
-            'volatility': volatility,
-            'last_price': ticker.get('last'),
-            'bid': ticker.get('bid'),
-            'ask': ticker.get('ask')
-        }
-
-        logger_main.info(f"Market analysis for {symbol} on {exchange.id}: trend={trend}, volatility={volatility:.2f}%")
-        return analysis
-    except Exception as e:
-        logger_main.error(f"Error analyzing market for {symbol} on {exchange.id}: {e}")
-        return None
-
-__all__ = ['analyze_market']
