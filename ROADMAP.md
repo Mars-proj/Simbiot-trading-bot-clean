@@ -6,10 +6,12 @@
 - [x] Add basic trading logic with RSI indicators
 - [x] Integrate market analysis modules (`market_analyzer.py`, `market_rentgen_core.py`) for volatility, trend, volume spikes, and sentiment analysis
 - [x] Add dynamic symbol fetching and CoinGecko data integration for robust historical data fetching
+- [x] Optimize data fetching with caching and request delays for CoinGecko API
 
 ## Medium-Term Goals (1-2 months)
 - [x] Scale system for 1000+ users with async processing (users processed in parallel, background retraining implemented)
 - [x] Add advanced market analysis (volatility, trends, volume spikes, sentiment)
+- [x] Optimize symbol filtering with volume pre-filtering and increased batch size
 - [ ] Implement risk management module
 - [ ] Add connection pooling and rate limiting for API requests
 
