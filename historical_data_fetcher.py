@@ -1,10 +1,18 @@
 import asyncio
 import time
+import json
+import os
 from logging_setup import logger_main
 from pycoingecko import CoinGeckoAPI
 from datetime import datetime
 
-async def fetch_historical_data(exchange_id, user_id, symbol, since, testnet=False, exchange=None, limit=1000):
+# Path to cache file for CoinGecko coins list
+COINGECKO_CACHE_FILE = "coingecko_coins.json"
+COINGECKO_CACHE_DURATION = 24 * 60 * 60  # 24 hours in seconds
+COINGECKO_MAX_DAYS = 365  # Maximum days allowed for free CoinGecko plan
+COINGECKO_OPTIMAL_DAYS = 90  # Optimal range for hourly data (up to 90 days)
+
+async def fetch_historical_data(exchange_id, user_id, symbol, since, testnet=False, exchange=None, limit=2000):
     """Fetches historical OHLCV data for a symbol with configurable limit and iterative time range."""
     logger_main.info(f"Fetching historical data for {symbol} on {exchange_id} for user {user_id} with limit {limit}")
     try:
@@ -39,7 +47,12 @@ async def fetch_historical_data(exchange_id, user_id, symbol, since, testnet=Fal
         # If exchange data is not available, try CoinGecko
         if not ohlcv:
             logger_main.info(f"No data available for {symbol} on {exchange_id}, trying CoinGecko")
-            ohlcv = await fetch_from_coingecko(symbol, since, limit)
+            # Adjust 'since' to not exceed CoinGecko's 365-day limit
+            max_since = int(time.time()) - COINGECKO_MAX_DAYS * 24 * 60 * 60
+            adjusted_since = max(since, max_since)
+            if adjusted_since > since:
+                logger_main.warning(f"Adjusted 'since' from {since} to {adjusted_since} to fit CoinGecko's 365-day limit")
+            ohlcv = await fetch_from_coingecko(symbol, adjusted_since, limit)
             if ohlcv:
                 logger_main.info(f"Fetched {len(ohlcv)} OHLCV data points for {symbol} from CoinGecko")
             else:
@@ -57,36 +70,49 @@ async def fetch_historical_data(exchange_id, user_id, symbol, since, testnet=Fal
         return None
 
 async def fetch_from_coingecko(symbol, since, limit):
-    """Fetches historical OHLCV data from CoinGecko."""
+    """Fetches historical OHLCV data from CoinGecko using market chart data."""
     try:
         cg = CoinGeckoAPI()
-        # Convert symbol to CoinGecko ID (e.g., BTCUSDT -> bitcoin)
-        coin_id = symbol_to_coingecko_id(symbol)
+        # Convert symbol to CoinGecko ID
+        coin_id = await symbol_to_coingecko_id(symbol)
         if not coin_id:
             logger_main.warning(f"Could not map {symbol} to CoinGecko ID")
             return None
 
-        # CoinGecko API expects days for historical data
-        days = (int(time.time()) - since) // (24 * 60 * 60)  # Convert seconds to days
-        if days < 1:
-            days = 1  # Minimum 1 day
+        # Ensure 'since' is not older than CoinGecko's limit
+        max_since = int(time.time()) - COINGECKO_MAX_DAYS * 24 * 60 * 60
+        adjusted_since = max(since // 1000, max_since)  # Convert milliseconds to seconds
+        to_timestamp = int(time.time())
 
-        # Fetch historical OHLCV data from CoinGecko (daily data)
-        data = cg.get_coin_ohlc_by_id(id=coin_id, vs_currency='usd', days=days)
-        if not data:
+        # Optimize range to get hourly data (up to 90 days)
+        optimal_since = int(time.time()) - COINGECKO_OPTIMAL_DAYS * 24 * 60 * 60
+        adjusted_since = max(adjusted_since, optimal_since)
+        if to_timestamp - adjusted_since < 3600:  # Ensure at least 1 hour range
+            adjusted_since = to_timestamp - 3600
+
+        logger_main.debug(f"Fetching CoinGecko data for {symbol} from {adjusted_since} to {to_timestamp}")
+
+        # Fetch historical market data from CoinGecko (hourly data for ranges < 90 days)
+        data = cg.get_coin_market_chart_range_by_id(
+            id=coin_id,
+            vs_currency='usd',
+            from_timestamp=adjusted_since,
+            to_timestamp=to_timestamp
+        )
+        if not data or 'prices' not in data or not data['prices']:
             logger_main.warning(f"No historical data available for {symbol} on CoinGecko")
             return None
 
-        # Convert daily data to hourly (approximate)
+        # Convert market chart data to OHLCV format
         ohlcv = []
-        for entry in data[:limit]:  # Limit the number of entries
-            timestamp = entry[0]  # Unix timestamp in milliseconds
-            open_price = entry[1]
-            high_price = entry[2]
-            low_price = entry[3]
-            close_price = entry[4]
-            # Approximate volume (CoinGecko OHLC doesn't provide volume, so we set to 0)
-            volume = 0
+        prices = data['prices']  # List of [timestamp, price]
+        for i in range(min(len(prices) - 1, limit)):  # Limit the number of entries
+            timestamp = prices[i][0]  # Unix timestamp in milliseconds
+            open_price = prices[i][1]
+            close_price = prices[i + 1][1]
+            high_price = max(open_price, close_price)
+            low_price = min(open_price, close_price)
+            volume = data['total_volumes'][i][1] if 'total_volumes' in data else 0
             ohlcv.append([timestamp, open_price, high_price, low_price, close_price, volume])
 
         return ohlcv
@@ -95,16 +121,59 @@ async def fetch_from_coingecko(symbol, since, limit):
         logger_main.error(f"Error fetching historical data from CoinGecko for {symbol}: {e}")
         return None
 
-def symbol_to_coingecko_id(symbol):
-    """Maps a symbol to a CoinGecko ID."""
-    # Simple mapping for common symbols (can be expanded)
-    symbol = symbol.replace("USDT", "").replace("USDC", "")
-    mapping = {
-        "BTC": "bitcoin",
-        "ETH": "ethereum",
-        "BNB": "binancecoin",
-        "XRP": "ripple",
-        "ADA": "cardano",
-        # Add more mappings as needed
-    }
-    return mapping.get(symbol.upper(), symbol.lower())
+async def symbol_to_coingecko_id(symbol):
+    """Maps a symbol to a CoinGecko ID using a cached coins list."""
+    try:
+        cg = CoinGeckoAPI()
+        # Load or fetch the CoinGecko coins list
+        coins_list = await get_coingecko_coins_list(cg)
+
+        # Remove USDT/USDC suffix and convert to lowercase
+        base_symbol = symbol.replace("USDT", "").replace("USDC", "").lower()
+
+        # Search for the symbol in the coins list
+        for coin in coins_list:
+            if coin['symbol'].lower() == base_symbol:
+                logger_main.debug(f"Mapped {symbol} to CoinGecko ID: {coin['id']}")
+                return coin['id']
+
+        logger_main.warning(f"No CoinGecko ID found for {symbol}")
+        return None
+
+    except Exception as e:
+        logger_main.error(f"Error mapping symbol {symbol} to CoinGecko ID: {e}")
+        return None
+
+async def get_coingecko_coins_list(cg):
+    """Fetches or loads the cached CoinGecko coins list."""
+    try:
+        # Check if cache file exists and is fresh
+        if os.path.exists(COINGECKO_CACHE_FILE):
+            with open(COINGECKO_CACHE_FILE, 'r') as f:
+                cache_data = json.load(f)
+            cache_time = cache_data.get('timestamp', 0)
+            if time.time() - cache_time < COINGECKO_CACHE_DURATION:
+                logger_main.debug("Using cached CoinGecko coins list")
+                return cache_data['coins']
+
+        # Fetch the coins list from CoinGecko
+        logger_main.info("Fetching CoinGecko coins list")
+        coins_list = cg.get_coins_list()
+        if not coins_list:
+            logger_main.error("Failed to fetch CoinGecko coins list")
+            return []
+
+        # Cache the coins list
+        cache_data = {
+            'timestamp': int(time.time()),
+            'coins': coins_list
+        }
+        with open(COINGECKO_CACHE_FILE, 'w') as f:
+            json.dump(cache_data, f)
+        logger_main.info(f"Cached {len(coins_list)} coins from CoinGecko")
+
+        return coins_list
+
+    except Exception as e:
+        logger_main.error(f"Error fetching CoinGecko coins list: {e}")
+        return []
