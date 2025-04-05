@@ -10,6 +10,7 @@ from exchange_pool import ExchangePool
 from market_state_analyzer import analyze_market_state, calculate_dynamic_thresholds
 from symbol_filter import filter_symbols
 from trading_manager import run_trading_for_user
+from cache_manager import load_symbol_cache
 import traceback
 
 async def main():
@@ -65,6 +66,17 @@ async def process_users(users, exchange_id, model_path, backtest_days):
                 json.dump(symbols, f)
             logger_main.info(f"Saved {len(symbols)} selected pairs to {selected_pairs_file}: {symbols[:5]}...")
 
+        # Load cached symbol lists to filter symbols immediately
+        problematic_cache = await load_symbol_cache("problematic_symbols.json")
+        working_cache = await load_symbol_cache("working_symbols.json")
+        problematic_symbols = problematic_cache['symbols']
+        working_symbols = working_cache['symbols']
+        logger_main.debug(f"Loaded {len(problematic_symbols)} problematic symbols and {len(working_symbols)} working symbols")
+
+        # Filter symbols to only include those in working_symbols
+        symbols = [symbol for symbol in symbols if symbol in working_symbols]
+        logger_main.info(f"Filtered symbols to {len(symbols)} working symbols: {symbols[:5]}...")
+
         # Check if backtest results file exists
         backtest_results_file = "backtest_results.json"
         logger_main.info(f"Checking for backtest results file: {backtest_results_file}")
@@ -103,8 +115,12 @@ async def process_users(users, exchange_id, model_path, backtest_days):
             return
 
         # Analyze market state and calculate dynamic thresholds
+        logger_main.info("Analyzing market state")
         market_state = await analyze_market_state(exchange_pool, exchange_id)
+        logger_main.info(f"Market state determined: {market_state}")
+        logger_main.info("Calculating dynamic thresholds")
         dynamic_thresholds = await calculate_dynamic_thresholds(exchange_pool, exchange_id, backtest_results, market_state)
+        logger_main.info(f"Dynamic thresholds calculated: {dynamic_thresholds}")
 
         # Process each user with the backtest results
         logger_main.info("Processing users with backtest results")
