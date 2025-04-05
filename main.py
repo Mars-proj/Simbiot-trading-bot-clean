@@ -81,19 +81,18 @@ async def main():
         ]
         model_path = "models/trading_model.pth"  # Example model path
         backtest_days = 7  # Reduced number of days for backtest (was 30)
-        min_profit_threshold = 0.01  # Reduced threshold (was 0.05)
 
-        logger_main.info(f"Configuration: exchange_id={exchange_id}, users={users}, model_path={model_path}, backtest_days={backtest_days}, min_profit_threshold={min_profit_threshold}")
+        logger_main.info(f"Configuration: exchange_id={exchange_id}, users={users}, model_path={model_path}, backtest_days={backtest_days}")
 
         # Process all users asynchronously
         logger_main.info("Calling process_users")
-        await process_users(users, exchange_id, model_path, backtest_days, min_profit_threshold)
+        await process_users(users, exchange_id, model_path, backtest_days)
         logger_main.info("Finished process_users")
 
     except Exception as e:
         logger_main.error(f"Error in main loop: {e}\n{traceback.format_exc()}")
 
-async def process_users(users, exchange_id, model_path, backtest_days, min_profit_threshold):
+async def process_users(users, exchange_id, model_path, backtest_days):
     """Processes trading for all users asynchronously."""
     exchange_pool = ExchangePool()
     try:
@@ -158,6 +157,9 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
             logger_main.error("Backtest results are empty, cannot proceed with trading")
             return
 
+        # Calculate dynamic thresholds based on all backtest results
+        dynamic_thresholds = await calculate_dynamic_thresholds(exchange_pool, exchange_id, backtest_results)
+
         # Process each user with the backtest results
         logger_main.info("Processing users with backtest results")
         tasks = []
@@ -165,7 +167,7 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
             logger_main.info(f"Starting processing for user {user['user_id']}")
             try:
                 task = asyncio.create_task(run_trading_for_user(
-                    user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results
+                    user, exchange_id, model_path, backtest_days, exchange_pool, symbols, backtest_results, dynamic_thresholds
                 ))
                 tasks.append(task)
             except Exception as e:
@@ -187,6 +189,61 @@ async def process_users(users, exchange_id, model_path, backtest_days, min_profi
     finally:
         logger_main.info("Closing all exchange instances in ExchangePool")
         await exchange_pool.close_all()
+
+async def calculate_dynamic_thresholds(exchange_pool, exchange_id, backtest_results):
+    """Calculates dynamic thresholds based on backtest results and market data."""
+    logger_main.info("Calculating dynamic thresholds")
+    exchange = await exchange_pool.get_exchange(exchange_id, "user1", testnet=False)
+    if not exchange:
+        logger_main.error("Failed to get exchange instance for dynamic threshold calculation")
+        return {"min_profit": 0.005, "min_volatility": 0.1, "min_sentiment": 0.5, "volume_spike_threshold": 1.5}
+
+    # Sample a subset of symbols for threshold calculation
+    sampled_symbols = list(backtest_results.keys())[:100]  # Use first 100 symbols
+    ohlcv_data = {}
+    for symbol in sampled_symbols:
+        since = int(time.time()) - 90 * 24 * 60 * 60  # 90 days ago
+        from historical_data_fetcher import fetch_historical_data
+        ohlcv = await fetch_historical_data(exchange_id, "user1", symbol, since, testnet=False, exchange=exchange, limit=2000)
+        if ohlcv:
+            ohlcv_data[symbol] = ohlcv
+            logger_main.info(f"Successfully fetched {len(ohlcv)} OHLCV data points for {symbol}")
+
+    # Initialize analyzers
+    market_analyzer = MarketAnalyzer()
+    market_rentgen = MarketRentgenCore()
+    profits = []
+    volatilities = []
+    sentiments = []
+
+    for symbol, ohlcv in ohlcv_data.items():
+        if ohlcv:
+            market_analyzer.load_data(ohlcv)
+            market_rentgen.load_data(ohlcv)
+            result = backtest_results.get(symbol)
+            if result and isinstance(result, dict) and 'profit' in result:
+                profits.append(result['profit'])
+            volatility = market_analyzer.calculate_volatility(window=14)
+            if volatility is not None:
+                volatilities.append(volatility)
+            sentiment = market_rentgen.calculate_market_sentiment()
+            if sentiment is not None:
+                sentiments.append(sentiment)
+
+    # Calculate dynamic thresholds
+    min_profit = pd.Series(profits).quantile(0.25) if profits else 0.005  # 25th percentile
+    min_volatility = pd.Series(volatilities).quantile(0.25) if volatilities else 0.1  # 25th percentile
+    min_sentiment = pd.Series(sentiments).mean() if sentiments else 0.5  # Mean sentiment
+    volume_spike_threshold = pd.Series(volatilities).quantile(0.75) / pd.Series(volatilities).mean() if volatilities and pd.Series(volatilities).mean() > 0 else 1.5  # 75th percentile relative to mean
+
+    logger_main.info(f"Dynamic thresholds calculated: min_profit={min_profit:.4f}, min_volatility={min_volatility:.4f}, min_sentiment={min_sentiment:.4f}, volume_spike_threshold={volume_spike_threshold:.4f}")
+    await exchange_pool.close_exchange(exchange_id, "user1")
+    return {
+        "min_profit": max(min_profit, 0.001),  # Minimum safety threshold
+        "min_volatility": max(min_volatility, 0.05),
+        "min_sentiment": max(min_sentiment, 0.4),
+        "volume_spike_threshold": max(volume_spike_threshold, 1.2)
+    }
 
 async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
     """Runs backtests for all symbols in parallel and returns results."""
@@ -218,12 +275,13 @@ async def run_backtests(exchange_id, user_id, symbols, backtest_days, testnet):
     logger_main.info(f"Backtest completed for {len(backtest_results)} symbols")
     return backtest_results
 
-async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshold, exchange_pool, exchange_id):
-    """Filters symbols based on backtest results and market analysis."""
+async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exchange_id, dynamic_thresholds):
+    """Filters symbols based on backtest results and dynamic market analysis."""
     valid_symbols = []
-    logger_main.info(f"Starting symbol filtering for {len(symbols)} symbols")
+    logger_main.info(f"Starting symbol filtering for {len(symbols)} symbols with dynamic thresholds")
     # Debug: Log the entire backtest_results to see its structure
     logger_main.debug(f"Backtest results structure: {backtest_results}")
+    logger_main.debug(f"Dynamic thresholds: {dynamic_thresholds}")
 
     # Initialize market analysis tools
     market_analyzer = MarketAnalyzer()
@@ -266,18 +324,19 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
             if not isinstance(profit, (int, float)):
                 logger_main.error(f"Profit for {symbol} is not a number: {profit}, type: {type(profit)}")
                 continue
-            logger_main.debug(f"Backtest profit for {symbol}: {profit:.2%}, threshold: {min_profit_threshold:.2%}")
-            if profit < min_profit_threshold:
-                logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below threshold ({min_profit_threshold:.2%}) for user {user_id}, skipping")
+            logger_main.debug(f"Backtest profit for {symbol}: {profit:.2%}, threshold: {dynamic_thresholds['min_profit']:.2%}")
+            if profit < dynamic_thresholds['min_profit']:
+                logger_main.warning(f"Backtest profit for {symbol} ({profit:.2%}) is below dynamic threshold ({dynamic_thresholds['min_profit']:.2%}), skipping")
                 continue
 
             # Fetch historical data for market analysis
-            since = int(time.time()) - 30 * 24 * 60 * 60  # 30 days ago
+            since = int(time.time()) - 90 * 24 * 60 * 60  # 90 days ago
             from historical_data_fetcher import fetch_historical_data
-            ohlcv = await fetch_historical_data(exchange_id, user_id, symbol, since, testnet=False, exchange=exchange)
+            ohlcv = await fetch_historical_data(exchange_id, user_id, symbol, since, testnet=False, exchange=exchange, limit=2000)
             if not ohlcv:
                 logger_main.warning(f"No historical data for {symbol}, skipping market analysis")
                 continue
+            logger_main.info(f"Successfully fetched {len(ohlcv)} OHLCV data points for {symbol}")
 
             # Load data into market analysis tools
             market_analyzer.load_data(ohlcv)
@@ -288,8 +347,8 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
             if volatility is None:
                 logger_main.warning(f"Failed to calculate volatility for {symbol}, skipping")
                 continue
-            if volatility < 0.2:  # Example threshold: skip symbols with low volatility
-                logger_main.warning(f"Volatility for {symbol} ({volatility:.2%}) is below threshold (0.2), skipping")
+            if volatility < dynamic_thresholds['min_volatility']:
+                logger_main.warning(f"Volatility for {symbol} ({volatility:.2%}) is below dynamic threshold ({dynamic_thresholds['min_volatility']:.2%}), skipping")
                 continue
 
             # Detect trend
@@ -297,17 +356,18 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
             if trend is None:
                 logger_main.warning(f"Failed to detect trend for {symbol}, skipping")
                 continue
-            if trend != 'up':  # Example: only trade symbols in an uptrend
-                logger_main.warning(f"Trend for {symbol} is {trend}, not 'up', skipping")
-                continue
+            # Allow all trends for flexibility (dynamic adjustment could be added later)
 
             # Analyze volume spikes
-            volume_spike = market_rentgen.analyze_volume_spikes(threshold=2.0)
+            volume_spike = market_rentgen.analyze_volume_spikes(threshold=dynamic_thresholds['volume_spike_threshold'])
             if volume_spike is None:
                 logger_main.warning(f"Failed to analyze volume spikes for {symbol}, skipping")
                 continue
-            if not volume_spike:  # Example: only trade symbols with recent volume spikes
-                logger_main.warning(f"No recent volume spike for {symbol}, skipping")
+            # Optional: allow symbols without spikes if data is scarce
+            if len(ohlcv) < 100 and not volume_spike:
+                logger_main.debug(f"Insufficient data for {symbol}, allowing without volume spike")
+            elif not volume_spike:
+                logger_main.warning(f"No recent volume spike for {symbol} above threshold {dynamic_thresholds['volume_spike_threshold']}, skipping")
                 continue
 
             # Calculate market sentiment
@@ -315,8 +375,8 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
             if sentiment is None:
                 logger_main.warning(f"Failed to calculate market sentiment for {symbol}, skipping")
                 continue
-            if sentiment < 0.6:  # Example: only trade symbols with positive sentiment (>60% positive days)
-                logger_main.warning(f"Market sentiment for {symbol} ({sentiment:.2%}) is below threshold (0.6), skipping")
+            if sentiment < dynamic_thresholds['min_sentiment']:
+                logger_main.warning(f"Market sentiment for {symbol} ({sentiment:.2%}) is below dynamic threshold ({dynamic_thresholds['min_sentiment']:.2%}), skipping")
                 continue
 
             valid_symbols.append(symbol)
@@ -329,9 +389,17 @@ async def filter_symbols(symbols, backtest_results, user_id, min_profit_threshol
         finally:
             logger_main.debug(f"Finished processing symbol {idx}/{len(symbols)}: {symbol}")
     logger_main.info(f"Completed symbol filtering, found {len(valid_symbols)} valid symbols")
+    # Ensure minimum number of symbols (e.g., 10) for trading
+    if len(valid_symbols) < 10 and valid_symbols:
+        logger_main.warning(f"Only {len(valid_symbols)} symbols found, including top performers to reach minimum of 10")
+        valid_symbols = valid_symbols[:10]  # Take top 10 if available
+    elif not valid_symbols:
+        logger_main.warning("No symbols passed filters, using top 10 by profit from backtest")
+        valid_symbols = sorted([(s, backtest_results[s]['profit']) for s in backtest_results if backtest_results[s] and 'profit' in backtest_results[s]], key=lambda x: x[1], reverse=True)[:10]
+        valid_symbols = [s for s, _ in valid_symbols]
     return valid_symbols
 
-async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min_profit_threshold, exchange_pool, symbols, backtest_results):
+async def run_trading_for_user(user, exchange_id, model_path, backtest_days, exchange_pool, symbols, backtest_results, dynamic_thresholds):
     """Runs trading for a single user using pre-computed backtest results."""
     logger_main.info(f"Entering run_trading_for_user for user {user['user_id']} on {exchange_id}")
     try:
@@ -358,14 +426,14 @@ async def run_trading_for_user(user, exchange_id, model_path, backtest_days, min
         # Filter symbols based on backtest results and market analysis
         logger_main.info(f"Calling filter_symbols for user {user_id}")
         try:
-            valid_symbols = await filter_symbols(symbols, backtest_results, user_id, min_profit_threshold, exchange_pool, exchange_id)
+            valid_symbols = await filter_symbols(symbols, backtest_results, user_id, exchange_pool, exchange_id, dynamic_thresholds)
         except Exception as e:
             logger_main.error(f"Error in filter_symbols for user {user_id}: {e}\n{traceback.format_exc()}")
             raise  # Перебрасываем исключение, чтобы увидеть полный стек вызовов
         logger_main.info(f"filter_symbols returned {len(valid_symbols)} valid symbols for user {user_id}")
 
         if not valid_symbols:
-            logger_main.error(f"No symbols passed backtest for user {user_id}, stopping")
+            logger_main.error(f"No symbols passed filters for user {user_id}, stopping")
             return
 
         logger_main.info(f"Starting trading with {len(valid_symbols)} symbols for user {user_id}: {valid_symbols[:5]}...")
