@@ -10,6 +10,7 @@ from cache_manager import load_symbol_cache, save_symbol_cache
 async def categorize_symbols(symbols, backtest_results, market_state, ohlcv_data):
     """Categorizes symbols based on market state and their characteristics."""
     logger_main.info(f"Categorizing {len(symbols)} symbols based on market state: {market_state}")
+    logger_main.debug(f"OHLCV data available for symbols: {list(ohlcv_data.keys())}")
     categories = {
         "high_volatility": [],
         "low_volatility": [],
@@ -29,6 +30,7 @@ async def categorize_symbols(symbols, backtest_results, market_state, ohlcv_data
                 logger_main.warning(f"No OHLCV data for {symbol}, skipping categorization")
                 continue
 
+            logger_main.debug(f"Processing {symbol} with {len(ohlcv)} OHLCV data points")
             market_analyzer.load_data(ohlcv)
             market_rentgen.load_data(ohlcv)
 
@@ -64,6 +66,7 @@ async def categorize_symbols(symbols, backtest_results, market_state, ohlcv_data
             logger_main.error(f"Error categorizing symbol {symbol}: {e}")
             continue
 
+    logger_main.debug(f"Categories after processing: {categories}")
     # Select symbols based on market state
     selected_symbols = []
     if "high_volatility" in market_state:
@@ -104,6 +107,11 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
     working_cache = await load_symbol_cache("working_symbols.json")
     
     # Validate cache
+    current_time = time.time()
+    logger_main.debug(f"Current time: {current_time}")
+    logger_main.debug(f"Problematic cache timestamp: {problematic_cache['timestamp']}")
+    logger_main.debug(f"Working cache timestamp: {working_cache['timestamp']}")
+    
     if problematic_cache['timestamp'] == 0 or working_cache['timestamp'] == 0:
         logger_main.warning("Cache is invalid or empty, forcing reprocessing of all symbols")
         cache_is_stale = True
@@ -111,8 +119,8 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
         problematic_symbols = problematic_cache['symbols']
         working_symbols = working_cache['symbols']
         logger_main.debug(f"Loaded {len(problematic_symbols)} problematic symbols and {len(working_symbols)} working symbols")
-        current_time = time.time()
         cache_is_stale = (current_time - problematic_cache['timestamp'] > 24 * 60 * 60) or (current_time - working_cache['timestamp'] > 24 * 60 * 60)
+        logger_main.debug(f"Cache is stale: {cache_is_stale} (time difference problematic: {current_time - problematic_cache['timestamp']}, working: {current_time - working_cache['timestamp']})")
 
     ohlcv_data = {}
 
@@ -146,14 +154,14 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
         since = int(current_time) - 90 * 24 * 60 * 60  # 90 days ago
         # Parallel fetching of historical data for all working symbols
         tasks = []
-        for symbol in working_symbols:
+        for symbol in symbols:
             logger_main.debug(f"Queuing fetch for {symbol}")
             tasks.append(asyncio.create_task(fetch_historical_data(exchange_id, user_id, symbol, since, testnet=False, exchange=exchange, limit=2000)))
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        for symbol, result in zip(working_symbols.copy(), results):  # Use copy to avoid RuntimeError
+        for symbol, result in zip(symbols, results):
             if isinstance(result, Exception) or result is None:
                 problematic_symbols.add(symbol)
-                working_symbols.discard(symbol)  # Use discard to avoid KeyError
+                working_symbols.discard(symbol)
                 logger_main.warning(f"Moved {symbol} from working to problematic symbols: {result}")
             else:
                 ohlcv_data[symbol] = result
@@ -166,8 +174,13 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
     # Get active symbols from the exchange
     try:
         markets = await exchange.fetch_markets()
-        active_symbols = {market['symbol'] for market in markets if market.get('active', True)}
-        logger_main.info(f"Fetched {len(active_symbols)} active symbols from exchange")
+        logger_main.debug(f"Fetched markets: {markets}")
+        if not markets:
+            logger_main.warning("No markets returned from exchange, using working symbols as fallback")
+            active_symbols = set(symbols)
+        else:
+            active_symbols = {market['symbol'] for market in markets if market.get('active', True)}
+            logger_main.info(f"Fetched {len(active_symbols)} active symbols from exchange: {list(active_symbols)[:5]}...")
     except Exception as e:
         logger_main.error(f"Failed to fetch markets: {e}")
         active_symbols = set(symbols)
