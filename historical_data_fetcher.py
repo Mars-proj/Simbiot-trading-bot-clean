@@ -88,24 +88,33 @@ async def fetch_from_coingecko(symbol, since, limit):
             if response.status != 200:
                 logger_main.warning(f"Failed to fetch historical data for {symbol} from CoinGecko: {response.status}")
                 return None
-            data = await response.json()
-            prices = data.get('prices', [])
-            if not prices:
-                logger_main.warning(f"No historical data available for {symbol} on CoinGecko")
-                logger_main.warning(f"No historical data available for {symbol} after multiple attempts, adding to problematic symbols")
+            try:
+                data = await response.json()
+                if not isinstance(data, dict):
+                    logger_main.warning(f"Unexpected response format for {symbol} from CoinGecko: {data}")
+                    return None
+                prices = data.get('prices', [])
+                if not prices:
+                    logger_main.warning(f"No historical data available for {symbol} on CoinGecko")
+                    return None
+
+                # Convert to OHLCV format
+                ohlcv = []
+                for price in prices[:limit]:
+                    if not isinstance(price, list) or len(price) < 2:
+                        logger_main.warning(f"Invalid price data for {symbol}: {price}")
+                        continue
+                    timestamp = price[0] // 1000  # Convert milliseconds to seconds
+                    ohlcv.append([timestamp, price[1], price[1], price[1], price[1], 0])
+                logger_main.info(f"Fetched {len(ohlcv)} OHLCV data points for {symbol} from CoinGecko")
+
+                # Cache the result
+                HISTORICAL_DATA_CACHE[cache_key] = ohlcv
+                with open(HISTORICAL_DATA_CACHE_FILE, 'w') as f:
+                    json.dump(HISTORICAL_DATA_CACHE, f)
+                logger_main.debug(f"Cached historical data for {cache_key}")
+
+                return ohlcv
+            except Exception as e:
+                logger_main.warning(f"Error processing CoinGecko response for {symbol}: {e}")
                 return None
-
-            # Convert to OHLCV format
-            ohlcv = []
-            for price in prices[:limit]:
-                timestamp = price[0] // 1000  # Convert milliseconds to seconds
-                ohlcv.append([timestamp, price[1], price[1], price[1], price[1], 0])
-            logger_main.info(f"Fetched {len(ohlcv)} OHLCV data points for {symbol} from CoinGecko")
-
-            # Cache the result
-            HISTORICAL_DATA_CACHE[cache_key] = ohlcv
-            with open(HISTORICAL_DATA_CACHE_FILE, 'w') as f:
-                json.dump(HISTORICAL_DATA_CACHE, f)
-            logger_main.debug(f"Cached historical data for {cache_key}")
-
-            return ohlcv
