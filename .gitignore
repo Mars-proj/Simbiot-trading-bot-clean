@@ -1,4 +1,19 @@
-# .gitignore
+# Лог-файлы
+trading_bot.log
+trading_bot.log.*
+
+# Кэш-файлы
+historical_data_cache.json
+coingecko_coins.json
+problematic_symbols.json
+working_symbols.json
+
+# Временные файлы
+*.save
+*.save.*
+
+# Виртуальное окружение (если есть)
+venv/# .gitignore
 .env
 *.log
 *.log.bak

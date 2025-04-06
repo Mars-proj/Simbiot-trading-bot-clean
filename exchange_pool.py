@@ -1,50 +1,59 @@
-# exchange_pool.py
+import asyncio
 import ccxt.async_support as ccxt
 from logging_setup import logger_main
-from config_keys import API_KEYS  # Исправляем импорт на API_KEYS
+from bot_user_data import BotUserData
 
 class ExchangePool:
+    """Manages a pool of exchange instances for multiple users."""
     def __init__(self):
-        logger_main.info("Initialized ExchangePool")
         self.exchanges = {}
 
     async def get_exchange(self, exchange_id, user_id, testnet=False):
-        logger_main.info(f"Getting exchange for {exchange_id}:{user_id} (testnet: {testnet})")
+        """Gets or creates an exchange instance for the user."""
         key = f"{exchange_id}:{user_id}"
         if key in self.exchanges:
+            logger_main.debug(f"Returning existing exchange instance for {key}")
             return self.exchanges[key]
 
-        logger_main.info(f"Creating new exchange instance for {exchange_id}:{user_id}")
-        # Validate API keys
-        if user_id not in API_KEYS or exchange_id not in API_KEYS[user_id]:
-            logger_main.error(f"No API keys found for user {user_id} on {exchange_id}")
+        try:
+            user_data = BotUserData(user_id, testnet)
+            api_keys = user_data.get_api_keys(exchange_id)
+            if not api_keys:
+                logger_main.error(f"No API keys for {exchange_id}:{user_id}")
+                return None
+
+            exchange_class = getattr(ccxt, exchange_id)
+            exchange = exchange_class({
+                'apiKey': api_keys['api_key'],
+                'secret': api_keys['api_secret'],
+                'enableRateLimit': True,
+            })
+            if testnet:
+                exchange.set_sandbox_mode(True)
+
+            self.exchanges[key] = exchange
+            logger_main.info(f"Created new exchange instance for {key}")
+            return exchange
+
+        except Exception as e:
+            logger_main.error(f"Error creating exchange instance for {key}: {e}")
             return None
 
-        api_key = API_KEYS[user_id][exchange_id]["api_key"]
-        api_secret = API_KEYS[user_id][exchange_id]["api_secret"]
-        logger_main.info("API keys validated successfully")
-
-        # Create exchange instance
-        exchange_class = getattr(ccxt, exchange_id)
-        exchange = exchange_class({
-            'apiKey': api_key,
-            'secret': api_secret,
-            'enableRateLimit': True,
-        })
-
-        if testnet:
-            exchange.set_sandbox_mode(True)
-
-        logger_main.info(f"Created exchange instance for {exchange_id} (user: {user_id}, testnet: {testnet}) with rateLimit: {exchange.rateLimit}")
-        self.exchanges[key] = exchange
-        return exchange
-
-    async def close_all(self):
-        logger_main.info("Closing all exchange instances in ExchangePool")
-        for key, exchange in self.exchanges.items():
+    async def close_exchange(self, exchange_id, user_id):
+        """Closes an exchange instance."""
+        key = f"{exchange_id}:{user_id}"
+        if key in self.exchanges:
             try:
-                await exchange.close()  # Закрываем соединение
+                await self.exchanges[key].close()
                 logger_main.info(f"Closed exchange instance for {key}")
             except Exception as e:
                 logger_main.error(f"Error closing exchange instance for {key}: {e}")
-        self.exchanges.clear()
+            finally:
+                del self.exchanges[key]
+
+    async def close_all(self):
+        """Closes all exchange instances."""
+        tasks = []
+        for key in list(self.exchanges.keys()):
+            tasks.append(self.close_exchange(*key.split(':')))
+        await asyncio.gather(*tasks)
