@@ -3,12 +3,14 @@ from logging_setup import logger_main
 async def start_trading_all(user, exchange_id, symbols, exchange):
     """Starts trading for a user on the specified exchange with the given symbols."""
     logger_main.info(f"Starting trading for user {user['user_id']} on {exchange_id} with {len(symbols)} symbols")
-    logger_main.debug(f"Exchange instance: {exchange}")
+    logger_main.debug(f"Exchange instance received: {exchange}")
     
     if exchange is None:
         logger_main.error("Exchange instance is None, cannot execute trades")
         return
 
+    logger_main.debug(f"Exchange methods available: {dir(exchange)}")
+    
     for symbol in symbols:
         try:
             logger_main.info(f"Trading {symbol} for user {user['user_id']} on {exchange_id}")
