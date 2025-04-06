@@ -152,20 +152,27 @@ async def filter_symbols(symbols, backtest_results, user_id, exchange_pool, exch
     else:
         logger_main.info(f"Using cached symbol lists with {len(working_symbols)} working symbols, fetching historical data")
         since = int(current_time) - 90 * 24 * 60 * 60  # 90 days ago
-        # Parallel fetching of historical data for all working symbols
-        tasks = []
-        for symbol in symbols:
-            logger_main.debug(f"Queuing fetch for {symbol}")
-            tasks.append(asyncio.create_task(fetch_historical_data(exchange_id, user_id, symbol, since, testnet=False, exchange=exchange, limit=2000)))
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        for symbol, result in zip(symbols, results):
-            if isinstance(result, Exception) or result is None:
-                problematic_symbols.add(symbol)
-                working_symbols.discard(symbol)
-                logger_main.warning(f"Moved {symbol} from working to problematic symbols: {result}")
-            else:
-                ohlcv_data[symbol] = result
-                logger_main.info(f"Fetched {len(result)} OHLCV data points for {symbol}")
+        # Parallel fetching of historical data for all working symbols in batches
+        batch_size = 10  # Process 10 symbols at a time to stay within CoinGecko rate limits
+        for i in range(0, len(symbols), batch_size):
+            batch = symbols[i:i + batch_size]
+            logger_main.info(f"Fetching historical data for batch {i//batch_size + 1} of {len(symbols)//batch_size + 1}")
+            tasks = []
+            for symbol in batch:
+                logger_main.debug(f"Queuing fetch for {symbol}")
+                tasks.append(asyncio.create_task(fetch_historical_data(exchange_id, user_id, symbol, since, testnet=False, exchange=exchange, limit=2000)))
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for symbol, result in zip(batch, results):
+                if isinstance(result, Exception) or result is None:
+                    problematic_symbols.add(symbol)
+                    working_symbols.discard(symbol)
+                    logger_main.warning(f"Moved {symbol} from working to problematic symbols: {result}")
+                else:
+                    ohlcv_data[symbol] = result
+                    logger_main.info(f"Fetched {len(result)} OHLCV data points for {symbol}")
+            
+            # Add a delay to respect CoinGecko rate limits (30 requests per minute)
+            await asyncio.sleep(20)  # Sleep for 20 seconds to ensure we don't exceed 30 requests per minute
 
         # Save updated caches after fetching new data
         await save_symbol_cache("problematic_symbols.json", {'timestamp': int(current_time), 'symbols': list(problematic_symbols)})
