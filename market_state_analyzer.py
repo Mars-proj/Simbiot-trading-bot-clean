@@ -49,6 +49,7 @@ async def analyze_market_state(exchange, timeframe='1h'):
         enabled_symbols = 0
         active_symbols = 0
         quote_values = set()
+        market_types = set()
 
         # Фильтруем активные символы
         total_change = 0.0
@@ -56,7 +57,9 @@ async def analyze_market_state(exchange, timeframe='1h'):
         for market in markets:
             symbol = market['symbol']
             quote = market.get('quote', '')
+            market_type = market.get('type', 'unknown')
             quote_values.add(quote)
+            market_types.add(market_type)
             # Считаем статистику
             if quote.upper() == 'USDT':
                 usdt_symbols += 1
@@ -66,8 +69,8 @@ async def analyze_market_state(exchange, timeframe='1h'):
                 active_symbols += 1
 
             # Проверяем, активен ли символ
-            is_active = quote.upper() == 'USDT'  # Временно считаем символ активным, если quote == "USDT"
-            logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, is_active={is_active}")
+            is_active = quote.upper() == 'USDT'
+            logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, type={market_type}, is_active={is_active}")
             if is_active:
                 new_available_symbols.append(symbol)
                 # Используем данные из fetch_markets для анализа
@@ -87,6 +90,7 @@ async def analyze_market_state(exchange, timeframe='1h'):
 
         logger.info(f"Statistics: USDT symbols={usdt_symbols}, enabled symbols={enabled_symbols}, active symbols={active_symbols}")
         logger.info(f"Unique quote values: {list(quote_values)}")
+        logger.info(f"Unique market types: {list(market_types)}")
 
         # Обновляем кэш символов
         await cache_symbols(new_available_symbols, new_problematic_symbols)

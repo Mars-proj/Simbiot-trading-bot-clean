@@ -19,8 +19,11 @@ class ExchangePool:
             'enableRateLimit': True,
             'timeout': 30000,
             'rateLimit': 1000,
+            'options': {
+                'defaultType': 'spot',  # Указываем, что нам нужен спотовый рынок
+            }
         })
-        logger.info(f"Exchange initialized for user {self.user}")
+        logger.info(f"Exchange initialized for user {self.user} with defaultType=spot")
         return self.exchange
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
