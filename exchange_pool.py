@@ -1,3 +1,4 @@
+# exchange_pool.py
 import ccxt.async_support as ccxt
 import logging
 import asyncio
@@ -13,17 +14,54 @@ class ExchangePool:
 
     async def __aenter__(self):
         logger.debug(f"Initializing exchange for user {self.user}")
-        self.exchange = ccxt.mexc({
-            'apiKey': self.api_key,
-            'secret': self.api_secret,
-            'enableRateLimit': True,
-            'timeout': 30000,
-            'rateLimit': 1000,
-            'options': {
-                'defaultType': 'spot',  # Указываем, что нам нужен спотовый рынок
-            }
-        })
-        logger.info(f"Exchange initialized for user {self.user} with defaultType=spot")
+        # Проверяем, есть ли API-ключ и секрет
+        if self.api_key and self.api_secret:
+            self.exchange = ccxt.mexc({
+                'apiKey': self.api_key,
+                'secret': self.api_secret,
+                'enableRateLimit': True,
+                'timeout': 30000,
+                'rateLimit': 1000,
+                'options': {
+                    'defaultType': 'spot',
+                }
+            })
+            logger.info(f"Exchange initialized for user {self.user} with API key, defaultType=spot")
+            # Проверяем доступность API-ключа
+            try:
+                balance = await self.exchange.fetch_balance()
+                logger.info(f"API key is valid for user {self.user}, fetched balance: {balance.get('total', {})}")
+            except Exception as e:
+                logger.error(f"API key validation failed for user {self.user}: {type(e).__name__}: {str(e)}")
+                # Переключаемся на публичный доступ
+                self.exchange = ccxt.mexc({
+                    'enableRateLimit': True,
+                    'timeout': 30000,
+                    'rateLimit': 1000,
+                    'options': {
+                        'defaultType': 'spot',
+                    }
+                })
+                logger.info(f"Fallback to public access for user {self.user}, defaultType=spot")
+        else:
+            self.exchange = ccxt.mexc({
+                'enableRateLimit': True,
+                'timeout': 30000,
+                'rateLimit': 1000,
+                'options': {
+                    'defaultType': 'spot',
+                }
+            })
+            logger.info(f"Exchange initialized for user {self.user} without API key (public access), defaultType=spot")
+
+        # Проверим доступные рынки
+        try:
+            markets = await self.exchange.load_markets()
+            logger.info(f"Loaded {len(markets)} markets for user {self.user}")
+            logger.info(f"First 5 market symbols for user {self.user}: {list(markets.keys())[:5]}")
+        except Exception as e:
+            logger.error(f"Failed to load markets for user {self.user}: {type(e).__name__}: {str(e)}")
+
         return self.exchange
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -32,4 +70,4 @@ class ExchangePool:
                 await self.exchange.close()
                 logger.info(f"Closed exchange instance for mexc:user {self.user}")
             except Exception as e:
-                logger.error(f"Failed to close exchange for user {self.user}: {e}")
+                logger.error(f"Failed to close exchange for user {self.user}: {type(e).__name__}: {str(e)}")
