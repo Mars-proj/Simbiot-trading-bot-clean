@@ -1,89 +1,36 @@
-import asyncio
-import json
-import os
-import time
-from logging_setup import logger_main
+import logging
 from exchange_pool import ExchangePool
-from market_state_analyzer import analyze_market_state, calculate_dynamic_thresholds
 from symbol_filter import filter_symbols
-from trading_manager import run_trading_for_user
+from start_trading_all import start_trading_all
 
-async def process_user(user, exchange_id, exchange_pool, symbols, backtest_results, dynamic_thresholds, market_state, semaphore):
-    """Processes a single user with rate limiting."""
-    async with semaphore:
-        logger_main.info(f"Processing user {user['user_id']}")
-        try:
-            valid_symbols = await run_trading_for_user(
-                user, exchange_id, None, 90, exchange_pool, symbols, backtest_results, dynamic_thresholds, market_state
-            )
-            logger_main.info(f"Completed processing for user {user['user_id']} with {len(valid_symbols)} valid symbols")
-        except Exception as e:
-            logger_main.error(f"Error processing user {user['user_id']}: {e}")
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s',
+    handlers=[
+        logging.FileHandler('trading_bot.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger('main')
 
 async def main():
-    logger_main.info("Starting process_users")
-    
-    # Load selected pairs
-    logger_main.info("Checking for selected pairs file: selected_pairs.json")
-    if not os.path.exists("selected_pairs.json"):
-        logger_main.error("Selected pairs file not found")
-        return
-    logger_main.info("Selected pairs file exists, loading symbols")
-    with open("selected_pairs.json", "r") as f:
-        symbols = json.load(f)
-    logger_main.info(f"Loaded {len(symbols)} selected pairs from selected_pairs.json: {symbols[:5]}...")
+    users = {
+        'user1': {'api_key': 'your_api_key_1', 'api_secret': 'your_api_secret_1'},
+        'user2': {'api_key': 'your_api_key_2', 'api_secret': 'your_api_secret_2'},
+        'user3': {'api_key': 'your_api_key_3', 'api_secret': 'your_api_secret_3'}
+    }
+    since = 1736219256  # Example timestamp
+    limit = 2000
+    timeframe = '1h'
 
-    # Load backtest results
-    logger_main.info("Checking for backtest results file: backtest_results.json")
-    if not os.path.exists("backtest_results.json"):
-        logger_main.error("Backtest results file not found")
-        return
-    logger_main.info("Backtest results file exists, loading results")
-    with open("backtest_results.json", "r") as f:
-        backtest_results = json.load(f)
-    logger_main.info(f"Loaded backtest results for {len(backtest_results)} symbols from backtest_results.json")
-
-    # Initialize exchange pool
-    exchange_pool = ExchangePool()
-
-    # Analyze market state
-    logger_main.info("Analyzing market state")
-    market_state = await analyze_market_state(exchange_pool, "mexc")
-    logger_main.info(f"Market state determined: {market_state}")
-    
-    if market_state == "unknown":
-        logger_main.error("Failed to determine market state, aborting")
-        return
-
-    # Calculate dynamic thresholds
-    logger_main.info("Calculating dynamic thresholds")
-    dynamic_thresholds = await calculate_dynamic_thresholds(exchange_pool, "mexc", backtest_results, market_state)
-
-    # Process users in parallel with rate limiting
-    users = [
-        {"user_id": "user1", "testnet": False},
-        {"user_id": "user2", "testnet": False},
-        {"user_id": "user3", "testnet": False},
-    ]
-
-    # Simulate 1000+ users for scalability testing
-    # Uncomment the following block to test with 1000 users
-    # users = [{"user_id": f"user{i}", "testnet": False} for i in range(1, 1001)]
-
-    # Semaphore to limit concurrent user processing (e.g., 50 users at a time)
-    semaphore = asyncio.Semaphore(50)  # Adjust based on system resources and API limits
-
-    tasks = []
-    for user in users:
-        task = asyncio.create_task(process_user(
-            user, "mexc", exchange_pool, symbols, backtest_results, dynamic_thresholds, market_state, semaphore
-        ))
-        tasks.append(task)
-
-    await asyncio.gather(*tasks, return_exceptions=True)
-
-    # Close exchange pool
-    await exchange_pool.close_all()
+    for user, credentials in users.items():
+        logger.info(f"Processing symbols for user {user}")
+        async with ExchangePool(credentials['api_key'], credentials['api_secret']) as exchange:
+            valid_symbols = await filter_symbols(exchange, exchange.symbols, since, limit, timeframe, user)
+            await start_trading_all(exchange, valid_symbols, user)  # Исправлено: убрали since
+        logger.info(f"Completed processing for user {user} with {len(valid_symbols)} valid symbols")
 
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(main())
