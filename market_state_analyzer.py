@@ -48,14 +48,17 @@ async def analyze_market_state(exchange, timeframe='1h'):
         usdt_symbols = 0
         enabled_symbols = 0
         active_symbols = 0
+        quote_values = set()
 
         # Фильтруем активные символы
         total_change = 0.0
         count = 0
         for market in markets:
             symbol = market['symbol']
+            quote = market.get('quote', '')
+            quote_values.add(quote)
             # Считаем статистику
-            if market.get('quote') == 'USDT':
+            if quote.upper() == 'USDT':
                 usdt_symbols += 1
             if market.get('info', {}).get('state', 'enabled') == 'enabled':
                 enabled_symbols += 1
@@ -63,9 +66,8 @@ async def analyze_market_state(exchange, timeframe='1h'):
                 active_symbols += 1
 
             # Проверяем, активен ли символ
-            # Временно считаем символ активным, если quote == "USDT"
-            is_active = market.get('quote') == 'USDT'
-            logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={market.get('quote')}, is_active={is_active}")
+            is_active = quote.upper() == 'USDT'  # Временно считаем символ активным, если quote == "USDT"
+            logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, is_active={is_active}")
             if is_active:
                 new_available_symbols.append(symbol)
                 # Используем данные из fetch_markets для анализа
@@ -84,6 +86,7 @@ async def analyze_market_state(exchange, timeframe='1h'):
                 logger.warning(f"Symbol {symbol} is inactive, added to problematic symbols")
 
         logger.info(f"Statistics: USDT symbols={usdt_symbols}, enabled symbols={enabled_symbols}, active symbols={active_symbols}")
+        logger.info(f"Unique quote values: {list(quote_values)}")
 
         # Обновляем кэш символов
         await cache_symbols(new_available_symbols, new_problematic_symbols)
