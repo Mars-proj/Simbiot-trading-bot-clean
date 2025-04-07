@@ -33,15 +33,6 @@ async def get_cached_symbols():
     finally:
         await redis_client.close()
 
-async def check_symbol_availability(exchange, symbol):
-    """Проверяет доступность символа, пытаясь получить его тикер."""
-    try:
-        await asyncio.wait_for(exchange.fetch_ticker(symbol), timeout=5)
-        return True
-    except Exception as e:
-        logger.warning(f"Symbol {symbol} is problematic: {type(e).__name__}: {str(e)}")
-        return False
-
 async def filter_symbols(exchange, symbols, since, limit, timeframe, user, market_state):
     logger.info(f"Starting symbol filtering for {len(symbols)} symbols with market state {market_state}")
 
@@ -51,28 +42,33 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
     if available_symbols and problematic_symbols:
         logger.info("Using cached symbols from Redis")
         valid_symbols = [symbol for symbol in symbols if symbol in available_symbols]
-        return valid_symbols
+    else:
+        # Если кэша нет, получаем данные через fetch_markets
+        try:
+            logger.debug("Fetching markets from MEXC API for symbol filtering")
+            markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=30)
+            logger.debug(f"Fetched {len(markets)} markets")
 
-    # Если кэша нет, проверяем символы
-    valid_symbols = []
-    new_problematic_symbols = []
-    tasks = []
+            new_available_symbols = []
+            new_problematic_symbols = []
+            for market in markets:
+                symbol = market['symbol']
+                if market.get('active', False):
+                    new_available_symbols.append(symbol)
+                else:
+                    new_problematic_symbols.append(symbol)
+                    logger.warning(f"Symbol {symbol} is inactive, added to problematic symbols")
 
-    for symbol in symbols:
-        if symbol in problematic_symbols:
-            continue
-        tasks.append(check_symbol_availability(exchange, symbol))
-
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    for symbol, result in zip(symbols, results):
-        if result is True:
-            valid_symbols.append(symbol)
-        else:
-            new_problematic_symbols.append(symbol)
-
-    # Кэшируем результаты
-    await cache_symbols(valid_symbols, new_problematic_symbols)
+            # Обновляем кэш
+            await cache_symbols(new_available_symbols, new_problematic_symbols)
+            valid_symbols = [symbol for symbol in symbols if symbol in new_available_symbols]
+            available_symbols = new_available_symbols
+            problematic_symbols = new_problematic_symbols
+        except Exception as e:
+            logger.error(f"Failed to fetch markets: {type(e).__name__}: {str(e)}")
+            valid_symbols = []
+            available_symbols = []
+            problematic_symbols = symbols  # Считаем все символы проблемными
 
     # Фильтруем символы по историческим данным
     final_valid_symbols = []
@@ -93,16 +89,20 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
         for symbol, result in zip(batch, results):
             if isinstance(result, Exception):
                 logger.warning(f"Moved {symbol} from working to problematic symbols: {result}")
-                new_problematic_symbols.append(symbol)
+                problematic_symbols.append(symbol)
+                if symbol in available_symbols:
+                    available_symbols.remove(symbol)
             elif result and len(result) >= min_data_points:
                 logger.info(f"Fetched {len(result)} OHLCV data points for {symbol}")
                 final_valid_symbols.append(symbol)
             else:
                 logger.warning(f"Insufficient data for {symbol}: {len(result)} OHLCV points")
-                new_problematic_symbols.append(symbol)
+                problematic_symbols.append(symbol)
+                if symbol in available_symbols:
+                    available_symbols.remove(symbol)
 
     # Обновляем кэш с учётом новых проблемных символов
-    await cache_symbols(final_valid_symbols, new_problematic_symbols)
+    await cache_symbols(available_symbols, problematic_symbols)
 
     logger.info(f"Filtered {len(final_valid_symbols)} valid symbols out of {len(symbols)}")
     return final_valid_symbols
