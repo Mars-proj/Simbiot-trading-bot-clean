@@ -1,3 +1,4 @@
+# symbol_filter.py
 import logging
 import asyncio
 import json
@@ -70,16 +71,18 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
                 market_type = market.get('type', 'unknown')
                 quote_values.add(quote)
                 market_types.add(market_type)
+                # Проверяем, что это спотовый рынок
+                is_spot = market_type == 'spot'
                 # Считаем статистику
-                if quote.upper() == 'USDT':
+                if quote.upper().endswith('USDT'):
                     usdt_symbols += 1
-                if market.get('info', {}).get('state', 'enabled') == 'enabled':
+                if market.get('info', {}).get('state', 'enabled') != '0':
                     enabled_symbols += 1
                 if market.get('active', False):
                     active_symbols += 1
 
                 # Проверяем, активен ли символ
-                is_active = quote.upper() == 'USDT'
+                is_active = (is_spot and quote.upper().endswith('USDT') and market.get('active', False))
                 logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, type={market_type}, is_active={is_active}")
                 if is_active:
                     new_available_symbols.append(symbol)

@@ -22,10 +22,9 @@ class ExchangePool:
                 'enableRateLimit': True,
                 'timeout': 30000,
                 'rateLimit': 1000,
-                'options': {
-                    'defaultType': 'spot',
-                }
             })
+            # Указываем defaultType через атрибут
+            self.exchange.options['defaultType'] = 'spot'
             logger.info(f"Exchange initialized for user {self.user} with API key, defaultType=spot")
             # Проверяем доступность API-ключа
             try:
@@ -38,20 +37,16 @@ class ExchangePool:
                     'enableRateLimit': True,
                     'timeout': 30000,
                     'rateLimit': 1000,
-                    'options': {
-                        'defaultType': 'spot',
-                    }
                 })
+                self.exchange.options['defaultType'] = 'spot'
                 logger.info(f"Fallback to public access for user {self.user}, defaultType=spot")
         else:
             self.exchange = ccxt.mexc({
                 'enableRateLimit': True,
                 'timeout': 30000,
                 'rateLimit': 1000,
-                'options': {
-                    'defaultType': 'spot',
-                }
             })
+            self.exchange.options['defaultType'] = 'spot'
             logger.info(f"Exchange initialized for user {self.user} without API key (public access), defaultType=spot")
 
         # Проверим доступные рынки
@@ -59,6 +54,9 @@ class ExchangePool:
             markets = await self.exchange.load_markets()
             logger.info(f"Loaded {len(markets)} markets for user {self.user}")
             logger.info(f"First 5 market symbols for user {self.user}: {list(markets.keys())[:5]}")
+            # Дополнительное логирование типов рынков
+            market_types = set(market['type'] for market in markets.values())
+            logger.info(f"Market types for user {self.user}: {list(market_types)}")
         except Exception as e:
             logger.error(f"Failed to load markets for user {self.user}: {type(e).__name__}: {str(e)}")
 
