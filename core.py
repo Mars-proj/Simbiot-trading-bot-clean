@@ -52,8 +52,8 @@ async def main():
     # Устанавливаем since на 1 месяц назад от текущей даты
     current_timestamp = int(datetime.now().timestamp() * 1000)  # Текущий timestamp в миллисекундах
     since = current_timestamp - (30 * 24 * 60 * 60 * 1000)  # 30 дней назад
-    limit = 1000  # Уменьшаем limit до 1000
-    timeframe = '1h'
+    limit = 1000
+    timeframe = '4h'  # Изменяем таймфрейм на 4h
 
     try:
         logger.debug("Loading users from Redis")
