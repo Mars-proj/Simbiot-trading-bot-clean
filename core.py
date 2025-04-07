@@ -33,6 +33,9 @@ async def main():
                 # Анализируем состояние рынка
                 market_state = await analyze_market_state(exchange, timeframe)
                 logger.info(f"Market state for user {user}: {market_state}")
+                # Если market_state дефолтный, всё равно продолжаем
+                if market_state['trend'] == 'neutral' and market_state['volatility'] == 0.01:
+                    logger.warning(f"Using default market state for user {user} due to analysis failure")
                 valid_symbols = await filter_symbols(exchange, exchange.symbols, since, limit, timeframe, user, market_state)
                 logger.info(f"Filtered symbols for user {user}: {valid_symbols}")
                 await start_trading_all(exchange, valid_symbols, user)

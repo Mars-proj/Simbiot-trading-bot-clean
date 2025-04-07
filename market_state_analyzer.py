@@ -1,7 +1,7 @@
 import logging
 import asyncio
 import aiohttp
-from symbol_filter import get_cached_symbols
+from symbol_filter import get_cached_symbols, cache_symbols
 
 logger = logging.getLogger("main")
 
@@ -31,49 +31,49 @@ async def analyze_market_state(exchange, timeframe='1h'):
     # Получаем кэшированные символы
     available_symbols, problematic_symbols = await get_cached_symbols()
     symbols_to_try = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']  # Список символов для анализа
+    new_problematic_symbols = []
 
-    retry_count = 3
     for symbol in symbols_to_try:
         if symbol in problematic_symbols:
             logger.warning(f"Skipping {symbol} as it is in problematic symbols")
             continue
 
-        for attempt in range(retry_count):
-            try:
-                logger.debug(f"Fetching ticker for {symbol} (attempt {attempt + 1}/{retry_count})")
-                ticker = await asyncio.wait_for(
-                    exchange.fetch_ticker(symbol),
-                    timeout=20
-                )
-                logger.debug(f"Ticker data for {symbol}: {ticker}")
-                price_change = ticker['percentage']  # Процент изменения цены за 24 часа
-                
-                # Простой пример определения тренда
-                trend = 'bullish' if price_change > 0 else 'bearish'
-                
-                # Пример: Оценка волатильности
-                volatility = abs(price_change) / 100
+        try:
+            logger.debug(f"Fetching ticker for {symbol} (attempt 1/1)")
+            ticker = await asyncio.wait_for(
+                exchange.fetch_ticker(symbol),
+                timeout=20
+            )
+            logger.debug(f"Ticker data for {symbol}: {ticker}")
+            price_change = ticker['percentage']  # Процент изменения цены за 24 часа
+            
+            # Простой пример определения тренда
+            trend = 'bullish' if price_change > 0 else 'bearish'
+            
+            # Пример: Оценка волатильности
+            volatility = abs(price_change) / 100
 
-                market_state = {
-                    'trend': trend,
-                    'volatility': volatility,
-                }
-                logger.info(f"Market state analyzed using {symbol}: {market_state}")
-                return market_state
-            except asyncio.TimeoutError as te:
-                logger.error(f"Timeout while fetching ticker for {symbol} on attempt {attempt + 1}/{retry_count}: {te}")
-                if attempt < retry_count - 1:
-                    logger.info(f"Retrying in 10 seconds...")
-                    await asyncio.sleep(10)
-                else:
-                    logger.error(f"Failed to fetch ticker for {symbol} after all retries due to timeout")
-            except Exception as e:
-                logger.error(f"Failed to fetch ticker for {symbol} on attempt {attempt + 1}/{retry_count}: {type(e).__name__}: {str(e)}")
-                if attempt < retry_count - 1:
-                    logger.info(f"Retrying in 10 seconds...")
-                    await asyncio.sleep(10)
-                else:
-                    logger.error(f"Failed to fetch ticker for {symbol} after all retries")
+            market_state = {
+                'trend': trend,
+                'volatility': volatility,
+            }
+            logger.info(f"Market state analyzed using {symbol}: {market_state}")
+            
+            # Обновляем кэш, если есть новые проблемные символы
+            if new_problematic_symbols:
+                await cache_symbols(available_symbols, list(set(problematic_symbols + new_problematic_symbols)))
+            return market_state
+        except asyncio.TimeoutError as te:
+            logger.error(f"Timeout while fetching ticker for {symbol}: {te}")
+            new_problematic_symbols.append(symbol)
+            logger.warning(f"Added {symbol} to problematic symbols due to timeout")
+        except Exception as e:
+            logger.error(f"Failed to fetch ticker for {symbol}: {type(e).__name__}: {str(e)}")
+            new_problematic_symbols.append(symbol)
+            logger.warning(f"Added {symbol} to problematic symbols due to error")
     
     logger.error("Failed to fetch ticker for all attempted symbols, returning default market state")
+    # Обновляем кэш с новыми проблемными символами
+    if new_problematic_symbols:
+        await cache_symbols(available_symbols, list(set(problematic_symbols + new_problematic_symbols)))
     return {'trend': 'neutral', 'volatility': 0.01}
