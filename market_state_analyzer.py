@@ -50,8 +50,8 @@ async def analyze_market_state(exchange, timeframe='1h'):
         for market in markets:
             symbol = market['symbol']
             # Проверяем, активен ли символ
-            is_active = market.get('active', True)  # Считаем символ активным, если поле отсутствует
-            logger.info(f"Symbol {symbol}: active={market.get('active')}, is_active={is_active}")
+            is_active = market.get('active', True) and market.get('info', {}).get('state', 'enabled') == 'enabled' and market.get('quote') == 'USDT'
+            logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={market.get('quote')}, is_active={is_active}")
             if is_active:
                 new_available_symbols.append(symbol)
                 # Используем данные из fetch_markets для анализа
