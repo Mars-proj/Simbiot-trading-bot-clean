@@ -22,7 +22,7 @@ async def check_network_access():
         logger.error(f"Failed to ping MEXC API: {type(e).__name__}: {str(e)}")
         return False
 
-async def analyze_market_state(exchange, timeframe='1h'):
+async def analyze_market_state(exchange_pool, timeframe='1h'):
     logger.info(f"Analyzing market state with timeframe {timeframe}")
     
     # Проверяем доступность API перед запросом
@@ -37,7 +37,7 @@ async def analyze_market_state(exchange, timeframe='1h'):
 
     try:
         # Используем кэшированные рынки из exchange_pool
-        markets = exchange.get_markets()
+        markets = exchange_pool.get_markets()
         if not markets:
             logger.error("No markets available, returning default market state")
             return {'trend': 'neutral', 'volatility': 0.01}, []
@@ -75,12 +75,12 @@ async def analyze_market_state(exchange, timeframe='1h'):
             if market.get('active', False):
                 active_symbols += 1
 
-            # Проверяем, активен ли символ (убрали проверку is_spot для теста)
-            is_active = quote.upper().endswith('USDT')
+            # Проверяем, активен ли символ (восстановили проверку is_spot)
+            is_active = (is_spot and quote.upper().endswith('USDT'))
             logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, type={market_type}, is_active={is_active}")
             if is_active:
                 new_available_symbols.append(symbol)
-                # Используем данные из fetch_markets для анализа
+                # Используем данные из markets для анализа
                 if 'info' in market and 'change' in market['info']:
                     try:
                         price_change = float(market['info']['change'])

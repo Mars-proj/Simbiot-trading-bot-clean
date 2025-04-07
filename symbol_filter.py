@@ -35,7 +35,7 @@ async def get_cached_symbols():
     finally:
         await redis_client.close()
 
-async def filter_symbols(exchange, symbols, since, limit, timeframe, user, market_state):
+async def filter_symbols(exchange_pool, symbols, since, limit, timeframe, user, market_state):
     logger.info(f"Starting symbol filtering for {len(symbols)} symbols with market state {market_state}")
 
     # Проверяем, есть ли кэшированные символы
@@ -47,7 +47,7 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
     else:
         # Используем кэшированные рынки из exchange_pool
         try:
-            markets = exchange.get_markets()
+            markets = exchange_pool.get_markets()
             if not markets:
                 logger.error("No markets available, returning empty list")
                 return []
@@ -84,8 +84,8 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
                 if market.get('active', False):
                     active_symbols += 1
 
-                # Проверяем, активен ли символ (убрали проверку is_spot для теста)
-                is_active = quote.upper().endswith('USDT')
+                # Проверяем, активен ли символ (восстановили проверку is_spot)
+                is_active = (is_spot and quote.upper().endswith('USDT'))
                 logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, type={market_type}, is_active={is_active}")
                 if is_active:
                     new_available_symbols.append(symbol)
@@ -121,7 +121,7 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
         tasks = []
         for symbol in batch:
             logger.debug(f"Queuing fetch for {symbol}")
-            tasks.append(fetch_historical_data(symbol, exchange, since, limit, timeframe, user))
+            tasks.append(fetch_historical_data(symbol, exchange_pool.exchange, since, limit, timeframe, user))
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
         for symbol, result in zip(batch, results):

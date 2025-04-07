@@ -23,11 +23,12 @@ async def process_user(user, credentials, since, limit, timeframe):
     """Обрабатывает одного пользователя."""
     try:
         logger.info(f"Processing symbols for user {user} with credentials: {credentials}")
-        async with ExchangePool(credentials['api_key'], credentials['api_secret'], user) as exchange:
+        exchange_pool = ExchangePool(credentials['api_key'], credentials['api_secret'], user)
+        async with exchange_pool as exchange:
             logger.debug(f"Exchange object created for user {user}: {exchange}")
             # Анализируем состояние рынка
             logger.debug(f"Calling analyze_market_state for user {user}")
-            market_state, symbols = await analyze_market_state(exchange, timeframe)
+            market_state, symbols = await analyze_market_state(exchange_pool, timeframe)
             logger.info(f"Market state for user {user}: {market_state}")
             # Если market_state дефолтный, всё равно продолжаем
             if market_state['trend'] == 'neutral' and market_state['volatility'] == 0.01:
@@ -37,7 +38,7 @@ async def process_user(user, credentials, since, limit, timeframe):
                 logger.error(f"No symbols available for user {user}, skipping")
                 return
             logger.debug(f"Calling filter_symbols for user {user} with {len(symbols)} symbols")
-            valid_symbols = await filter_symbols(exchange, symbols, since, limit, timeframe, user, market_state)
+            valid_symbols = await filter_symbols(exchange_pool, symbols, since, limit, timeframe, user, market_state)
             logger.info(f"Filtered symbols for user {user}: {valid_symbols}")
             logger.debug(f"Calling start_trading_all for user {user}")
             await start_trading_all(exchange, valid_symbols, user)
