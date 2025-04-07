@@ -22,26 +22,6 @@ async def check_network_access():
         logger.error(f"Failed to ping MEXC API: {type(e).__name__}: {str(e)}")
         return False
 
-async def fetch_markets_with_retry(exchange, max_retries=3, retry_delay=5):
-    """Пытается получить рынки с повторными попытками в случае таймаута."""
-    for attempt in range(max_retries):
-        try:
-            logger.debug(f"Attempt {attempt + 1}/{max_retries} to fetch markets")
-            markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=120)
-            logger.info(f"Successfully fetched {len(markets)} markets on attempt {attempt + 1}")
-            return markets
-        except asyncio.TimeoutError as te:
-            logger.warning(f"Timeout while fetching markets on attempt {attempt + 1}: {te}")
-            if attempt < max_retries - 1:
-                logger.info(f"Retrying in {retry_delay} seconds...")
-                await asyncio.sleep(retry_delay)
-            else:
-                logger.error("Max retries reached, failed to fetch markets")
-                raise
-        except Exception as e:
-            logger.error(f"Failed to fetch markets on attempt {attempt + 1}: {type(e).__name__}: {str(e)}")
-            raise
-
 async def analyze_market_state(exchange, timeframe='1h'):
     logger.info(f"Analyzing market state with timeframe {timeframe}")
     
@@ -56,13 +36,17 @@ async def analyze_market_state(exchange, timeframe='1h'):
     new_problematic_symbols = []
 
     try:
-        logger.debug("Fetching markets from MEXC API")
-        markets = await fetch_markets_with_retry(exchange)
-        logger.info(f"Fetched {len(markets)} markets")
-        # Сохраняем данные fetch_markets в файл для отладки
+        # Используем кэшированные рынки из exchange_pool
+        markets = exchange.get_markets()
+        if not markets:
+            logger.error("No markets available, returning default market state")
+            return {'trend': 'neutral', 'volatility': 0.01}, []
+        logger.info(f"Using {len(markets)} cached markets")
+
+        # Сохраняем данные markets в файл для отладки
         with open("/root/trading_bot/fetch_markets_data.json", "w") as f:
             json.dump(markets, f, indent=2)
-        logger.info(f"Saved fetch_markets data to /root/trading_bot/fetch_markets_data.json")
+        logger.info(f"Saved markets data to /root/trading_bot/fetch_markets_data.json")
         logger.info(f"First 5 markets: {markets[:5]}")
 
         # Считаем статистику для отладки
@@ -91,8 +75,8 @@ async def analyze_market_state(exchange, timeframe='1h'):
             if market.get('active', False):
                 active_symbols += 1
 
-            # Проверяем, активен ли символ (убрали проверки state и active для теста)
-            is_active = (is_spot and quote.upper().endswith('USDT'))
+            # Проверяем, активен ли символ (убрали проверку is_spot для теста)
+            is_active = quote.upper().endswith('USDT')
             logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, type={market_type}, is_active={is_active}")
             if is_active:
                 new_available_symbols.append(symbol)
@@ -118,7 +102,7 @@ async def analyze_market_state(exchange, timeframe='1h'):
         # Обновляем кэш символов
         await cache_symbols(new_available_symbols, new_problematic_symbols)
 
-        # Анализируем состояние рынка на основе данных из fetch_markets
+        # Анализируем состояние рынка на основе данных из markets
         if count > 0:
             avg_change = total_change / count
             trend = 'bullish' if avg_change > 0 else 'bearish'
@@ -135,9 +119,6 @@ async def analyze_market_state(exchange, timeframe='1h'):
         logger.info(f"Market state analyzed: {market_state}")
         return market_state, new_available_symbols
 
-    except asyncio.TimeoutError as te:
-        logger.error(f"Timeout while fetching markets: {te}")
-        return {'trend': 'neutral', 'volatility': 0.01}, []
     except Exception as e:
-        logger.error(f"Failed to fetch markets: {type(e).__name__}: {str(e)}")
+        logger.error(f"Failed to analyze market state: {type(e).__name__}: {str(e)}")
         return {'trend': 'neutral', 'volatility': 0.01}, []

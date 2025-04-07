@@ -35,26 +35,6 @@ async def get_cached_symbols():
     finally:
         await redis_client.close()
 
-async def fetch_markets_with_retry(exchange, max_retries=3, retry_delay=5):
-    """Пытается получить рынки с повторными попытками в случае таймаута."""
-    for attempt in range(max_retries):
-        try:
-            logger.debug(f"Attempt {attempt + 1}/{max_retries} to fetch markets")
-            markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=120)
-            logger.info(f"Successfully fetched {len(markets)} markets on attempt {attempt + 1}")
-            return markets
-        except asyncio.TimeoutError as te:
-            logger.warning(f"Timeout while fetching markets on attempt {attempt + 1}: {te}")
-            if attempt < max_retries - 1:
-                logger.info(f"Retrying in {retry_delay} seconds...")
-                await asyncio.sleep(retry_delay)
-            else:
-                logger.error("Max retries reached, failed to fetch markets")
-                raise
-        except Exception as e:
-            logger.error(f"Failed to fetch markets on attempt {attempt + 1}: {type(e).__name__}: {str(e)}")
-            raise
-
 async def filter_symbols(exchange, symbols, since, limit, timeframe, user, market_state):
     logger.info(f"Starting symbol filtering for {len(symbols)} symbols with market state {market_state}")
 
@@ -65,15 +45,18 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
         logger.info("Using cached symbols from Redis")
         valid_symbols = [symbol for symbol in symbols if symbol in available_symbols]
     else:
-        # Если кэша нет, получаем данные через fetch_markets
+        # Используем кэшированные рынки из exchange_pool
         try:
-            logger.debug("Fetching markets from MEXC API for symbol filtering")
-            markets = await fetch_markets_with_retry(exchange)
-            logger.info(f"Fetched {len(markets)} markets")
-            # Сохраняем данные fetch_markets в файл для отладки
+            markets = exchange.get_markets()
+            if not markets:
+                logger.error("No markets available, returning empty list")
+                return []
+            logger.info(f"Using {len(markets)} cached markets")
+
+            # Сохраняем данные markets в файл для отладки
             with open("/root/trading_bot/fetch_markets_data_symbol_filter.json", "w") as f:
                 json.dump(markets, f, indent=2)
-            logger.info(f"Saved fetch_markets data to /root/trading_bot/fetch_markets_data_symbol_filter.json")
+            logger.info(f"Saved markets data to /root/trading_bot/fetch_markets_data_symbol_filter.json")
             logger.info(f"First 5 markets: {markets[:5]}")
 
             # Считаем статистику для отладки
@@ -101,8 +84,8 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
                 if market.get('active', False):
                     active_symbols += 1
 
-                # Проверяем, активен ли символ (убрали проверки state и active для теста)
-                is_active = (is_spot and quote.upper().endswith('USDT'))
+                # Проверяем, активен ли символ (убрали проверку is_spot для теста)
+                is_active = quote.upper().endswith('USDT')
                 logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, type={market_type}, is_active={is_active}")
                 if is_active:
                     new_available_symbols.append(symbol)
@@ -120,7 +103,7 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
             available_symbols = new_available_symbols
             problematic_symbols = new_problematic_symbols
         except Exception as e:
-            logger.error(f"Failed to fetch markets: {type(e).__name__}: {str(e)}")
+            logger.error(f"Failed to process markets: {type(e).__name__}: {str(e)}")
             valid_symbols = []
             available_symbols = []
             problematic_symbols = symbols  # Считаем все символы проблемными

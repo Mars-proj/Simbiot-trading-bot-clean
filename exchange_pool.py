@@ -11,6 +11,7 @@ class ExchangePool:
         self.api_secret = api_secret
         self.user = user
         self.exchange = None
+        self.markets = None  # Для хранения загруженных рынков
 
     async def __aenter__(self):
         logger.debug(f"Initializing exchange for user {self.user}")
@@ -52,14 +53,15 @@ class ExchangePool:
         # Проверим доступные рынки
         try:
             # Явно указываем params с defaultType
-            markets = await self.exchange.fetch_markets(params={'type': 'spot'})
-            logger.info(f"Loaded {len(markets)} markets for user {self.user}")
-            logger.info(f"First 5 market symbols for user {self.user}: {list(market['symbol'] for market in markets)[:5]}")
+            self.markets = await self.exchange.fetch_markets(params={'type': 'spot'})
+            logger.info(f"Loaded {len(self.markets)} markets for user {self.user}")
+            logger.info(f"First 5 market symbols for user {self.user}: {list(market['symbol'] for market in self.markets)[:5]}")
             # Дополнительное логирование типов рынков
-            market_types = set(market['type'] for market in markets)
+            market_types = set(market['type'] for market in self.markets)
             logger.info(f"Market types for user {self.user}: {list(market_types)}")
         except Exception as e:
             logger.error(f"Failed to load markets for user {self.user}: {type(e).__name__}: {str(e)}")
+            self.markets = []
 
         return self.exchange
 
@@ -70,3 +72,7 @@ class ExchangePool:
                 logger.info(f"Closed exchange instance for mexc:user {self.user}")
             except Exception as e:
                 logger.error(f"Failed to close exchange for user {self.user}: {type(e).__name__}: {str(e)}")
+
+    def get_markets(self):
+        """Возвращает загруженные рынки."""
+        return self.markets
