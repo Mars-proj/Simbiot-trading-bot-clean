@@ -12,27 +12,16 @@ class ExchangePool:
         self.exchange = None
 
     async def __aenter__(self):
-        retry_count = 3
-        for attempt in range(retry_count):
-            try:
-                self.exchange = ccxt.mexc({
-                    'apiKey': self.api_key,
-                    'secret': self.api_secret,
-                    'enableRateLimit': True,
-                    'timeout': 30000,
-                    'rateLimit': 1000,
-                })
-                logger.info(f"Attempting to load markets for user {self.user} (attempt {attempt + 1}/{retry_count})")
-                await self.exchange.load_markets()
-                logger.info(f"Successfully loaded markets for user {self.user}")
-                return self.exchange
-            except Exception as e:
-                logger.error(f"Failed to initialize exchange for user {self.user} on attempt {attempt + 1}: {e}")
-                if attempt < retry_count - 1:
-                    logger.info(f"Retrying in 5 seconds...")
-                    await asyncio.sleep(5)
-                else:
-                    raise Exception(f"Failed to initialize exchange for user {self.user} after {retry_count} attempts: {e}")
+        logger.debug(f"Initializing exchange for user {self.user}")
+        self.exchange = ccxt.mexc({
+            'apiKey': self.api_key,
+            'secret': self.api_secret,
+            'enableRateLimit': True,
+            'timeout': 30000,
+            'rateLimit': 1000,
+        })
+        logger.info(f"Exchange initialized for user {self.user}")
+        return self.exchange
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.exchange:
