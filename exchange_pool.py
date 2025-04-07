@@ -22,11 +22,11 @@ class ExchangePool:
                 'secret': self.api_secret,
                 'enableRateLimit': True,
                 'timeout': 30000,
-                'rateLimit': 1000,
+                'rateLimit': 100,  # Уменьшаем rateLimit до 100 мс (10 запросов/сек)
             })
             # Указываем defaultType через атрибут
             self.exchange.options['defaultType'] = 'spot'
-            logger.info(f"Exchange initialized for user {self.user} with API key, defaultType=spot")
+            logger.info(f"Exchange initialized for user {self.user} with API key, defaultType=spot, rateLimit={self.exchange.rateLimit}")
             # Проверяем доступность API-ключа
             try:
                 balance = await self.exchange.fetch_balance()
@@ -37,18 +37,18 @@ class ExchangePool:
                 self.exchange = ccxt.mexc({
                     'enableRateLimit': True,
                     'timeout': 30000,
-                    'rateLimit': 1000,
+                    'rateLimit': 100,
                 })
                 self.exchange.options['defaultType'] = 'spot'
-                logger.info(f"Fallback to public access for user {self.user}, defaultType=spot")
+                logger.info(f"Fallback to public access for user {self.user}, defaultType=spot, rateLimit={self.exchange.rateLimit}")
         else:
             self.exchange = ccxt.mexc({
                 'enableRateLimit': True,
                 'timeout': 30000,
-                'rateLimit': 1000,
+                'rateLimit': 100,
             })
             self.exchange.options['defaultType'] = 'spot'
-            logger.info(f"Exchange initialized for user {self.user} without API key (public access), defaultType=spot")
+            logger.info(f"Exchange initialized for user {self.user} without API key (public access), defaultType=spot, rateLimit={self.exchange.rateLimit}")
 
         # Проверим доступные рынки
         try:

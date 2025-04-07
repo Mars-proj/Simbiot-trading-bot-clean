@@ -110,12 +110,13 @@ async def filter_symbols(exchange_pool, symbols, since, limit, timeframe, user, 
 
     # Фильтруем символы по историческим данным
     final_valid_symbols = []
-    batch_size = 10
+    batch_size = 50
     batches = [valid_symbols[i:i + batch_size] for i in range(0, len(valid_symbols), batch_size)]
 
     # Пример: Используем market_state для фильтрации
-    min_data_points = 1  # Уменьшаем до 1 для теста
+    min_data_points = 1
 
+    total_symbols_processed = 0
     for batch_idx, batch in enumerate(batches):
         logger.info(f"Fetching historical data for batch {batch_idx + 1} of {len(batches)}")
         tasks = []
@@ -125,6 +126,8 @@ async def filter_symbols(exchange_pool, symbols, since, limit, timeframe, user, 
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
         for symbol, result in zip(batch, results):
+            total_symbols_processed += 1
+            logger.info(f"Processed {total_symbols_processed}/{len(valid_symbols)} symbols")
             if isinstance(result, Exception):
                 logger.warning(f"Moved {symbol} from working to problematic symbols: {result}")
                 problematic_symbols.append(symbol)
@@ -138,9 +141,12 @@ async def filter_symbols(exchange_pool, symbols, since, limit, timeframe, user, 
                 problematic_symbols.append(symbol)
                 if symbol in available_symbols:
                     available_symbols.remove(symbol)
+        
+        # Добавляем задержку 1 секунду между батчами
+        await asyncio.sleep(1)
 
     # Обновляем кэш с учётом новых проблемных символов
     await cache_symbols(available_symbols, problematic_symbols)
 
-    logger.info(f"Filtered {len(final_valid_symbols)} valid symbols out of {len(symbols)}")
+    logger.info(f"Filtered {len(final_valid_symbols)} valid symbols out of {len(valid_symbols)}")
     return final_valid_symbols
