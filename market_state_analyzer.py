@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import aiohttp
+import json
 from symbol_filter import get_cached_symbols, cache_symbols
 
 logger = logging.getLogger("main")
@@ -37,7 +38,11 @@ async def analyze_market_state(exchange, timeframe='1h'):
         logger.debug("Fetching markets from MEXC API")
         markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=60)
         logger.info(f"Fetched {len(markets)} markets")
-        logger.info(f"First 5 markets: {markets[:5]}")  # Логируем первые 5 записей для отладки
+        # Сохраняем данные fetch_markets в файл для отладки
+        with open("/root/trading_bot/fetch_markets_data.json", "w") as f:
+            json.dump(markets, f, indent=2)
+        logger.info(f"Saved fetch_markets data to /root/trading_bot/fetch_markets_data.json")
+        logger.info(f"First 5 markets: {markets[:5]}")
 
         # Фильтруем активные символы
         total_change = 0.0
@@ -46,7 +51,7 @@ async def analyze_market_state(exchange, timeframe='1h'):
             symbol = market['symbol']
             # Проверяем, активен ли символ
             is_active = market.get('active', True)  # Считаем символ активным, если поле отсутствует
-            logger.debug(f"Symbol {symbol}: is_active={is_active}, market data: {market}")
+            logger.info(f"Symbol {symbol}: active={market.get('active')}, is_active={is_active}")
             if is_active:
                 new_available_symbols.append(symbol)
                 # Используем данные из fetch_markets для анализа

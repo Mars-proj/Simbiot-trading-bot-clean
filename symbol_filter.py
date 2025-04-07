@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import json
 from historical_data_fetcher import fetch_historical_data
 import redis.asyncio as redis
 
@@ -48,7 +49,11 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
             logger.debug("Fetching markets from MEXC API for symbol filtering")
             markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=30)
             logger.info(f"Fetched {len(markets)} markets")
-            logger.info(f"First 5 markets: {markets[:5]}")  # Логируем первые 5 записей для отладки
+            # Сохраняем данные fetch_markets в файл для отладки
+            with open("/root/trading_bot/fetch_markets_data_symbol_filter.json", "w") as f:
+                json.dump(markets, f, indent=2)
+            logger.info(f"Saved fetch_markets data to /root/trading_bot/fetch_markets_data_symbol_filter.json")
+            logger.info(f"First 5 markets: {markets[:5]}")
 
             new_available_symbols = []
             new_problematic_symbols = []
@@ -56,7 +61,7 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
                 symbol = market['symbol']
                 # Проверяем, активен ли символ
                 is_active = market.get('active', True)  # Считаем символ активным, если поле отсутствует
-                logger.debug(f"Symbol {symbol}: is_active={is_active}, market data: {market}")
+                logger.info(f"Symbol {symbol}: active={market.get('active')}, is_active={is_active}")
                 if is_active:
                     new_available_symbols.append(symbol)
                 else:
