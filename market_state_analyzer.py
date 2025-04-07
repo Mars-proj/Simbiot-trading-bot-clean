@@ -44,13 +44,27 @@ async def analyze_market_state(exchange, timeframe='1h'):
         logger.info(f"Saved fetch_markets data to /root/trading_bot/fetch_markets_data.json")
         logger.info(f"First 5 markets: {markets[:5]}")
 
+        # Считаем статистику для отладки
+        usdt_symbols = 0
+        enabled_symbols = 0
+        active_symbols = 0
+
         # Фильтруем активные символы
         total_change = 0.0
         count = 0
         for market in markets:
             symbol = market['symbol']
+            # Считаем статистику
+            if market.get('quote') == 'USDT':
+                usdt_symbols += 1
+            if market.get('info', {}).get('state', 'enabled') == 'enabled':
+                enabled_symbols += 1
+            if market.get('active', False):
+                active_symbols += 1
+
             # Проверяем, активен ли символ
-            is_active = market.get('active', True) and market.get('info', {}).get('state', 'enabled') == 'enabled' and market.get('quote') == 'USDT'
+            # Временно считаем символ активным, если quote == "USDT"
+            is_active = market.get('quote') == 'USDT'
             logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={market.get('quote')}, is_active={is_active}")
             if is_active:
                 new_available_symbols.append(symbol)
@@ -68,6 +82,8 @@ async def analyze_market_state(exchange, timeframe='1h'):
             else:
                 new_problematic_symbols.append(symbol)
                 logger.warning(f"Symbol {symbol} is inactive, added to problematic symbols")
+
+        logger.info(f"Statistics: USDT symbols={usdt_symbols}, enabled symbols={enabled_symbols}, active symbols={active_symbols}")
 
         # Обновляем кэш символов
         await cache_symbols(new_available_symbols, new_problematic_symbols)
