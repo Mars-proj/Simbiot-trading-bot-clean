@@ -37,7 +37,7 @@ async def analyze_market_state(exchange, timeframe='1h'):
         logger.debug("Fetching markets from MEXC API")
         markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=60)
         logger.debug(f"Fetched {len(markets)} markets")
-        logger.debug(f"Markets data: {markets[:5]}")  # Логируем первые 5 записей для отладки
+        logger.debug(f"First 5 markets: {markets[:5]}")  # Логируем первые 5 записей для отладки
 
         # Фильтруем активные символы
         total_change = 0.0
@@ -45,7 +45,6 @@ async def analyze_market_state(exchange, timeframe='1h'):
         for market in markets:
             symbol = market['symbol']
             # Проверяем, активен ли символ
-            # MEXC может не возвращать поле 'active', поэтому используем альтернативный критерий
             is_active = market.get('active', True)  # Считаем символ активным, если поле отсутствует
             if is_active:
                 new_available_symbols.append(symbol)
