@@ -7,6 +7,7 @@ from start_trading_all import start_trading_all
 from market_state_analyzer import analyze_market_state
 import asyncio
 import concurrent.futures
+from datetime import datetime
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -48,8 +49,10 @@ async def process_user(user, credentials, since, limit, timeframe):
 
 async def main():
     user_manager = UserManager()
-    since = 1736219256  # Example timestamp
-    limit = 2000
+    # Устанавливаем since на 1 месяц назад от текущей даты
+    current_timestamp = int(datetime.now().timestamp() * 1000)  # Текущий timestamp в миллисекундах
+    since = current_timestamp - (30 * 24 * 60 * 60 * 1000)  # 30 дней назад
+    limit = 1000  # Уменьшаем limit до 1000
     timeframe = '1h'
 
     try:

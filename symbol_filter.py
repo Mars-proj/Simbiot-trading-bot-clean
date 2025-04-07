@@ -84,7 +84,7 @@ async def filter_symbols(exchange_pool, symbols, since, limit, timeframe, user, 
                 if market.get('active', False):
                     active_symbols += 1
 
-                # Проверяем, активен ли символ (восстановили проверку is_spot)
+                # Проверяем, активен ли символ
                 is_active = (is_spot and quote.upper().endswith('USDT'))
                 logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, type={market_type}, is_active={is_active}")
                 if is_active:
@@ -114,7 +114,7 @@ async def filter_symbols(exchange_pool, symbols, since, limit, timeframe, user, 
     batches = [valid_symbols[i:i + batch_size] for i in range(0, len(valid_symbols), batch_size)]
 
     # Пример: Используем market_state для фильтрации
-    min_data_points = 89 if market_state.get('trend') == 'bullish' else 50
+    min_data_points = 1  # Уменьшаем до 1 для теста
 
     for batch_idx, batch in enumerate(batches):
         logger.info(f"Fetching historical data for batch {batch_idx + 1} of {len(batches)}")
@@ -134,7 +134,7 @@ async def filter_symbols(exchange_pool, symbols, since, limit, timeframe, user, 
                 logger.info(f"Fetched {len(result)} OHLCV data points for {symbol}")
                 final_valid_symbols.append(symbol)
             else:
-                logger.warning(f"Insufficient data for {symbol}: {len(result)} OHLCV points")
+                logger.warning(f"Insufficient data for {symbol}: {len(result) if result else 0} OHLCV points")
                 problematic_symbols.append(symbol)
                 if symbol in available_symbols:
                     available_symbols.remove(symbol)
