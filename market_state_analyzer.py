@@ -22,6 +22,26 @@ async def check_network_access():
         logger.error(f"Failed to ping MEXC API: {type(e).__name__}: {str(e)}")
         return False
 
+async def fetch_markets_with_retry(exchange, max_retries=3, retry_delay=5):
+    """Пытается получить рынки с повторными попытками в случае таймаута."""
+    for attempt in range(max_retries):
+        try:
+            logger.debug(f"Attempt {attempt + 1}/{max_retries} to fetch markets")
+            markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=120)
+            logger.info(f"Successfully fetched {len(markets)} markets on attempt {attempt + 1}")
+            return markets
+        except asyncio.TimeoutError as te:
+            logger.warning(f"Timeout while fetching markets on attempt {attempt + 1}: {te}")
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                await asyncio.sleep(retry_delay)
+            else:
+                logger.error("Max retries reached, failed to fetch markets")
+                raise
+        except Exception as e:
+            logger.error(f"Failed to fetch markets on attempt {attempt + 1}: {type(e).__name__}: {str(e)}")
+            raise
+
 async def analyze_market_state(exchange, timeframe='1h'):
     logger.info(f"Analyzing market state with timeframe {timeframe}")
     
@@ -37,7 +57,7 @@ async def analyze_market_state(exchange, timeframe='1h'):
 
     try:
         logger.debug("Fetching markets from MEXC API")
-        markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=60)
+        markets = await fetch_markets_with_retry(exchange)
         logger.info(f"Fetched {len(markets)} markets")
         # Сохраняем данные fetch_markets в файл для отладки
         with open("/root/trading_bot/fetch_markets_data.json", "w") as f:
