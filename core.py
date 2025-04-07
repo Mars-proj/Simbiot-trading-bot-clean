@@ -3,6 +3,7 @@ from user_manager import UserManager
 from exchange_pool import ExchangePool
 from symbol_filter import filter_symbols
 from start_trading_all import start_trading_all
+from market_state_analyzer import analyze_market_state
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,7 +29,10 @@ async def main():
         for user, credentials in users.items():
             logger.info(f"Processing symbols for user {user}")
             async with ExchangePool(credentials['api_key'], credentials['api_secret'], user) as exchange:
-                valid_symbols = await filter_symbols(exchange, exchange.symbols, since, limit, timeframe, user)
+                # Анализируем состояние рынка
+                market_state = await analyze_market_state(exchange, timeframe)
+                logger.info(f"Market state for user {user}: {market_state}")
+                valid_symbols = await filter_symbols(exchange, exchange.symbols, since, limit, timeframe, user, market_state)
                 await start_trading_all(exchange, valid_symbols, user)
             logger.info(f"Completed processing for user {user} with {len(valid_symbols)} valid symbols")
     except Exception as e:
