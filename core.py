@@ -49,32 +49,33 @@ async def process_user(user, credentials, since, limit, timeframe):
 
 async def main():
     user_manager = UserManager()
-    # Устанавливаем since на 1 месяц назад от текущей даты
-    current_timestamp = int(datetime.now().timestamp() * 1000)  # Текущий timestamp в миллисекундах
-    since = current_timestamp - (30 * 24 * 60 * 60 * 1000)  # 30 дней назад
-    limit = 1000
-    timeframe = '4h'  # Изменяем таймфрейм на 4h
-
     try:
-        logger.debug("Loading users from Redis")
-        users = await user_manager.get_users()
-        logger.info(f"Loaded {len(users)} users from Redis: {users}")
+        while True:  # Бесконечный цикл для работы 24/7
+            current_timestamp = int(datetime.now().timestamp() * 1000)
+            since = current_timestamp - (30 * 24 * 60 * 60 * 1000)  # 30 дней назад
+            limit = 1000
+            timeframe = '4h'
 
-        # Создаём пул задач для параллельной обработки пользователей
-        tasks = []
-        for user, credentials in users.items():
-            tasks.append(process_user(user, credentials, since, limit, timeframe))
+            logger.debug("Loading users from Redis")
+            users = await user_manager.get_users()
+            logger.info(f"Loaded {len(users)} users from Redis: {users}")
 
-        # Ограничиваем количество одновременно выполняемых задач (например, 100)
-        # Это позволяет масштабировать систему для 1000+ пользователей
-        max_concurrent_tasks = 100
-        for i in range(0, len(tasks), max_concurrent_tasks):
-            batch = tasks[i:i + max_concurrent_tasks]
-            await asyncio.gather(*batch, return_exceptions=True)
-            logger.info(f"Processed batch of {len(batch)} users")
+            tasks = []
+            for user, credentials in users.items():
+                tasks.append(process_user(user, credentials, since, limit, timeframe))
+
+            max_concurrent_tasks = 100
+            for i in range(0, len(tasks), max_concurrent_tasks):
+                batch = tasks[i:i + max_concurrent_tasks]
+                await asyncio.gather(*batch, return_exceptions=True)
+                logger.info(f"Processed batch of {len(batch)} users")
+
+            # Задержка перед следующим циклом (например, 1 час)
+            logger.info("Waiting for 1 hour before next cycle")
+            await asyncio.sleep(3600)  # 1 час = 3600 секунд
 
     except Exception as e:
-        logger.error(f"Error in main: {type(e).__name__}: {str(e)}")
+        logger.error(f"Error in main loop: {type(e).__name__}: {str(e)}")
     finally:
         logger.debug("Closing user manager")
         await user_manager.close()
