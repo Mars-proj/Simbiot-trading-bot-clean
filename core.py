@@ -34,19 +34,17 @@ async def main():
                 logger.debug(f"Exchange object created: {exchange}")
                 # Анализируем состояние рынка
                 logger.debug(f"Calling analyze_market_state for user {user}")
-                market_state = await analyze_market_state(exchange, timeframe)
+                market_state, symbols = await analyze_market_state(exchange, timeframe)
                 logger.info(f"Market state for user {user}: {market_state}")
                 # Если market_state дефолтный, всё равно продолжаем
                 if market_state['trend'] == 'neutral' and market_state['volatility'] == 0.01:
                     logger.warning(f"Using default market state for user {user} due to analysis failure")
-                # Убедимся, что exchange.symbols заполнен
-                if not hasattr(exchange, 'symbols') or not exchange.symbols:
-                    logger.debug("Fetching markets to populate exchange.symbols")
-                    markets = await exchange.fetch_markets()
-                    exchange.symbols = [market['symbol'] for market in markets]
-                    logger.debug(f"Populated exchange.symbols with {len(exchange.symbols)} symbols")
-                logger.debug(f"Calling filter_symbols for user {user}")
-                valid_symbols = await filter_symbols(exchange, exchange.symbols, since, limit, timeframe, user, market_state)
+                # Используем символы, возвращённые из analyze_market_state
+                if not symbols:
+                    logger.error(f"No symbols available for user {user}, skipping")
+                    continue
+                logger.debug(f"Calling filter_symbols for user {user} with {len(symbols)} symbols")
+                valid_symbols = await filter_symbols(exchange, symbols, since, limit, timeframe, user, market_state)
                 logger.info(f"Filtered symbols for user {user}: {valid_symbols}")
                 logger.debug(f"Calling start_trading_all for user {user}")
                 await start_trading_all(exchange, valid_symbols, user)

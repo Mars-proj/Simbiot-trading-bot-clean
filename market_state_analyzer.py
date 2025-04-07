@@ -26,7 +26,7 @@ async def analyze_market_state(exchange, timeframe='1h'):
     # Проверяем доступность API перед запросом
     if not await check_network_access():
         logger.error("MEXC API is not accessible, returning default market state")
-        return {'trend': 'neutral', 'volatility': 0.01}
+        return {'trend': 'neutral', 'volatility': 0.01}, []
 
     # Получаем кэшированные символы
     available_symbols, problematic_symbols = await get_cached_symbols()
@@ -35,15 +35,19 @@ async def analyze_market_state(exchange, timeframe='1h'):
 
     try:
         logger.debug("Fetching markets from MEXC API")
-        markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=60)  # Увеличиваем таймаут до 60 секунд
+        markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=60)
         logger.debug(f"Fetched {len(markets)} markets")
+        logger.debug(f"Markets data: {markets[:5]}")  # Логируем первые 5 записей для отладки
 
         # Фильтруем активные символы
         total_change = 0.0
         count = 0
         for market in markets:
             symbol = market['symbol']
-            if market.get('active', False):
+            # Проверяем, активен ли символ
+            # MEXC может не возвращать поле 'active', поэтому используем альтернативный критерий
+            is_active = market.get('active', True)  # Считаем символ активным, если поле отсутствует
+            if is_active:
                 new_available_symbols.append(symbol)
                 # Используем данные из fetch_markets для анализа
                 if 'info' in market and 'change' in market['info']:
@@ -54,6 +58,7 @@ async def analyze_market_state(exchange, timeframe='1h'):
                     except (ValueError, TypeError) as e:
                         logger.warning(f"Invalid change data for {symbol}: {e}")
                         new_problematic_symbols.append(symbol)
+                        new_available_symbols.remove(symbol)
                         continue
             else:
                 new_problematic_symbols.append(symbol)
@@ -77,11 +82,11 @@ async def analyze_market_state(exchange, timeframe='1h'):
             'volatility': volatility,
         }
         logger.info(f"Market state analyzed: {market_state}")
-        return market_state
+        return market_state, new_available_symbols
 
     except asyncio.TimeoutError as te:
         logger.error(f"Timeout while fetching markets: {te}")
-        return {'trend': 'neutral', 'volatility': 0.01}
+        return {'trend': 'neutral', 'volatility': 0.01}, []
     except Exception as e:
         logger.error(f"Failed to fetch markets: {type(e).__name__}: {str(e)}")
-        return {'trend': 'neutral', 'volatility': 0.01}
+        return {'trend': 'neutral', 'volatility': 0.01}, []
