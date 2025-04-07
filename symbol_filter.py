@@ -47,8 +47,8 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
         try:
             logger.debug("Fetching markets from MEXC API for symbol filtering")
             markets = await asyncio.wait_for(exchange.fetch_markets(), timeout=30)
-            logger.debug(f"Fetched {len(markets)} markets")
-            logger.debug(f"First 5 markets: {markets[:5]}")  # Логируем первые 5 записей для отладки
+            logger.info(f"Fetched {len(markets)} markets")
+            logger.info(f"First 5 markets: {markets[:5]}")  # Логируем первые 5 записей для отладки
 
             new_available_symbols = []
             new_problematic_symbols = []
@@ -56,6 +56,7 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
                 symbol = market['symbol']
                 # Проверяем, активен ли символ
                 is_active = market.get('active', True)  # Считаем символ активным, если поле отсутствует
+                logger.debug(f"Symbol {symbol}: is_active={is_active}, market data: {market}")
                 if is_active:
                     new_available_symbols.append(symbol)
                 else:
