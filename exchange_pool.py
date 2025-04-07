@@ -51,11 +51,12 @@ class ExchangePool:
 
         # Проверим доступные рынки
         try:
-            markets = await self.exchange.load_markets()
+            # Явно указываем params с defaultType
+            markets = await self.exchange.fetch_markets(params={'type': 'spot'})
             logger.info(f"Loaded {len(markets)} markets for user {self.user}")
-            logger.info(f"First 5 market symbols for user {self.user}: {list(markets.keys())[:5]}")
+            logger.info(f"First 5 market symbols for user {self.user}: {list(market['symbol'] for market in markets)[:5]}")
             # Дополнительное логирование типов рынков
-            market_types = set(market['type'] for market in markets.values())
+            market_types = set(market['type'] for market in markets)
             logger.info(f"Market types for user {self.user}: {list(market_types)}")
         except Exception as e:
             logger.error(f"Failed to load markets for user {self.user}: {type(e).__name__}: {str(e)}")

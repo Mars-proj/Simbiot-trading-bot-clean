@@ -81,8 +81,8 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user, marke
                 if market.get('active', False):
                     active_symbols += 1
 
-                # Проверяем, активен ли символ
-                is_active = (is_spot and quote.upper().endswith('USDT') and market.get('active', False))
+                # Проверяем, активен ли символ (убрали проверки state и active для теста)
+                is_active = (is_spot and quote.upper().endswith('USDT'))
                 logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, type={market_type}, is_active={is_active}")
                 if is_active:
                     new_available_symbols.append(symbol)
