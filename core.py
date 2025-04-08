@@ -11,6 +11,8 @@ from datetime import datetime
 import time
 import redis.asyncio as redis
 import json
+import psutil
+import os
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -38,20 +40,16 @@ async def update_signal_stats(signal_count):
         else:
             stats_data = {'signal_counts': [], 'last_cycles': 5}
 
-        # Добавляем количество сигналов в текущем цикле
         stats_data['signal_counts'].append(signal_count)
-        # Ограничиваем количество хранимых циклов
         stats_data['signal_counts'] = stats_data['signal_counts'][-stats_data['last_cycles']:]
 
-        # Считаем среднее количество сигналов за последние циклы
         avg_signals = sum(stats_data['signal_counts']) / len(stats_data['signal_counts']) if stats_data['signal_counts'] else 0
 
-        # Адаптивный интервал: если сигналов много, уменьшаем интервал; если мало, увеличиваем
-        base_interval = 300  # Базовый интервал 5 минут
-        if avg_signals > 10:  # Если в среднем более 10 сигналов за цикл
-            interval = max(60, base_interval * 0.5)  # Уменьшаем до 2.5 минут, но не менее 1 минуты
-        elif avg_signals < 2:  # Если сигналов мало
-            interval = min(600, base_interval * 2)  # Увеличиваем до 10 минут
+        base_interval = 300
+        if avg_signals > 10:
+            interval = max(60, base_interval * 0.5)
+        elif avg_signals < 2:
+            interval = min(600, base_interval * 2)
         else:
             interval = base_interval
 
@@ -62,13 +60,13 @@ async def update_signal_stats(signal_count):
 
 async def process_user(user, credentials, since, limit, timeframe):
     """Обрабатывает одного пользователя."""
+    start_time = time.time()
     signal_count = 0
     try:
         logger.info(f"Processing symbols for user {user} with credentials: {credentials}")
         exchange_pool = ExchangePool(credentials['api_key'], credentials['api_secret'], user)
         async with exchange_pool as exchange:
             logger.debug(f"Exchange object created for user {user}: {exchange}")
-            # Анализируем состояние рынка
             logger.debug(f"Calling analyze_market_state for user {user}")
             market_state, symbols = await analyze_market_state(exchange_pool, timeframe)
             logger.info(f"Market state for user {user}: {market_state}")
@@ -81,18 +79,43 @@ async def process_user(user, credentials, since, limit, timeframe):
             valid_symbols = await filter_symbols(exchange_pool, symbols, since, limit, timeframe, user, market_state)
             logger.info(f"Filtered symbols for user {user}: {valid_symbols}")
             logger.debug(f"Calling start_trading_all for user {user}")
-            signal_count = await start_trading_all(exchange, valid_symbols, user)
+            signal_count = await start_trading_all(exchange, valid_symbols, user, market_state)
             logger.info(f"Completed processing for user {user} with {len(valid_symbols)} valid symbols, generated {signal_count} signals")
     except Exception as e:
         logger.error(f"Error processing user {user}: {type(e).__name__}: {str(e)}")
+    finally:
+        duration = time.time() - start_time
+        logger.info(f"User {user} processing took {duration:.2f} seconds")
     return signal_count
+
+async def log_system_metrics():
+    """Логирует метрики системы: использование CPU, памяти и количество активных пользователей."""
+    try:
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        memory_used = memory.used / (1024 * 1024)  # MB
+        memory_total = memory.total / (1024 * 1024)  # MB
+        memory_percent = memory.percent
+        process = psutil.Process(os.getpid())
+        process_memory = process.memory_info().rss / (1024 * 1024)  # MB
+
+        redis_client = await get_redis_client()
+        try:
+            users = await redis_client.get("users")
+            active_users = len(json.loads(users.decode())) if users else 0
+        finally:
+            await redis_client.close()
+
+        logger.info(f"System metrics: CPU={cpu_percent}%, Memory={memory_used:.2f}/{memory_total:.2f}MB ({memory_percent}%), Process Memory={process_memory:.2f}MB, Active Users={active_users}")
+    except Exception as e:
+        logger.error(f"Failed to log system metrics: {type(e).__name__}: {str(e)}")
 
 async def main():
     user_manager = UserManager()
     try:
         cycle_count = 0
-        max_concurrent_tasks = 100  # Начальное значение
-        cycle_times = []  # Для отслеживания времени выполнения цикла
+        max_concurrent_tasks = 100
+        cycle_times = []
         while True:
             cycle_count += 1
             logger.info(f"Starting cycle {cycle_count}")
@@ -123,17 +146,20 @@ async def main():
             # Мониторинг производительности
             cycle_duration = time.time() - start_time
             cycle_times.append(cycle_duration)
-            cycle_times = cycle_times[-5:]  # Храним последние 5 циклов
+            cycle_times = cycle_times[-5:]
             avg_cycle_time = sum(cycle_times) / len(cycle_times) if cycle_times else 0
             logger.info(f"Cycle {cycle_count} completed in {cycle_duration:.2f} seconds, average cycle time: {avg_cycle_time:.2f} seconds, total signals: {total_signals}")
 
             # Динамическое управление max_concurrent_tasks
-            if avg_cycle_time > 300:  # Если среднее время цикла больше 5 минут
-                max_concurrent_tasks = max(50, max_concurrent_tasks - 10)  # Уменьшаем нагрузку
+            if avg_cycle_time > 300:
+                max_concurrent_tasks = max(50, max_concurrent_tasks - 10)
                 logger.info(f"Reducing max_concurrent_tasks to {max_concurrent_tasks} due to high cycle time")
-            elif avg_cycle_time < 60:  # Если цикл выполняется быстро
-                max_concurrent_tasks = min(200, max_concurrent_tasks + 10)  # Увеличиваем нагрузку
+            elif avg_cycle_time < 60:
+                max_concurrent_tasks = min(200, max_concurrent_tasks + 10)
                 logger.info(f"Increasing max_concurrent_tasks to {max_concurrent_tasks} due to low cycle time")
+
+            # Логирование системных метрик
+            await log_system_metrics()
 
             # Адаптивный интервал
             interval = await update_signal_stats(total_signals)
