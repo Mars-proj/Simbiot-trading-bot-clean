@@ -6,13 +6,13 @@ from symbol_filter import filter_symbols
 from start_trading_all import start_trading_all
 from market_state_analyzer import analyze_market_state
 import asyncio
-import concurrent.futures
-from datetime import datetime
 import time
 import redis.asyncio as redis
 import json
 import psutil
 import os
+from celery_app import app, process_user_task  # Импортируем process_user_task из celery_app
+from datetime import datetime
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -68,7 +68,11 @@ async def process_user(user, credentials, since, limit, timeframe):
         async with exchange_pool as exchange:
             logger.debug(f"Exchange object created for user {user}: {exchange}")
             logger.debug(f"Calling analyze_market_state for user {user}")
-            market_state, symbols = await analyze_market_state(exchange_pool, timeframe)
+            result = await analyze_market_state(exchange_pool, timeframe)
+            if not isinstance(result, tuple) or len(result) != 2:
+                logger.error(f"Unexpected result from analyze_market_state: {result}")
+                return signal_count
+            market_state, symbols = result
             logger.info(f"Market state for user {user}: {market_state}")
             if market_state['trend'] == 'neutral' and market_state['volatility'] == 0.01:
                 logger.warning(f"Using default market state for user {user} due to analysis failure")
@@ -114,7 +118,6 @@ async def main():
     user_manager = UserManager()
     try:
         cycle_count = 0
-        max_concurrent_tasks = 100
         cycle_times = []
         while True:
             cycle_count += 1
@@ -133,15 +136,19 @@ async def main():
             total_signals = 0
             tasks = []
             for user, credentials in users.items():
-                tasks.append(process_user(user, credentials, since, limit, timeframe))
+                # Запускаем задачу через Celery
+                task = process_user_task.delay(user, credentials, since, limit, timeframe)
+                tasks.append(task)
 
-            for i in range(0, len(tasks), max_concurrent_tasks):
-                batch = tasks[i:i + max_concurrent_tasks]
-                batch_results = await asyncio.gather(*batch, return_exceptions=True)
-                for result in batch_results:
-                    if isinstance(result, int):
-                        total_signals += result
-                logger.info(f"Processed batch of {len(batch)} users")
+            # Ожидаем завершения всех задач
+            for task in tasks:
+                while not task.ready():
+                    await asyncio.sleep(1)
+                signal_count = task.result
+                if isinstance(signal_count, int):
+                    total_signals += signal_count
+                else:
+                    logger.error(f"Task for user {task.id} failed: {signal_count}")
 
             # Мониторинг производительности
             cycle_duration = time.time() - start_time
@@ -150,14 +157,6 @@ async def main():
             avg_cycle_time = sum(cycle_times) / len(cycle_times) if cycle_times else 0
             logger.info(f"Cycle {cycle_count} completed in {cycle_duration:.2f} seconds, average cycle time: {avg_cycle_time:.2f} seconds, total signals: {total_signals}")
 
-            # Динамическое управление max_concurrent_tasks
-            if avg_cycle_time > 300:
-                max_concurrent_tasks = max(50, max_concurrent_tasks - 10)
-                logger.info(f"Reducing max_concurrent_tasks to {max_concurrent_tasks} due to high cycle time")
-            elif avg_cycle_time < 60:
-                max_concurrent_tasks = min(200, max_concurrent_tasks + 10)
-                logger.info(f"Increasing max_concurrent_tasks to {max_concurrent_tasks} due to low cycle time")
-
             # Логирование системных метрик
             await log_system_metrics()
 
@@ -165,7 +164,6 @@ async def main():
             interval = await update_signal_stats(total_signals)
             logger.info(f"Waiting for {interval} seconds before next cycle")
             await asyncio.sleep(interval)
-
     except Exception as e:
         logger.error(f"Error in main loop: {type(e).__name__}: {str(e)}")
     finally:
