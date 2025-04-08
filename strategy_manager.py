@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import redis.asyncio as redis
 import json
+from learning.strategy_optimizer import optimize_strategies
 
 logger = logging.getLogger("main")
 
@@ -194,11 +195,83 @@ async def atr_cci_strategy(exchange, symbol, user, volatility, timeframe='4h'):
         logger.error(f"Failed to execute ATR+CCI strategy for {symbol}: {type(e).__name__}: {str(e)}")
         return None
 
+async def custom_strategy(exchange, symbol, user, strategy, timeframe='4h'):
+    """Выполняет пользовательскую стратегию, сгенерированную оптимизатором."""
+    try:
+        indicators = strategy["indicators"]
+        signal = None
+
+        for ind in indicators:
+            name = ind["name"]
+            low = ind["low"]
+            high = ind["high"]
+
+            if name == "rsi":
+                value = await calculate_rsi(exchange, symbol, timeframe)
+                if value is None:
+                    return None
+                if value < low:
+                    signal = "buy" if signal is None else signal
+                elif value > high:
+                    signal = "sell" if signal is None else signal
+            elif name == "sma":
+                short_sma, long_sma = await calculate_sma(exchange, symbol, timeframe)
+                if short_sma is None or long_sma is None:
+                    return None
+                if short_sma > long_sma:
+                    signal = "buy" if signal is None else signal
+                elif short_sma < long_sma:
+                    signal = "sell" if signal is None else signal
+            elif name == "bollinger":
+                sma, upper_band, lower_band = await calculate_bollinger_bands(exchange, symbol, timeframe)
+                if sma is None or upper_band is None or lower_band is None:
+                    return None
+                ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=1)
+                if not ohlcv:
+                    return None
+                current_price = ohlcv[-1][4]
+                if low == "lower" and current_price <= lower_band:
+                    signal = "buy" if signal is None else signal
+                elif high == "upper" and current_price >= upper_band:
+                    signal = "sell" if signal is None else signal
+            elif name == "cci":
+                value = await calculate_cci(exchange, symbol, timeframe)
+                if value is None:
+                    return None
+                if value < low:
+                    signal = "buy" if signal is None else signal
+                elif value > high:
+                    signal = "sell" if signal is None else signal
+
+        return signal
+    except Exception as e:
+        logger.error(f"Failed to execute custom strategy for {symbol}: {type(e).__name__}: {str(e)}")
+        return None
+
 async def select_strategy(exchange, symbol, user, market_state, volatility, timeframe='4h'):
     """Выбирает стратегию в зависимости от типа рынка."""
     market_type = market_state.get("market_type", "sideways")
     logger.info(f"Selecting strategy for {symbol}: market_type={market_type}")
 
+    # Check for custom strategies in Redis
+    redis_client = await get_redis_client()
+    try:
+        strategy_key = f"custom_strategies:{symbol}"
+        custom_strategies = await redis_client.get(strategy_key)
+        if custom_strategies:
+            custom_strategies = json.loads(custom_strategies.decode())
+            if custom_strategies:
+                # Use the top custom strategy
+                top_strategy = custom_strategies[0]
+                logger.info(f"Using custom strategy for {symbol}: {top_strategy['indicators']}")
+                signal = await custom_strategy(exchange, symbol, user, top_strategy, timeframe)
+                if signal is not None:
+                    return signal
+
+    finally:
+        await redis_client.close()
+
+    # Fallback to predefined strategies
     if market_type == "trending":
         return await rsi_sma_strategy(exchange, symbol, user, volatility, timeframe)
     elif market_type == "sideways":
