@@ -1,124 +1,148 @@
 # market_state_analyzer.py
 import logging
-import asyncio
-import aiohttp
-import json
-from symbol_filter import get_cached_symbols, cache_symbols
+import numpy as np
+import pandas as pd
 
 logger = logging.getLogger("main")
 
-async def check_network_access():
-    """Проверяет доступность API MEXC перед выполнением запросов."""
+async def calculate_adx(exchange, symbol, timeframe='4h', period=14, limit=100):
+    """Calculates ADX (Average Directional Index) to determine trend strength."""
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get('https://api.mexc.com/api/v3/ping', timeout=5) as response:
-                if response.status == 200:
-                    logger.info("Network access to MEXC API confirmed")
-                    return True
-                else:
-                    logger.error(f"MEXC API ping failed with status: {response.status}")
-                    return False
+        ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+        if not ohlcv or len(ohlcv) < period + 1:
+            logger.warning(f"Insufficient data to calculate ADX for {symbol}")
+            return 0
+
+        highs = [candle[2] for candle in ohlcv]
+        lows = [candle[3] for candle in ohlcv]
+        closes = [candle[4] for candle in ohlcv]
+
+        df = pd.DataFrame({'high': highs, 'low': lows, 'close': closes})
+        df['plus_dm'] = np.where((df['high'] - df['high'].shift(1)) > (df['low'].shift(1) - df['low']),
+                                np.maximum(df['high'] - df['high'].shift(1), 0), 0)
+        df['minus_dm'] = np.where((df['low'].shift(1) - df['low']) > (df['high'] - df['high'].shift(1)),
+                                 np.maximum(df['low'].shift(1) - df['low'], 0), 0)
+
+        df['tr'] = np.maximum(df['high'] - df['low'],
+                             np.maximum(abs(df['high'] - df['close'].shift(1)),
+                                       abs(df['low'] - df['close'].shift(1))))
+        df['plus_di'] = 100 * df['plus_dm'].rolling(window=period).mean() / df['tr'].rolling(window=period).mean()
+        df['minus_di'] = 100 * df['minus_dm'].rolling(window=period).mean() / df['tr'].rolling(window=period).mean()
+        df['dx'] = 100 * abs(df['plus_di'] - df['minus_di']) / (df['plus_di'] + df['minus_di'])
+        df['adx'] = df['dx'].rolling(window=period).mean()
+
+        adx = df['adx'].iloc[-1]
+        return adx if not np.isnan(adx) else 0
     except Exception as e:
-        logger.error(f"Failed to ping MEXC API: {type(e).__name__}: {str(e)}")
-        return False
+        logger.error(f"Failed to calculate ADX for {symbol}: {type(e).__name__}: {str(e)}")
+        return 0
 
-async def analyze_market_state(exchange_pool, timeframe='1h'):
-    logger.info(f"Analyzing market state with timeframe {timeframe}")
-    
-    # Проверяем доступность API перед запросом
-    if not await check_network_access():
-        logger.error("MEXC API is not accessible, returning default market state")
-        return {'trend': 'neutral', 'volatility': 0.01}, []
-
-    # Получаем кэшированные символы
-    available_symbols, problematic_symbols = await get_cached_symbols()
-    new_available_symbols = []
-    new_problematic_symbols = []
-
+async def calculate_bollinger_width(exchange, symbol, timeframe='4h', period=20, limit=100):
+    """Calculates Bollinger Band Width to determine if the market is sideways."""
     try:
-        # Используем кэшированные рынки из exchange_pool
+        ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+        if not ohlcv or len(ohlcv) < period:
+            logger.warning(f"Insufficient data to calculate Bollinger Bands for {symbol}")
+            return 0
+
+        closes = [candle[4] for candle in ohlcv]
+        df = pd.Series(closes)
+
+        sma = df.rolling(window=period).mean()
+        std = df.rolling(window=period).std()
+        upper_band = sma + 2 * std
+        lower_band = sma - 2 * std
+        bb_width = (upper_band - lower_band) / sma
+
+        return bb_width.iloc[-1] if not np.isnan(bb_width.iloc[-1]) else 0
+    except Exception as e:
+        logger.error(f"Failed to calculate Bollinger Band Width for {symbol}: {type(e).__name__}: {str(e)}")
+        return 0
+
+async def calculate_atr(exchange, symbol, timeframe='4h', period=14, limit=100):
+    """Calculates ATR (Average True Range) to measure volatility."""
+    try:
+        ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+        if not ohlcv or len(ohlcv) < period + 1:
+            logger.warning(f"Insufficient data to calculate ATR for {symbol}")
+            return 0
+
+        highs = [candle[2] for candle in ohlcv]
+        lows = [candle[3] for candle in ohlcv]
+        closes = [candle[4] for candle in ohlcv]
+
+        df = pd.DataFrame({'high': highs, 'low': lows, 'close': closes})
+        df['tr'] = np.maximum(df['high'] - df['low'],
+                             np.maximum(abs(df['high'] - df['close'].shift(1)),
+                                       abs(df['low'] - df['close'].shift(1))))
+        df['atr'] = df['tr'].rolling(window=period).mean()
+
+        atr = df['atr'].iloc[-1]
+        return atr if not np.isnan(atr) else 0
+    except Exception as e:
+        logger.error(f"Failed to calculate ATR for {symbol}: {type(e).__name__}: {str(e)}")
+        return 0
+
+async def analyze_market_state(exchange_pool, timeframe):
+    """
+    Analyzes the market state using the exchange pool.
+    Returns a dictionary with trend, volatility, and market type.
+    """
+    try:
         markets = exchange_pool.get_markets()
         if not markets:
-            logger.error("No markets available, returning default market state")
-            return {'trend': 'neutral', 'volatility': 0.01}, []
-        logger.info(f"Using {len(markets)} cached markets")
+            logger.error("No markets available for analysis")
+            return {"trend": "neutral", "volatility": 0.01, "market_type": "sideways"}
 
-        # Сохраняем данные markets в файл для отладки
-        with open("/root/trading_bot/fetch_markets_data.json", "w") as f:
-            json.dump(markets, f, indent=2)
-        logger.info(f"Saved markets data to /root/trading_bot/fetch_markets_data.json")
-        logger.info(f"First 5 markets: {markets[:5]}")
+        # Use BTC/USDT as a reference symbol for market state
+        reference_symbol = "BTC/USDT"
+        ohlcv = await exchange_pool.exchange.fetch_ohlcv(reference_symbol, timeframe, limit=100)
+        if not ohlcv or len(ohlcv) < 50:
+            logger.warning(f"Insufficient data for {reference_symbol}")
+            return {"trend": "neutral", "volatility": 0.01, "market_type": "sideways"}
 
-        # Считаем статистику для отладки
-        usdt_symbols = 0
-        enabled_symbols = 0
-        active_symbols = 0
-        quote_values = set()
-        market_types = set()
-
-        # Фильтруем активные символы
-        total_change = 0.0
-        count = 0
-        for market in markets:
-            symbol = market['symbol']
-            quote = market.get('quote', '')
-            market_type = market.get('type', 'unknown')
-            quote_values.add(quote)
-            market_types.add(market_type)
-            # Проверяем, что это спотовый рынок
-            is_spot = market_type == 'spot'
-            # Считаем статистику
-            if quote.upper().endswith('USDT'):
-                usdt_symbols += 1
-            if market.get('info', {}).get('state', 'enabled') != '0':
-                enabled_symbols += 1
-            if market.get('active', False):
-                active_symbols += 1
-
-            # Проверяем, активен ли символ (восстановили проверку is_spot)
-            is_active = (is_spot and quote.upper().endswith('USDT'))
-            logger.info(f"Symbol {symbol}: active={market.get('active')}, state={market.get('info', {}).get('state')}, quote={quote}, type={market_type}, is_active={is_active}")
-            if is_active:
-                new_available_symbols.append(symbol)
-                # Используем данные из markets для анализа
-                if 'info' in market and 'change' in market['info']:
-                    try:
-                        price_change = float(market['info']['change'])
-                        total_change += price_change
-                        count += 1
-                    except (ValueError, TypeError) as e:
-                        logger.warning(f"Invalid change data for {symbol}: {e}")
-                        new_problematic_symbols.append(symbol)
-                        new_available_symbols.remove(symbol)
-                        continue
-            else:
-                new_problematic_symbols.append(symbol)
-                logger.warning(f"Symbol {symbol} is inactive, added to problematic symbols")
-
-        logger.info(f"Statistics: USDT symbols={usdt_symbols}, enabled symbols={enabled_symbols}, active symbols={active_symbols}")
-        logger.info(f"Unique quote values: {list(quote_values)}")
-        logger.info(f"Unique market types: {list(market_types)}")
-
-        # Обновляем кэш символов
-        await cache_symbols(new_available_symbols, new_problematic_symbols)
-
-        # Анализируем состояние рынка на основе данных из markets
-        if count > 0:
-            avg_change = total_change / count
-            trend = 'bullish' if avg_change > 0 else 'bearish'
-            volatility = abs(avg_change) / 100
+        # Calculate trend (simple moving average comparison)
+        closes = [candle[4] for candle in ohlcv]
+        short_ma = np.mean(closes[-10:])
+        long_ma = np.mean(closes[-50:])
+        if short_ma > long_ma:
+            trend = "bullish"
+        elif short_ma < long_ma:
+            trend = "bearish"
         else:
-            logger.error("No valid symbols for market state analysis, returning default market state")
-            trend = 'neutral'
-            volatility = 0.01
+            trend = "neutral"
 
-        market_state = {
-            'trend': trend,
-            'volatility': volatility,
-        }
-        logger.info(f"Market state analyzed: {market_state}")
-        return market_state, new_available_symbols
+        # Calculate volatility (standard deviation of returns)
+        returns = np.diff(closes) / closes[:-1]
+        volatility = np.std(returns) * np.sqrt(24 * 365)  # Annualized volatility
+        volatility = volatility if not np.isnan(volatility) else 0.01
 
+        # Determine market type
+        adx = await calculate_adx(exchange_pool.exchange, reference_symbol, timeframe)
+        bb_width = await calculate_bollinger_width(exchange_pool.exchange, reference_symbol, timeframe)
+        atr = await calculate_atr(exchange_pool.exchange, reference_symbol, timeframe)
+
+        # Calculate average ATR for comparison
+        atr_values = []
+        for i in range(-5, 0):
+            sub_ohlcv = ohlcv[i-14:i] if i + 14 <= 0 else ohlcv[-14:]
+            if len(sub_ohlcv) >= 14:
+                sub_atr = await calculate_atr(exchange_pool.exchange, reference_symbol, timeframe, limit=len(sub_ohlcv))
+                atr_values.append(sub_atr)
+        avg_atr = np.mean(atr_values) if atr_values else atr
+
+        # Determine market type
+        if adx > 25:  # Strong trend
+            market_type = "trending"
+        elif bb_width < 0.05:  # Narrow Bollinger Bands indicate sideways market
+            market_type = "sideways"
+        elif atr > avg_atr * 1.5:  # High volatility
+            market_type = "volatile"
+        else:
+            market_type = "sideways"
+
+        logger.info(f"Market state: trend={trend}, volatility={volatility}, market_type={market_type}, adx={adx}, bb_width={bb_width}, atr={atr}, avg_atr={avg_atr}")
+        return {"trend": trend, "volatility": volatility, "market_type": market_type}
     except Exception as e:
         logger.error(f"Failed to analyze market state: {type(e).__name__}: {str(e)}")
-        return {'trend': 'neutral', 'volatility': 0.01}, []
+        return {"trend": "neutral", "volatility": 0.01, "market_type": "sideways"}
