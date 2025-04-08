@@ -1,22 +1,28 @@
-# Roadmap for Simbiot Trading Bot
+# Simbiot Trading Bot Roadmap
 
-## Short-Term Goals (1-2 weeks)
-- [x] Set up basic trading bot structure
-- [x] Implement API integration with MEXC
-- [x] Add basic trading logic with RSI indicators
-- [x] Integrate market analysis modules (`market_analyzer.py`, `market_rentgen_core.py`) for volatility, trend, volume spikes, and sentiment analysis
-- [x] Add dynamic symbol fetching and CoinGecko data integration for robust historical data fetching
-- [x] Optimize data fetching with caching and request delays for CoinGecko API
+## Завершённые этапы
+- [x] Инициализация проекта и базовая структура (2025-04-01)
+- [x] Интеграция с Redis для хранения данных пользователей (2025-04-02)
+- [x] Реализация асинхронного взаимодействия с биржей MEXC через ccxt (2025-04-03)
+- [x] Настройка Celery для параллельной обработки пользователей (2025-04-05)
+- [x] Исправление ошибок с загрузкой рынков и регистрацией задач (2025-04-08)
+  - Успешно загружаются данные OHLCV для 2753 символов.
+  - API-ключи для MEXC работают, рынки доступны.
+- [x] Упрощение стратегий для генерации сигналов (2025-04-08)
+  - Добавлена простая RSI-стратегия в `strategy_manager.py`.
+  - Логирование сигналов в `start_trading_all.py`.
 
-## Medium-Term Goals (1-2 months)
-- [x] Scale system for 1000+ users with async processing (users processed in parallel, background retraining implemented)
-- [x] Add advanced market analysis (volatility, trends, volume spikes, sentiment)
-- [x] Optimize symbol filtering with volume pre-filtering and increased batch size
-- [ ] Implement risk management module
-- [ ] Add connection pooling and rate limiting for API requests
+## Текущие задачи
+- [ ] Генерация и выполнение реальных сделок
+  - Проверить, почему сигналы не генерируются (возможно, рынок в боковике).
+  - Реализовать выполнение сделок через MEXC API.
+- [ ] Оптимизация производительности
+  - Уменьшить время обработки символов (сейчас ~1.2 секунды на пользователя).
+  - Оптимизировать количество воркеров Celery для снижения нагрузки на CPU (ForkPoolWorker использует 13-17% CPU).
 
-## Long-Term Goals (3-6 months)
-- [ ] Integrate AI-based prediction models
-- [ ] Add support for multiple exchanges (Binance, Bybit)
-- [ ] Implement portfolio management features
-- [ ] Enhance symbol selection with advanced market activity checks (e.g., minimum trading volume)
+## Будущие улучшения
+- [ ] Интеграция с другими биржами (Binance, Bybit)
+- [ ] Добавление уведомлений о сделках через Telegram
+- [ ] Реализация более сложных стратегий (например, машинное обучение)
+- [ ] Создание графического интерфейса для мониторинга
+- [ ] Автоматизация тестирования стратегий
