@@ -1,7 +1,10 @@
 # start_trading_all.py
 import logging
 import redis.asyncio as redis
+import numpy as np
+import pandas as pd
 from strategy_manager import select_strategy
+from learning.trade_evaluator import evaluate_trade
 
 logger = logging.getLogger("main")
 
@@ -60,25 +63,6 @@ async def calculate_order_amount(exchange, symbol, volatility, avg_volume):
         logger.error(f"Failed to calculate order amount for {symbol}: {type(e).__name__}: {str(e)}")
         return 0
 
-async def update_trade_success(symbol, user, profit):
-    """Обновляет статистику успешности сделок в Redis."""
-    redis_client = await get_redis_client()
-    try:
-        success_key = f"trade_success:{symbol}:{user}"
-        success_data = await redis_client.get(success_key)
-        if success_data:
-            success_data = json.loads(success_data.decode())
-        else:
-            success_data = {'total_trades': 0, 'successful_trades': 0}
-
-        success_data['total_trades'] += 1
-        if profit > 0:
-            success_data['successful_trades'] += 1
-
-        await redis_client.set(success_key, json.dumps(success_data), ex=86400 * 30)
-    finally:
-        await redis_client.close()
-
 async def start_trading_all(exchange, valid_symbols, user, market_state):
     logger.debug(f"Exchange instance received: {exchange}")
     logger.debug(f"Exchange methods available: {dir(exchange)}")
@@ -91,7 +75,7 @@ async def start_trading_all(exchange, valid_symbols, user, market_state):
             avg_volume = await calculate_average_volume(exchange, symbol)
 
             # Select strategy based on market type
-            signal = await select_strategy(exchange, symbol, user, market_state, volatility)
+            signal, strategy_info = await select_strategy(exchange, symbol, user, market_state, volatility)
             if signal is None:
                 logger.debug(f"No trade for {symbol}: No signal generated")
                 continue
@@ -107,14 +91,17 @@ async def start_trading_all(exchange, valid_symbols, user, market_state):
                 logger.info(f"Buy trade executed for {symbol} on mexc: {order}")
                 logger.info(f"Order details: id={order.get('id')}, status={order.get('status')}, filled={order.get('filled')}")
                 signal_count += 1
+                # Calculate profit (simplified for now)
+                profit = 0  # TBD: Calculate actual profit based on position
+                await evaluate_trade(symbol, user, strategy_info, profit)
             elif signal == "sell":
                 logger.debug(f"Placing market sell order for {symbol} with amount {amount}")
                 order = await exchange.create_market_sell_order(symbol, amount)
                 logger.info(f"Sell trade executed for {symbol} on mexc: {order}")
                 logger.info(f"Order details: id={order.get('id')}, status={order.get('status')}, filled={order.get('filled')}")
                 signal_count += 1
-
-            await update_trade_success(symbol, user, 0)  # Profit calculation TBD
+                profit = 0  # TBD: Calculate actual profit based on position
+                await evaluate_trade(symbol, user, strategy_info, profit)
         except Exception as e:
             logger.error(f"Failed to process {symbol}: {type(e).__name__}: {str(e)}")
     return signal_count
