@@ -3,6 +3,7 @@ import logging
 import redis.asyncio as redis
 import numpy as np
 import pandas as pd
+import json
 from strategy_manager import select_strategy
 from learning.trade_evaluator import evaluate_trade
 
@@ -63,6 +64,49 @@ async def calculate_order_amount(exchange, symbol, volatility, avg_volume):
         logger.error(f"Failed to calculate order amount for {symbol}: {type(e).__name__}: {str(e)}")
         return 0
 
+async def manage_position(exchange, symbol, user, signal, amount, current_price):
+    """Управляет позицией: открывает или закрывает позицию и возвращает прибыль."""
+    redis_client = await get_redis_client()
+    try:
+        position_key = f"position:{symbol}:{user}"
+        position_data = await redis_client.get(position_key)
+        if position_data:
+            position_data = json.loads(position_data.decode())
+        else:
+            position_data = {'amount': 0, 'entry_price': 0}
+
+        profit = 0
+        if signal == "buy":
+            # Open or add to position
+            if position_data['amount'] > 0:
+                # Average the entry price
+                total_amount = position_data['amount'] + amount
+                total_cost = (position_data['amount'] * position_data['entry_price']) + (amount * current_price)
+                position_data['entry_price'] = total_cost / total_amount
+                position_data['amount'] = total_amount
+            else:
+                position_data['amount'] = amount
+                position_data['entry_price'] = current_price
+        elif signal == "sell":
+            if position_data['amount'] > 0:
+                # Close position and calculate profit
+                profit = (current_price - position_data['entry_price']) * min(amount, position_data['amount'])
+                position_data['amount'] -= amount
+                if position_data['amount'] <= 0:
+                    position_data['amount'] = 0
+                    position_data['entry_price'] = 0
+            else:
+                logger.warning(f"No position to sell for {symbol}")
+                return 0
+
+        await redis_client.set(position_key, json.dumps(position_data), ex=86400 * 30)
+        return profit
+    except Exception as e:
+        logger.error(f"Failed to manage position for {symbol}: {type(e).__name__}: {str(e)}")
+        return 0
+    finally:
+        await redis_client.close()
+
 async def start_trading_all(exchange, valid_symbols, user, market_state):
     logger.debug(f"Exchange instance received: {exchange}")
     logger.debug(f"Exchange methods available: {dir(exchange)}")
@@ -85,14 +129,22 @@ async def start_trading_all(exchange, valid_symbols, user, market_state):
                 logger.warning(f"Skipping trade for {symbol}: invalid order amount {amount}")
                 continue
 
+            # Get current price for profit calculation
+            ticker = await exchange.fetch_ticker(symbol)
+            current_price = ticker['last']
+            if not current_price or current_price <= 0:
+                logger.warning(f"Invalid price for {symbol}: {current_price}")
+                continue
+
+            # Manage position and calculate profit
+            profit = await manage_position(exchange, symbol, user, signal, amount, current_price)
+
             if signal == "buy":
                 logger.debug(f"Placing market buy order for {symbol} with amount {amount}")
                 order = await exchange.create_market_buy_order(symbol, amount)
                 logger.info(f"Buy trade executed for {symbol} on mexc: {order}")
                 logger.info(f"Order details: id={order.get('id')}, status={order.get('status')}, filled={order.get('filled')}")
                 signal_count += 1
-                # Calculate profit (simplified for now)
-                profit = 0  # TBD: Calculate actual profit based on position
                 await evaluate_trade(symbol, user, strategy_info, profit)
             elif signal == "sell":
                 logger.debug(f"Placing market sell order for {symbol} with amount {amount}")
@@ -100,7 +152,6 @@ async def start_trading_all(exchange, valid_symbols, user, market_state):
                 logger.info(f"Sell trade executed for {symbol} on mexc: {order}")
                 logger.info(f"Order details: id={order.get('id')}, status={order.get('status')}, filled={order.get('filled')}")
                 signal_count += 1
-                profit = 0  # TBD: Calculate actual profit based on position
                 await evaluate_trade(symbol, user, strategy_info, profit)
         except Exception as e:
             logger.error(f"Failed to process {symbol}: {type(e).__name__}: {str(e)}")
