@@ -4,8 +4,86 @@ import time
 import ccxt.async_support as ccxt
 import pandas as pd
 import numpy as np
+import redis.asyncio as redis
+import json
 
 logger = logging.getLogger("main")
+
+async def get_redis_client():
+    """Инициализация Redis клиента."""
+    return await redis.from_url("redis://localhost:6379/0")
+
+async def save_position(user, symbol, trade):
+    """Сохраняет информацию об открытой позиции в Redis."""
+    redis_client = await get_redis_client()
+    try:
+        position_key = f"positions:{user}:{symbol}"
+        await redis_client.set(position_key, json.dumps(trade), ex=86400)  # Храним 24 часа
+        logger.debug(f"Saved position for {symbol} for user {user}")
+    except Exception as e:
+        logger.error(f"Failed to save position for {symbol}: {type(e).__name__}: {str(e)}")
+    finally:
+        await redis_client.close()
+
+async def get_position(user, symbol):
+    """Получает информацию об открытой позиции из Redis."""
+    redis_client = await get_redis_client()
+    try:
+        position_key = f"positions:{user}:{symbol}"
+        position_data = await redis_client.get(position_key)
+        if position_data:
+            return json.loads(position_data.decode())
+        return None
+    except Exception as e:
+        logger.error(f"Failed to get position for {symbol}: {type(e).__name__}: {str(e)}")
+        return None
+    finally:
+        await redis_client.close()
+
+async def delete_position(user, symbol):
+    """Удаляет информацию об открытой позиции из Redis."""
+    redis_client = await get_redis_client()
+    try:
+        position_key = f"positions:{user}:{symbol}"
+        await redis_client.delete(position_key)
+        logger.debug(f"Deleted position for {symbol} for user {user}")
+    except Exception as e:
+        logger.error(f"Failed to delete position for {symbol}: {type(e).__name__}: {str(e)}")
+    finally:
+        await redis_client.close()
+
+async def get_all_positions(user):
+    """Получает все открытые позиции пользователя из Redis."""
+    redis_client = await get_redis_client()
+    try:
+        positions = []
+        keys = await redis_client.keys(f"positions:{user}:*")
+        for key in keys:
+            position_data = await redis_client.get(key)
+            if position_data:
+                positions.append(json.loads(position_data.decode()))
+        return positions
+    except Exception as e:
+        logger.error(f"Failed to get all positions for user {user}: {type(e).__name__}: {str(e)}")
+        return []
+    finally:
+        await redis_client.close()
+
+async def calculate_profit(exchange, trade):
+    """Рассчитывает текущую прибыль/убыток по позиции."""
+    try:
+        symbol = trade['symbol']
+        amount = trade['amount']
+        buy_price = trade['price']
+        
+        ticker = await exchange.fetch_ticker(symbol)
+        current_price = ticker['last']
+        
+        profit = (current_price - buy_price) * amount
+        return profit
+    except Exception as e:
+        logger.error(f"Failed to calculate profit for {trade['symbol']}: {type(e).__name__}: {str(e)}")
+        return 0
 
 async def evaluate_trade(exchange, trade, symbol, user, market_state):
     try:
@@ -34,22 +112,73 @@ async def evaluate_trade(exchange, trade, symbol, user, market_state):
         # Простая логика закрытия позиции
         if current_rsi > 70 or profit > 0.05 * trade['cost'] or holding_time > 24:
             logger.info(f"Closing position for {symbol}: profit={profit:.2f}, RSI={current_rsi:.2f}")
-            return True
-        return False
+            return True, profit
+        return False, profit
     except Exception as e:
         logger.error(f"Failed to evaluate trade for {symbol}: {type(e).__name__}: {str(e)}")
-        return False
+        return False, 0
+
+async def evaluate_potential_trade(exchange, symbol, timeframe='1h', limit=100):
+    """Оценивает потенциальную прибыльность нового символа."""
+    try:
+        ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+        df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+        
+        df['sma_20'] = df['close'].rolling(window=20).mean()
+        current_price = df['close'].iloc[-1]
+        sma_20 = df['sma_20'].iloc[-1]
+        
+        # Простая метрика прибыльности: если цена выше SMA и тренд растущий
+        if current_price > sma_20:
+            # Оцениваем потенциальную прибыль на основе последних 20 свечей
+            recent_returns = df['close'].pct_change().tail(20).mean() * 100  # Средняя доходность в %
+            return recent_returns
+        return 0
+    except Exception as e:
+        logger.error(f"Failed to evaluate potential trade for {symbol}: {type(e).__name__}: {str(e)}")
+        return 0
 
 async def start_trading_all(exchange, symbols, user, market_state):
     signal_count = 0
+    
+    # Проверяем баланс
+    balance = await exchange.fetch_balance()
+    usdt_balance = balance.get('USDT', {}).get('free', 0)
+    
+    # Получаем все открытые позиции
+    positions = await get_all_positions(user)
+    logger.info(f"User {user} has {len(positions)} open positions")
+    
+    # Оцениваем текущие позиции
+    positions_with_profit = []
+    for position in positions:
+        should_close, profit = await evaluate_trade(exchange, position, position['symbol'], user, market_state)
+        if should_close:
+            try:
+                # Закрываем позицию
+                await exchange.create_market_sell_order(position['symbol'], position['amount'])
+                logger.info(f"Sell trade executed for {position['symbol']} on {exchange.id}")
+                await delete_position(user, position['symbol'])
+                usdt_balance += profit  # Увеличиваем доступный баланс
+            except Exception as e:
+                logger.error(f"Failed to close position for {position['symbol']}: {type(e).__name__}: {str(e)}")
+        else:
+            positions_with_profit.append((position, profit))
+    
+    # Проверяем баланс после закрытия позиций
+    if usdt_balance < 10:
+        logger.warning(f"Insufficient USDT balance for {user}: {usdt_balance}, waiting for positions to close")
+        return signal_count
+    
+    # Сортируем позиции по прибыльности (по убыванию)
+    positions_with_profit.sort(key=lambda x: x[1], reverse=True)
+    
     for symbol in symbols:
         try:
-            # Проверяем баланс
-            balance = await exchange.fetch_balance()
-            usdt_balance = balance.get('USDT', {}).get('free', 0)
-            if usdt_balance < 10:
-                logger.warning(f"Insufficient USDT balance for {user}: {usdt_balance}")
-                continue
+            # Проверяем, есть ли уже открытая позиция для этого символа
+            existing_position = await get_position(user, symbol)
+            if existing_position:
+                continue  # Пропускаем символ, если позиция уже открыта
             
             # Получаем данные OHLCV
             ohlcv = await exchange.fetch_ohlcv(symbol, '1h', limit=100)
@@ -60,10 +189,39 @@ async def start_trading_all(exchange, symbols, user, market_state):
             current_price = df['close'].iloc[-1]
             sma_20 = df['sma_20'].iloc[-1]
             
+            # Оцениваем потенциальную прибыльность
+            potential_profit = await evaluate_potential_trade(exchange, symbol)
+            
+            # Проверяем, стоит ли открывать новую позицию
             if current_price > sma_20:
                 # Проверяем, что цена не нулевая
                 if current_price <= 0:
                     logger.warning(f"Skipping {symbol}: current price is zero or negative ({current_price})")
+                    continue
+                
+                # Проверяем баланс
+                if usdt_balance < 10:
+                    # Если баланса недостаточно, проверяем, можем ли продать менее прибыльную позицию
+                    if positions_with_profit:
+                        least_profitable_position, least_profit = positions_with_profit[-1]
+                        if potential_profit > least_profit:
+                            # Продаём менее прибыльную позицию
+                            try:
+                                await exchange.create_market_sell_order(least_profitable_position['symbol'], least_profitable_position['amount'])
+                                logger.info(f"Sell trade executed for {least_profitable_position['symbol']} to free up funds")
+                                await delete_position(user, least_profitable_position['symbol'])
+                                usdt_balance += least_profit
+                                positions_with_profit.pop()  # Удаляем проданную позицию
+                            except Exception as e:
+                                logger.error(f"Failed to sell {least_profitable_position['symbol']}: {type(e).__name__}: {str(e)}")
+                                continue
+                    else:
+                        logger.warning(f"Insufficient USDT balance for {user}: {usdt_balance}, no positions to sell")
+                        continue
+                
+                # Проверяем баланс снова
+                if usdt_balance < 10:
+                    logger.warning(f"Still insufficient USDT balance for {user}: {usdt_balance}")
                     continue
                 
                 # Рассчитываем сумму ордера (10% от баланса, но не менее 10 USDT)
@@ -80,13 +238,11 @@ async def start_trading_all(exchange, symbols, user, market_state):
                 logger.info(f"Buy trade executed for {symbol} on {exchange.id}: {trade}")
                 logger.info(f"Order details: id={trade['id']}, status={trade['status']}, filled={trade['filled']}")
                 
-                # Оцениваем сделку
-                should_close = await evaluate_trade(exchange, trade, symbol, user, market_state)
-                if should_close:
-                    # Закрываем позицию
-                    await exchange.create_market_sell_order(symbol, amount)
-                    logger.info(f"Sell trade executed for {symbol} on {exchange.id}")
+                # Сохраняем информацию об открытой позиции
+                await save_position(user, symbol, trade)
                 
+                # Обновляем баланс
+                usdt_balance -= amount_usd
                 signal_count += 1
         except Exception as e:
             logger.error(f"Failed to process {symbol}: {type(e).__name__}: {str(e)}")
