@@ -4,6 +4,7 @@ import asyncio
 import sys
 import os
 import ccxt.async_support as ccxt
+import time
 from user_manager import UserManager
 from market_state_analyzer import analyze_market_state
 from symbol_filter import filter_symbols
@@ -53,10 +54,10 @@ async def main():
     logger.debug("Starting main execution")
     async with UserManager() as user_manager:
         cycle = 1
-        since = 1000
-        limit = 100
+        since = int(time.time() * 1000) - 2_592_000_000  # 30 дней назад
+        limit = 50  # Уменьшаем до 50 свечей
         timeframe = '4h'
-        batch_size = 500  # Размер батча для фильтрации символов
+        batch_size = 500  # Размер батча для фильтрации и торговли
         while True:
             logger.info(f"Starting cycle {cycle}")
             users = await user_manager.get_users()

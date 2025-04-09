@@ -3,6 +3,7 @@ import logging
 import asyncio
 import redis.asyncio as redis
 import json
+import time
 
 logger = logging.getLogger("main")
 
@@ -38,6 +39,7 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user=None, 
                     continue
                 try:
                     ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, since=since, limit=limit)
+                    logger.debug(f"Fetched {len(ohlcv)} candles for {symbol}")
                     if len(ohlcv) < limit:
                         logger.warning(f"Skipping {symbol}: insufficient data (only {len(ohlcv)} candles)")
                         problematic_symbols.append(symbol)
