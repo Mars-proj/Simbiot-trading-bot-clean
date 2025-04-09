@@ -1,306 +1,112 @@
 # strategy_manager.py
 import logging
-import numpy as np
 import pandas as pd
+import numpy as np
 import redis.asyncio as redis
 import json
-from learning.strategy_optimizer import optimize_strategies
-from learning.trade_evaluator import evaluate_trade, get_strategy_success
 
 logger = logging.getLogger("main")
 
 async def get_redis_client():
-    """Инициализация Redis клиента."""
     return await redis.from_url("redis://localhost:6379/0")
 
-async def calculate_rsi(exchange, symbol, timeframe='4h', period=14, limit=100):
-    """Вычисляет RSI для символа."""
+async def calculate_rsi(exchange, symbol, timeframe='4h', limit=100):
+    """Рассчитывает RSI с кэшированием."""
     try:
+        redis_client = await get_redis_client()
+        rsi_key = f"rsi:{symbol}:{timeframe}"
+        cached_rsi = await redis_client.get(rsi_key)
+        if cached_rsi:
+            return float(cached_rsi.decode())
+
         ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
-        if not ohlcv or len(ohlcv) < period:
+        if not ohlcv or len(ohlcv) < 14:
             logger.warning(f"Insufficient data to calculate RSI for {symbol}")
             return None
-
         closes = [candle[4] for candle in ohlcv]
-        df = pd.Series(closes)
-
-        delta = df.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-
+        closes_series = pd.Series(closes)
+        delta = closes_series.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
         rs = gain / loss
         rsi = 100 - (100 / (1 + rs))
-        return rsi.iloc[-1]
+        rsi_value = rsi.iloc[-1]
+
+        await redis_client.set(rsi_key, str(rsi_value), ex=3600)  # Кэшируем на 1 час
+        return rsi_value
     except Exception as e:
         logger.error(f"Failed to calculate RSI for {symbol}: {type(e).__name__}: {str(e)}")
         return None
-
-async def calculate_sma(exchange, symbol, timeframe='4h', short_period=10, long_period=20, limit=100):
-    """Вычисляет скользящие средние (короткую и длинную) для символа."""
-    try:
-        ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
-        if not ohlcv or len(ohlcv) < long_period:
-            logger.warning(f"Insufficient data to calculate SMA for {symbol}")
-            return None, None
-
-        closes = [candle[4] for candle in ohlcv]
-        df = pd.Series(closes)
-
-        short_sma = df.rolling(window=short_period).mean().iloc[-1]
-        long_sma = df.rolling(window=long_period).mean().iloc[-1]
-        return short_sma, long_sma
-    except Exception as e:
-        logger.error(f"Failed to calculate SMA for {symbol}: {type(e).__name__}: {str(e)}")
-        return None, None
-
-async def calculate_bollinger_bands(exchange, symbol, timeframe='4h', period=20, limit=100):
-    """Вычисляет Bollinger Bands для символа."""
-    try:
-        ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
-        if not ohlcv or len(ohlcv) < period:
-            logger.warning(f"Insufficient data to calculate Bollinger Bands for {symbol}")
-            return None, None, None
-
-        closes = [candle[4] for candle in ohlcv]
-        df = pd.Series(closes)
-
-        sma = df.rolling(window=period).mean()
-        std = df.rolling(window=period).std()
-        upper_band = sma + 2 * std
-        lower_band = sma - 2 * std
-
-        return sma.iloc[-1], upper_band.iloc[-1], lower_band.iloc[-1]
-    except Exception as e:
-        logger.error(f"Failed to calculate Bollinger Bands for {symbol}: {type(e).__name__}: {str(e)}")
-        return None, None, None
-
-async def calculate_cci(exchange, symbol, timeframe='4h', period=20, limit=100):
-    """Вычисляет CCI (Commodity Channel Index) для символа."""
-    try:
-        ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
-        if not ohlcv or len(ohlcv) < period:
-            logger.warning(f"Insufficient data to calculate CCI for {symbol}")
-            return None
-
-        highs = [candle[2] for candle in ohlcv]
-        lows = [candle[3] for candle in ohlcv]
-        closes = [candle[4] for candle in ohlcv]
-
-        df = pd.DataFrame({'high': highs, 'low': lows, 'close': closes})
-        df['tp'] = (df['high'] + df['low'] + df['close']) / 3
-        df['sma_tp'] = df['tp'].rolling(window=period).mean()
-        df['mad'] = df['tp'].rolling(window=period).apply(lambda x: np.mean(np.abs(x - np.mean(x))), raw=True)
-        df['cci'] = (df['tp'] - df['sma_tp']) / (0.015 * df['mad'])
-
-        cci = df['cci'].iloc[-1]
-        return cci if not np.isnan(cci) else 0
-    except Exception as e:
-        logger.error(f"Failed to calculate CCI for {symbol}: {type(e).__name__}: {str(e)}")
-        return 0
-
-async def get_dynamic_thresholds(indicator, volatility, user, symbol, base_low=40, base_high=60):
-    """Вычисляет динамические пороговые значения для индикатора."""
-    redis_client = await get_redis_client()
-    try:
-        success_key = f"trade_success:{symbol}:{user}"
-        success_data = await redis_client.get(success_key)
-        success_rate = 0.5
-        if success_data:
-            success_data = json.loads(success_data.decode())
-            total_trades = success_data.get('total_trades', 1)
-            successful_trades = success_data.get('successful_trades', 0)
-            success_rate = successful_trades / total_trades if total_trades > 0 else 0.5
-
-        volatility_factor = 1 + (volatility / 10)
-        success_factor = 1 - (success_rate - 0.5)
-
-        if indicator == "rsi":
-            low = base_low * success_factor / volatility_factor
-            high = base_high * success_factor * volatility_factor
-            low = max(30, min(45, low))
-            high = max(55, min(70, high))
-        elif indicator == "cci":
-            low = -100 * success_factor / volatility_factor
-            high = 100 * success_factor * volatility_factor
-            low = max(-150, min(-50, low))
-            high = min(150, max(50, high))
-        else:
-            low = base_low
-            high = base_high
-
-        return low, high
     finally:
         await redis_client.close()
 
-async def rsi_sma_strategy(exchange, symbol, user, volatility, timeframe='4h'):
-    """Стратегия для трендового рынка: RSI + SMA."""
+async def get_dynamic_thresholds(redis_client, symbol, market_state, volatility, success_rate):
+    """Получает динамические пороговые значения RSI с учётом самообучения."""
     try:
-        # Check if strategy is disabled
-        strategy_data = await get_strategy_success("rsi_sma", symbol, user)
-        if strategy_data and strategy_data.get('disabled', False):
-            logger.info(f"Strategy rsi_sma is disabled for {symbol}")
-            return None, None
+        threshold_key = f"thresholds:{symbol}"
+        threshold_data = await redis_client.get(threshold_key)
+        if threshold_data:
+            threshold_data = json.loads(threshold_data.decode())
+            base_rsi_buy = threshold_data.get('rsi_buy', 30)
+            base_rsi_sell = threshold_data.get('rsi_sell', 70)
+        else:
+            base_rsi_buy = 30
+            base_rsi_sell = 70
 
-        rsi = await calculate_rsi(exchange, symbol, timeframe)
+        # Корректируем пороги на основе волатильности и состояния рынка
+        if market_state == "bullish":
+            base_rsi_buy -= 5 * volatility  # Более агрессивная покупка
+            base_rsi_sell -= 5 * volatility  # Более ранняя продажа
+        elif market_state == "bearish":
+            base_rsi_buy += 5 * volatility  # Более осторожная покупка
+            base_rsi_sell += 5 * volatility  # Более поздняя продажа
+
+        # Корректируем пороги на основе успешности сделок
+        if success_rate < 0.4:  # Если успешность низкая, делаем пороги более консервативными
+            base_rsi_buy += 5
+            base_rsi_sell -= 5
+        elif success_rate > 0.6:  # Если успешность высокая, делаем пороги более агрессивными
+            base_rsi_buy -= 5
+            base_rsi_sell += 5
+
+        # Ограничиваем пороги в разумных пределах
+        base_rsi_buy = max(20, min(40, base_rsi_buy))
+        base_rsi_sell = max(60, min(80, base_rsi_sell))
+
+        # Сохраняем обновлённые пороги
+        threshold_data = {'rsi_buy': base_rsi_buy, 'rsi_sell': base_rsi_sell}
+        await redis_client.set(threshold_key, json.dumps(threshold_data), ex=86400 * 30)
+        return base_rsi_buy, base_rsi_sell
+    except Exception as e:
+        logger.error(f"Failed to fetch dynamic thresholds for {symbol}: {type(e).__name__}: {str(e)}")
+        return 30, 70
+    finally:
+        await redis_client.close()
+
+async def select_strategy(exchange, symbol, user, market_state, volatility):
+    redis_client = await get_redis_client()
+    try:
+        rsi = await calculate_rsi(exchange, symbol)
         if rsi is None:
             return None, None
 
-        short_sma, long_sma = await calculate_sma(exchange, symbol, timeframe)
-        if short_sma is None or long_sma is None:
-            return None, None
+        # Получаем историческую прибыльность для корректировки порогов
+        profit_key = f"profitability:{symbol}"
+        profit_data = await redis_client.get(profit_key)
+        success_rate = 0.5
+        if profit_data:
+            profit_data = json.loads(profit_data.decode())
+            success_rate = profit_data.get('success_rate', 0.5)
 
-        base_low = strategy_data['parameters'].get('base_low', 40) if strategy_data else 40
-        base_high = strategy_data['parameters'].get('base_high', 60) if strategy_data else 60
-        rsi_buy, rsi_sell = await get_dynamic_thresholds("rsi", volatility, user, symbol, base_low=base_low, base_high=base_high)
+        rsi_buy, rsi_sell = await get_dynamic_thresholds(redis_client, symbol, market_state, volatility, success_rate)
 
-        if rsi < rsi_buy and short_sma > long_sma:
-            return "buy", {"name": "rsi_sma", "parameters": {"base_low": base_low, "base_high": base_high}}
-        elif rsi > rsi_sell and short_sma < long_sma:
-            return "sell", {"name": "rsi_sma", "parameters": {"base_low": base_low, "base_high": base_high}}
-        else:
-            return None, None
-    except Exception as e:
-        logger.error(f"Failed to execute RSI+SMA strategy for {symbol}: {type(e).__name__}: {str(e)}")
+        if rsi < rsi_buy:
+            return "buy", f"RSI strategy (buy at RSI {rsi:.2f} < {rsi_buy:.2f})"
+        elif rsi > rsi_sell:
+            return "sell", f"RSI strategy (sell at RSI {rsi:.2f} > {rsi_sell:.2f})"
         return None, None
-
-async def bollinger_strategy(exchange, symbol, user, volatility, timeframe='4h'):
-    """Стратегия для бокового рынка: Bollinger Bands."""
-    try:
-        # Check if strategy is disabled
-        strategy_data = await get_strategy_success("bollinger", symbol, user)
-        if strategy_data and strategy_data.get('disabled', False):
-            logger.info(f"Strategy bollinger is disabled for {symbol}")
-            return None, None
-
-        sma, upper_band, lower_band = await calculate_bollinger_bands(exchange, symbol, timeframe)
-        if sma is None or upper_band is None or lower_band is None:
-            return None, None
-
-        ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=1)
-        if not ohlcv:
-            return None, None
-        current_price = ohlcv[-1][4]
-
-        if current_price <= lower_band:
-            return "buy", {"name": "bollinger"}
-        elif current_price >= upper_band:
-            return "sell", {"name": "bollinger"}
-        else:
-            return None, None
     except Exception as e:
-        logger.error(f"Failed to execute Bollinger Bands strategy for {symbol}: {type(e).__name__}: {str(e)}")
+        logger.error(f"Failed to select strategy for {symbol}: {type(e).__name__}: {str(e)}")
         return None, None
-
-async def atr_cci_strategy(exchange, symbol, user, volatility, timeframe='4h'):
-    """Стратегия для волатильного рынка: ATR + CCI."""
-    try:
-        # Check if strategy is disabled
-        strategy_data = await get_strategy_success("atr_cci", symbol, user)
-        if strategy_data and strategy_data.get('disabled', False):
-            logger.info(f"Strategy atr_cci is disabled for {symbol}")
-            return None, None
-
-        cci = await calculate_cci(exchange, symbol, timeframe)
-        if cci is None:
-            return None, None
-
-        base_low = strategy_data['parameters'].get('base_low', -100) if strategy_data else -100
-        base_high = strategy_data['parameters'].get('base_high', 100) if strategy_data else 100
-        cci_low, cci_high = await get_dynamic_thresholds("cci", volatility, user, symbol, base_low=base_low, base_high=base_high)
-
-        if cci < cci_low:
-            return "buy", {"name": "atr_cci", "parameters": {"base_low": base_low, "base_high": base_high}}
-        elif cci > cci_high:
-            return "sell", {"name": "atr_cci", "parameters": {"base_low": base_low, "base_high": base_high}}
-        else:
-            return None, None
-    except Exception as e:
-        logger.error(f"Failed to execute ATR+CCI strategy for {symbol}: {type(e).__name__}: {str(e)}")
-        return None, None
-
-async def custom_strategy(exchange, symbol, user, strategy, timeframe='4h'):
-    """Выполняет пользовательскую стратегию, сгенерированную оптимизатором."""
-    try:
-        indicators = strategy["indicators"]
-        signal = None
-
-        for ind in indicators:
-            name = ind["name"]
-            low = ind["low"]
-            high = ind["high"]
-
-            if name == "rsi":
-                value = await calculate_rsi(exchange, symbol, timeframe)
-                if value is None:
-                    return None, None
-                if value < low:
-                    signal = "buy" if signal is None else signal
-                elif value > high:
-                    signal = "sell" if signal is None else signal
-            elif name == "sma":
-                short_sma, long_sma = await calculate_sma(exchange, symbol, timeframe)
-                if short_sma is None or long_sma is None:
-                    return None, None
-                if short_sma > long_sma:
-                    signal = "buy" if signal is None else signal
-                elif short_sma < long_sma:
-                    signal = "sell" if signal is None else signal
-            elif name == "bollinger":
-                sma, upper_band, lower_band = await calculate_bollinger_bands(exchange, symbol, timeframe)
-                if sma is None or upper_band is None or lower_band is None:
-                    return None, None
-                ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=1)
-                if not ohlcv:
-                    return None, None
-                current_price = ohlcv[-1][4]
-                if low == "lower" and current_price <= lower_band:
-                    signal = "buy" if signal is None else signal
-                elif high == "upper" and current_price >= upper_band:
-                    signal = "sell" if signal is None else signal
-            elif name == "cci":
-                value = await calculate_cci(exchange, symbol, timeframe)
-                if value is None:
-                    return None, None
-                if value < low:
-                    signal = "buy" if signal is None else signal
-                elif value > high:
-                    signal = "sell" if signal is None else signal
-
-        return signal, {"name": "custom", "indicators": indicators}
-    except Exception as e:
-        logger.error(f"Failed to execute custom strategy for {symbol}: {type(e).__name__}: {str(e)}")
-        return None, None
-
-async def select_strategy(exchange, symbol, user, market_state, volatility, timeframe='4h'):
-    """Выбирает стратегию в зависимости от типа рынка."""
-    market_type = market_state.get("market_type", "sideways")
-    logger.info(f"Selecting strategy for {symbol}: market_type={market_type}")
-
-    # Check for custom strategies in Redis
-    redis_client = await get_redis_client()
-    try:
-        strategy_key = f"custom_strategies:{symbol}"
-        custom_strategies = await redis_client.get(strategy_key)
-        if custom_strategies:
-            custom_strategies = json.loads(custom_strategies.decode())
-            if custom_strategies:
-                # Use the top custom strategy
-                top_strategy = custom_strategies[0]
-                logger.info(f"Using custom strategy for {symbol}: {top_strategy['indicators']}")
-                signal, strategy_info = await custom_strategy(exchange, symbol, user, top_strategy, timeframe)
-                if signal is not None:
-                    return signal, strategy_info
-
     finally:
         await redis_client.close()
-
-    # Fallback to predefined strategies
-    if market_type == "trending":
-        return await rsi_sma_strategy(exchange, symbol, user, volatility, timeframe)
-    elif market_type == "sideways":
-        return await bollinger_strategy(exchange, symbol, user, volatility, timeframe)
-    elif market_type == "volatile":
-        return await atr_cci_strategy(exchange, symbol, user, volatility, timeframe)
-    else:
-        logger.warning(f"Unknown market type {market_type} for {symbol}, defaulting to no trade")
-        return None, None

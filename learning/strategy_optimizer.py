@@ -5,8 +5,7 @@ import pandas as pd
 import redis.asyncio as redis
 import json
 import itertools
-from backtester import backtest_strategy
-
+from .backtester import backtest_strategy
 logger = logging.getLogger("main")
 
 async def get_redis_client():

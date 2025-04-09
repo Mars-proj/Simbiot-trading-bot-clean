@@ -1,0 +1,980 @@
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 15:10:22
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7fbc46b181d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 15:17:15
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7fafdf40c410
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 15:20:21
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f2d540f41d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 15:21:07
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f32a7ed03d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 16:08:02
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f7637fb41d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 16:13:07
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f46d7d10410
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 16:44:16
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f19b67141d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 16:48:16
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7fb32600c410
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 17:06:58
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f1e674141d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 17:08:05
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f835d3ac410
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 17:40:54
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f3e0dcb81d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-08 17:55:46
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f9d61ab0410
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 02:35:44
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7fd276c141d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 03:06:30
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f8987e141d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 03:16:37
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f9242e0c410
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 03:19:26
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f949d1181d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 04:06:03
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7fcdeae0c410
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 04:32:47
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f449dbf41d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 05:06:38
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         trading_bot:0x7f6346ed0410
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 06:42:33
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7f2b51735b10
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 06:46:12
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7f04fc72e010
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 06:48:03
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7f63f9f35b10
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/.local/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/.local/pipx/venvs/celery/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 07:12:23
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7f94c5631dd0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 07:29:28
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7f446a61dd90
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/trading_bot/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+Restoring 2 unacknowledged message(s)
+
+
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 07:30:36
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7fedc0e4db10
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 07:48:07
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7f0796d89d90
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/trading_bot/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 08:04:29
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7f0b22669cd0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 08:07:47
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7fe0afe33410
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/trading_bot/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 08:28:13
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7fb71b63b210
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 09:53:30
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7fbb4ec37490
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 10:05:51
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7fa638a3e950
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/trading_bot/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 10:07:59
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7fee1cc3af10
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 10:19:40
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7f0dcd33b450
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 10:37:50
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7f76bc1372d0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+
+
+Restarting celery worker (/root/trading_bot/venv/bin/celery -A celery_app worker --loglevel=info --concurrency=4 --logfile=celery_worker.log)
+/root/trading_bot/venv/lib/python3.11/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@debian v5.5.1 (immunity)
+--- ***** ----- 
+-- ******* ---- Linux-6.1.0-29-amd64-x86_64-with-glibc2.36 2025-04-09 12:58:41
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         celery_app:0x7f5034a3afd0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . celery_app.process_user_task
+

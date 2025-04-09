@@ -2,69 +2,58 @@
 import logging
 import pandas as pd
 import numpy as np
+import redis.asyncio as redis
+import json
 
 logger = logging.getLogger("main")
 
-async def analyze_market_state(exchange_pool, timeframe='4h'):
+async def get_redis_client():
+    return await redis.from_url("redis://localhost:6379/0")
+
+async def analyze_market_state(exchange, symbol, timeframe='4h', limit=100):
+    """Анализирует состояние рынка с учётом самообучения."""
     try:
-        logger.debug("Fetching markets")
-        markets = exchange_pool.get_markets()
-        if not markets:
-            logger.error("No markets available, using default market state")
-            return {'trend': 'neutral', 'volatility': 0.01, 'market_type': 'sideways'}, []
+        redis_client = await get_redis_client()
+        state_key = f"market_state:{symbol}:{timeframe}"
+        cached_state = await redis_client.get(state_key)
+        if cached_state:
+            return cached_state.decode()
 
-        symbols = [symbol for symbol in markets.keys() if symbol.endswith('/USDT')]
-        if not symbols:
-            logger.error("No USDT symbols available, using default market state")
-            return {'trend': 'neutral', 'volatility': 0.01, 'market_type': 'sideways'}, []
+        ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+        if not ohlcv or len(ohlcv) < 20:
+            logger.warning(f"Insufficient data to analyze market state for {symbol}")
+            return "neutral"
 
-        logger.debug(f"Analyzing market state with {len(symbols)} symbols")
-        total_volatility = 0
-        trend_scores = {'up': 0, 'down': 0, 'neutral': 0}
-        for symbol in symbols[:10]:  # Ограничиваем анализ первыми 10 символами
-            try:
-                ohlcv = await exchange_pool.fetch_ohlcv(symbol, timeframe, limit=100)
-                if not ohlcv or len(ohlcv) < 2:
-                    logger.warning(f"Insufficient OHLCV data for {symbol}, skipping")
-                    continue
+        closes = [candle[4] for candle in ohlcv]
+        closes_series = pd.Series(closes)
 
-                closes = [candle[4] for candle in ohlcv]
-                df = pd.Series(closes)
-                returns = df.pct_change().dropna()
-                volatility = returns.std() * np.sqrt(24 * 365)
-                total_volatility += volatility if not np.isnan(volatility) else 0
+        # Рассчитываем скользящие средние
+        sma_short = closes_series.rolling(window=5).mean().iloc[-1]
+        sma_long = closes_series.rolling(window=20).mean().iloc[-1]
 
-                short_sma = df.rolling(window=10).mean().iloc[-1]
-                long_sma = df.rolling(window=20).mean().iloc[-1]
-                if short_sma > long_sma:
-                    trend_scores['up'] += 1
-                elif short_sma < long_sma:
-                    trend_scores['down'] += 1
-                else:
-                    trend_scores['neutral'] += 1
-            except Exception as e:
-                logger.error(f"Failed to analyze {symbol}: {type(e).__name__}: {str(e)}")
-                continue
+        # Определяем тренд
+        if sma_short > sma_long:
+            state = "bullish"
+        elif sma_short < sma_long:
+            state = "bearish"
+        else:
+            state = "neutral"
 
-        if not trend_scores['up'] and not trend_scores['down'] and not trend_scores['neutral']:
-            logger.error("No valid data for market analysis, using default market state")
-            return {'trend': 'neutral', 'volatility': 0.01, 'market_type': 'sideways'}, []
+        # Корректируем состояние на основе исторической успешности
+        profit_key = f"profitability:{symbol}"
+        profit_data = await redis_client.get(profit_key)
+        if profit_data:
+            profit_data = json.loads(profit_data.decode())
+            success_rate = profit_data.get('success_rate', 0.5)
+            if success_rate < 0.4 and state == "bullish":
+                state = "neutral"  # Если успешность низкая, не доверяем бычьему тренду
+            elif success_rate > 0.6 and state == "bearish":
+                state = "neutral"  # Если успешность высокая, не доверяем медвежьему тренду
 
-        avg_volatility = total_volatility / (trend_scores['up'] + trend_scores['down'] + trend_scores['neutral'])
-        dominant_trend = max(trend_scores, key=trend_scores.get)
-
-        market_type = 'sideways'
-        if avg_volatility > 0.5:
-            market_type = 'volatile'
-        elif dominant_trend in ['up', 'down']:
-            market_type = 'trending'
-
-        market_state = {
-            'trend': dominant_trend,
-            'volatility': avg_volatility,
-            'market_type': market_type
-        }
-        return market_state, symbols
+        await redis_client.set(state_key, state, ex=3600)  # Кэшируем на 1 час
+        return state
     except Exception as e:
-        logger.error(f"Failed to analyze market state: {type(e).__name__}: {str(e)}")
-        return {'trend': 'neutral', 'volatility': 0.01, 'market_type': 'sideways'}, []
+        logger.error(f"Failed to analyze market state for {symbol}: {type(e).__name__}: {str(e)}")
+        return "neutral"
+    finally:
+        await redis_client.close()

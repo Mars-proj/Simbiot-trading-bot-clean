@@ -1,7 +1,7 @@
 # user_manager.py
-import redis.asyncio as redis
 import logging
-from config_keys import USER_API_KEYS
+import json
+import redis.asyncio as redis
 
 logger = logging.getLogger("main")
 
@@ -9,35 +9,32 @@ class UserManager:
     def __init__(self):
         self.redis_client = None
 
-    async def get_redis_client(self):
-        if self.redis_client is None:
-            self.redis_client = await redis.from_url("redis://localhost:6379/0")
-        return self.redis_client
+    async def __aenter__(self):
+        self.redis_client = await redis.from_url("redis://localhost:6379/0")
+        return self
 
-    async def get_users(self):
-        redis_client = await self.get_redis_client()
-        try:
-            # Проверяем, есть ли пользователи в Redis
-            users_data = await redis_client.hgetall("users")
-            if users_data:
-                users = {user.decode(): eval(cred.decode()) for user, cred in users_data.items()}
-                logger.info(f"Loaded {len(users)} users from Redis")
-                return users
-            else:
-                # Если Redis пуст, используем тестовых пользователей из config_keys.py
-                logger.warning("No users found in Redis, using test users from config_keys.py")
-                users = USER_API_KEYS
-                # Сохраняем тестовых пользователей в Redis
-                for user, creds in users.items():
-                    await redis_client.hset("users", user, str(creds))
-                logger.info(f"Saved {len(users)} test users to Redis")
-                return users
-        except Exception as e:
-            logger.error(f"Failed to load users from Redis: {type(e).__name__}: {str(e)}")
-            # В случае ошибки возвращаем тестовых пользователей
-            return USER_API_KEYS
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
 
     async def close(self):
+        """Закрывает соединение с Redis."""
         if self.redis_client:
+            logger.debug("Closing Redis connection in UserManager")
             await self.redis_client.close()
             self.redis_client = None
+
+    async def get_users(self):
+        """Загружает пользователей из Redis."""
+        try:
+            users_data = await self.redis_client.get("users")
+            if users_data:
+                return json.loads(users_data.decode())
+            else:
+                logger.warning("No users found in Redis, returning empty dict")
+                return {}
+        except redis.RedisError as e:
+            logger.error(f"Failed to load users from Redis: {type(e).__name__}: {str(e)}")
+            return {}
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to decode users JSON: {type(e).__name__}: {str(e)}")
+            return {}
