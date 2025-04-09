@@ -78,7 +78,7 @@ async def main():
     """
     Main execution loop for the trading bot.
 
-    - Loads users from Redis.
+    - Loads users from PostgreSQL.
     - Filters symbols for each user.
     - Distributes trading tasks to Celery workers.
     - Runs in an infinite loop with a dynamic interval.
@@ -88,6 +88,17 @@ async def main():
     exchange_pool = ExchangePool()
     detector = ExchangeDetector()
     async with UserManager() as user_manager:
+        # Добавляем пользователя с предоставленными ключами
+        user_id = "main_user"
+        api_key = "mx0vglM30RTqlJzTGF"
+        api_secret = "74320c83880348768a6b68973d50854b"
+        try:
+            await user_manager.add_user(user_id, api_key, api_secret)
+            logger.info(f"Added user {user_id} with provided API keys")
+        except Exception as e:
+            logger.error(f"Failed to add user {user_id}: {type(e).__name__}: {str(e)}")
+            return
+
         cycle = 1
         since = int(time.time() * 1000) - 2_592_000_000  # 30 дней назад
         limit = 50
@@ -97,11 +108,11 @@ async def main():
             start_time = time.time()
             logger.info(f"Starting cycle {cycle}")
             users = await user_manager.get_users()
-            logger.info(f"Loaded {len(users)} users from Redis: {users}")
+            logger.info(f"Loaded {len(users)} users from PostgreSQL: {users}")
             tasks = []
             for user, credentials in users.items():
                 try:
-                    all_symbols = await exchange_pool.get_exchange("mexc", credentials).markets.keys()
+                    all_symbols = list(exchange_pool.get_exchange("mexc", credentials).markets.keys())
                     valid_symbols = await filter_symbols(exchange_pool.get_exchange("mexc", credentials), all_symbols, since, limit, timeframe, user=user, batch_size=batch_size)
                 except Exception as e:
                     logger.error(f"Failed to load symbols for user {user}: {type(e).__name__}: {str(e)}")

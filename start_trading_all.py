@@ -191,21 +191,21 @@ async def evaluate_trade(exchange, trade, symbol, user, market_state, notifier, 
         if current_price >= take_profit or current_price <= stop_loss:
             logger.info(f"Closing position for {symbol}: profit={profit:.2f}, price={current_price}")
             await notifier.notify("user@example.com", f"Position Closed: {symbol}", f"Closed position for {symbol} with profit {profit:.2f}")
-            strategy_manager.record_result(trade.get('strategy', 'unknown'), profit)
+            await strategy_manager.record_result(trade.get('strategy', 'unknown'), profit)
             return True, profit
         
         stop_loss_order = await set_stop_loss(exchange, symbol, amount, buy_price, volatility)
         if stop_loss_order:
             logger.info(f"Stop-loss triggered for {symbol}: {stop_loss_order}")
             await notifier.notify("user@example.com", f"Stop-Loss Triggered: {symbol}", f"Stop-loss triggered for {symbol}")
-            strategy_manager.record_result(trade.get('strategy', 'unknown'), profit)
+            await strategy_manager.record_result(trade.get('strategy', 'unknown'), profit)
             return True, profit
         
         trailing_stop_order = await set_trailing_stop(exchange, symbol, amount, buy_price)
         if trailing_stop_order:
             logger.info(f"Trailing stop triggered for {symbol}: {trailing_stop_order}")
             await notifier.notify("user@example.com", f"Trailing Stop Triggered: {symbol}", f"Trailing stop triggered for {symbol}")
-            strategy_manager.record_result(trade.get('strategy', 'unknown'), profit)
+            await strategy_manager.record_result(trade.get('strategy', 'unknown'), profit)
             return True, profit
         
         logger.debug(f"Evaluated trade for {symbol}: profit={profit:.2f}, holding_time={holding_time:.2f} hours")
@@ -213,31 +213,6 @@ async def evaluate_trade(exchange, trade, symbol, user, market_state, notifier, 
     except Exception as e:
         logger.error(f"Failed to evaluate trade for {symbol}: {type(e).__name__}: {str(e)}")
         return False, 0
-
-async def optimize_thresholds(data, strategy_manager):
-    """
-    Optimize trading thresholds using genetic algorithms.
-
-    Args:
-        data (pd.DataFrame): OHLCV data.
-        strategy_manager: StrategyManager instance.
-
-    Returns:
-        dict: Optimized thresholds.
-    """
-    def evaluate(individual):
-        profit_target, stop_loss, trailing_percent = individual
-        # Симуляция торговли с текущими порогами
-        # Здесь нужно добавить логику симуляции, но для примера возвращаем случайное значение
-        return random.uniform(-100, 100),
-
-    optimizer = GeneticOptimizer(evaluate, [(0.01, 0.1), (0.01, 0.05), (0.005, 0.02)])
-    best_params = optimizer.optimize()
-    return {
-        "profit_target": best_params[0],
-        "stop_loss": best_params[1],
-        "trailing_percent": best_params[2]
-    }
 
 async def start_trading_all(exchange, symbols, user, market_state):
     """
@@ -257,10 +232,29 @@ async def start_trading_all(exchange, symbols, user, market_state):
     """
     signal_count = 0
     notifier = NotificationManager()
-    strategy_manager = StrategyManager()
     retraining_manager = RetrainingManager()
     predictor = Predictor(retraining_manager)
-    
+    strategy_manager = StrategyManager(exchange, "BTC/USDT", "1h", since=int(time.time() * 1000) - 30 * 24 * 60 * 60 * 1000, limit=1000)
+
+    # Оптимизируем параметры стратегий
+    await strategy_manager.optimize_strategy_params()
+
+    # Генерируем новую стратегию каждые 10 сделок
+    trade_counter_key = f"trade_counter:{user}"
+    redis_client = await get_redis_client()
+    try:
+        trade_counter = await redis_client.get(trade_counter_key)
+        trade_counter = int(trade_counter.decode()) if trade_counter else 0
+        if trade_counter >= 10:
+            await strategy_manager.generate_new_strategy(f"generated_strategy_{trade_counter // 10}")
+            await redis_client.set(trade_counter_key, 0)
+        else:
+            await redis_client.set(trade_counter_key, trade_counter + 1)
+    except Exception as e:
+        logger.error(f"Failed to manage trade counter: {type(e).__name__}: {str(e)}")
+    finally:
+        await redis_client.close()
+
     positions = await get_all_positions(user)
     logger.info(f"User {user} has {len(positions)} open positions")
     
@@ -369,7 +363,7 @@ async def start_trading_all(exchange, symbols, user, market_state):
             if signal not in ["buy", "sell"]:
                 raise ValueError(f"Invalid signal: {signal}")
             
-            strategy_name, ab_signal = strategy_manager.ab_test(df)
+            strategy_name, ab_signal = await strategy_manager.ab_test(df)
             if ab_signal != signal:
                 signal = ab_signal
             
