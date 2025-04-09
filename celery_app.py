@@ -1,4 +1,8 @@
 from celery import Celery
+import logging
+import asyncio
+
+logger = logging.getLogger("celery")
 
 app = Celery('trading_bot', broker='amqp://guest:guest@localhost/', backend='rpc://')
 
@@ -30,9 +34,12 @@ def process_user_task(self, user, credentials, since, limit, timeframe, symbol_b
         exchange_pool: ExchangePool instance.
         detector: ExchangeDetector instance.
     """
+    logger.info(f"Starting task for user {user} with {len(symbol_batch)} symbols")
     from core import process_user
-    import asyncio
     try:
-        await process_user(user, credentials, since, limit, timeframe, symbol_batch, exchange_pool, detector)
+        # Вызываем асинхронную функцию через asyncio.run()
+        asyncio.run(process_user(user, credentials, since, limit, timeframe, symbol_batch, exchange_pool, detector))
+        logger.info(f"Task completed for user {user}")
     except Exception as e:
+        logger.error(f"Task failed for user {user}: {type(e).__name__}: {str(e)}")
         self.retry(countdown=60)
