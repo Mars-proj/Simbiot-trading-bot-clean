@@ -6,7 +6,7 @@ ccxt==4.4.73
 celery==5.3.4
 deap==1.3.3
 fastapi==0.103.1
-numpy==1.25.2
+numpy==1.24.3
 pandas==2.1.0
 prometheus-client==0.17.1
 river==0.13.0
