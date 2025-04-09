@@ -179,6 +179,32 @@ async def start_trading_all(exchange, symbols, user, market_state):
     positions_with_profit.sort(key=lambda x: x[1], reverse=True)
     
     for symbol in symbols:
+        # Проверяем баланс перед каждой сделкой
+        balance = await exchange.fetch_balance()
+        usdt_balance = balance.get('USDT', {}).get('free', 0)
+        if usdt_balance < 10:
+            # Если баланса недостаточно, проверяем, можем ли продать менее прибыльную позицию
+            if positions_with_profit:
+                potential_profit = await evaluate_potential_trade(exchange, symbol)
+                least_profitable_position, least_profit = positions_with_profit[-1]
+                if potential_profit > least_profit:
+                    # Продаём менее прибыльную позицию
+                    try:
+                        sell_order = await exchange.create_market_sell_order(least_profitable_position['symbol'], least_profitable_position['amount'])
+                        logger.info(f"Sell trade executed for {least_profitable_position['symbol']} to free up funds: {sell_order}")
+                        await delete_position(user, least_profitable_position['symbol'])
+                        # Обновляем баланс после продажи
+                        balance = await exchange.fetch_balance()
+                        usdt_balance = balance.get('USDT', {}).get('free', 0)
+                        logger.info(f"Updated USDT balance after selling {least_profitable_position['symbol']}: {usdt_balance}")
+                        positions_with_profit.pop()
+                    except Exception as e:
+                        logger.error(f"Failed to sell {least_profitable_position['symbol']}: {type(e).__name__}: {str(e)}")
+                        continue
+            else:
+                logger.warning(f"Insufficient USDT balance for {user}: {usdt_balance}, no positions to sell")
+                break  # Прерываем цикл, если баланс недостаточен и нет позиций для продажи
+        
         try:
             # Проверяем, есть ли уже открытая позиция для этого символа
             existing_position = await get_position(user, symbol)
@@ -221,18 +247,18 @@ async def start_trading_all(exchange, symbols, user, market_state):
                                 balance = await exchange.fetch_balance()
                                 usdt_balance = balance.get('USDT', {}).get('free', 0)
                                 logger.info(f"Updated USDT balance after selling {least_profitable_position['symbol']}: {usdt_balance}")
-                                positions_with_profit.pop()  # Удаляем проданную позицию
+                                positions_with_profit.pop()
                             except Exception as e:
                                 logger.error(f"Failed to sell {least_profitable_position['symbol']}: {type(e).__name__}: {str(e)}")
                                 continue
                     else:
                         logger.warning(f"Insufficient USDT balance for {user}: {usdt_balance}, no positions to sell")
-                        continue
+                        break  # Прерываем цикл, если баланс недостаточен и нет позиций для продажи
                 
                 # Проверяем баланс снова
                 if usdt_balance < 10:
                     logger.warning(f"Still insufficient USDT balance for {user}: {usdt_balance}")
-                    continue
+                    break  # Прерываем цикл
                 
                 # Рассчитываем сумму ордера (10% от баланса, но не менее 10 USDT)
                 amount_usd = max(10, usdt_balance * 0.1)
@@ -267,4 +293,5 @@ async def start_trading_all(exchange, symbols, user, market_state):
         except Exception as e:
             logger.error(f"Failed to process {symbol}: {type(e).__name__}: {str(e)}")
             continue
+    
     return signal_count

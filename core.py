@@ -89,8 +89,22 @@ async def main():
                     task = process_user_task.delay(user, credentials, since, limit, timeframe, symbol_batch)
                     tasks.append(task)
 
-            for task in tasks:
-                await task.wait()
+            # Ждём завершения всех задач
+            if tasks:  # Проверяем, есть ли задачи
+                for task in tasks:
+                    try:
+                        # Ждём, пока задача не завершится (или не произойдёт ошибка)
+                        while not task.ready():
+                            await asyncio.sleep(1)
+                        if task.successful():
+                            logger.debug(f"Task {task.id} completed successfully")
+                        else:
+                            logger.error(f"Task {task.id} failed: {task.get(propagate=False)}")
+                    except Exception as e:
+                        logger.error(f"Error waiting for task {task.id}: {type(e).__name__}: {str(e)}")
+            else:
+                logger.warning("No tasks to process in this cycle")
+
             logger.info(f"Completed cycle {cycle}")
             cycle += 1
             await asyncio.sleep(120)  # Цикл каждые 2 минуты
