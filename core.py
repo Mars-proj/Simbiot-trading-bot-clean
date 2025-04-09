@@ -56,6 +56,7 @@ async def main():
         since = 1000
         limit = 100
         timeframe = '4h'
+        batch_size = 500  # Размер батча для фильтрации символов
         while True:
             logger.info(f"Starting cycle {cycle}")
             users = await user_manager.get_users()
@@ -72,7 +73,8 @@ async def main():
                     })
                     await exchange.load_markets()
                     all_symbols = list(exchange.markets.keys())
-                    valid_symbols = await filter_symbols(exchange, all_symbols, since, limit, timeframe, user=user)  # Исправленный вызов
+                    # Фильтруем символы по батчам
+                    valid_symbols = await filter_symbols(exchange, all_symbols, since, limit, timeframe, user=user, batch_size=batch_size)
                 except Exception as e:
                     logger.error(f"Failed to load symbols for user {user}: {type(e).__name__}: {str(e)}")
                     continue
@@ -80,8 +82,7 @@ async def main():
                     if exchange:
                         await exchange.close()
 
-                # Разделяем символы на батчи по 500 для масштабируемости
-                batch_size = 500
+                # Разделяем валидные символы на батчи по 500 для торговли
                 for i in range(0, len(valid_symbols), batch_size):
                     symbol_batch = valid_symbols[i:i + batch_size]
                     task = process_user_task.delay(user, credentials, since, limit, timeframe, symbol_batch)
