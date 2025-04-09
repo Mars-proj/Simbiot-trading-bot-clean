@@ -17,6 +17,37 @@ def calculate_volatility(df, window=20):
     volatility = returns.rolling(window=window).std() * np.sqrt(window)
     return volatility
 
+def calculate_sma(df, window=20):
+    """
+    Calculate the Simple Moving Average (SMA) of the closing price.
+
+    Args:
+        df: DataFrame with OHLCV data (columns: ['timestamp', 'open', 'high', 'low', 'close', 'volume']).
+        window: Rolling window size for SMA calculation (default: 20).
+
+    Returns:
+        Series: SMA values.
+    """
+    return df['close'].rolling(window=window).mean()
+
+def calculate_rsi(df, window=14):
+    """
+    Calculate the Relative Strength Index (RSI) of the closing price.
+
+    Args:
+        df: DataFrame with OHLCV data (columns: ['timestamp', 'open', 'high', 'low', 'close', 'volume']).
+        window: Rolling window size for RSI calculation (default: 14).
+
+    Returns:
+        Series: RSI values.
+    """
+    delta = df['close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
 def extract_features(df):
     """
     Extract features from OHLCV data for machine learning.
@@ -34,15 +65,11 @@ def extract_features(df):
     df['volatility'] = calculate_volatility(df)
     
     # Moving averages
-    df['sma_20'] = df['close'].rolling(window=20).mean()
-    df['sma_50'] = df['close'].rolling(window=50).mean()
+    df['sma_20'] = calculate_sma(df, window=20)
+    df['sma_50'] = calculate_sma(df, window=50)
     
-    # RSI (Relative Strength Index)
-    delta = df['close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-    rs = gain / loss
-    df['rsi'] = 100 - (100 / (1 + rs))
+    # RSI
+    df['rsi'] = calculate_rsi(df)
     
     # MACD (Moving Average Convergence Divergence)
     exp1 = df['close'].ewm(span=12, adjust=False).mean()
