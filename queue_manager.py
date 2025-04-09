@@ -1,8 +1,11 @@
 import aio_pika
+import logging
+
+logger = logging.getLogger("main")
 
 class QueueManager:
     """
-    Manage task queues using RabbitMQ.
+    Manage task queues using RabbitMQ with error handling.
     """
 
     def __init__(self, url="amqp://guest:guest@localhost/"):
@@ -18,11 +21,25 @@ class QueueManager:
 
     async def connect(self):
         """
-        Connect to RabbitMQ.
+        Connect to RabbitMQ with retry logic.
+
+        Raises:
+            Exception: If connection fails after retries.
         """
-        self.connection = await aio_pika.connect_robust(self.url)
-        self.channel = await self.connection.channel()
-        await self.channel.declare_queue("trading_tasks")
+        retries = 3
+        for attempt in range(retries):
+            try:
+                self.connection = await aio_pika.connect_robust(self.url)
+                self.channel = await self.connection.channel()
+                await self.channel.declare_queue("trading_tasks")
+                logger.info("Successfully connected to RabbitMQ")
+                return
+            except Exception as e:
+                logger.error(f"Failed to connect to RabbitMQ (attempt {attempt+1}/{retries}): {type(e).__name__}: {str(e)}")
+                if attempt < retries - 1:
+                    await asyncio.sleep(5)
+                else:
+                    raise Exception("Failed to connect to RabbitMQ after retries")
 
     async def publish_task(self, task):
         """
@@ -30,14 +47,29 @@ class QueueManager:
 
         Args:
             task (str): Task to publish.
+
+        Raises:
+            Exception: If publishing fails.
         """
-        await self.channel.default_exchange.publish(
-            aio_pika.Message(body=task.encode()),
-            routing_key="trading_tasks"
-        )
+        if not self.channel:
+            await self.connect()
+        try:
+            await self.channel.default_exchange.publish(
+                aio_pika.Message(body=task.encode()),
+                routing_key="trading_tasks"
+            )
+            logger.debug(f"Published task to RabbitMQ: {task}")
+        except Exception as e:
+            logger.error(f"Failed to publish task to RabbitMQ: {type(e).__name__}: {str(e)}")
+            raise
 
     async def close(self):
         """
         Close the RabbitMQ connection.
         """
-        await self.connection.close()
+        if self.connection:
+            try:
+                await self.connection.close()
+                logger.info("Closed RabbitMQ connection")
+            except Exception as e:
+                logger.error(f"Failed to close RabbitMQ connection: {type(e).__name__}: {str(e)}")

@@ -109,8 +109,15 @@ async def main():
 
                 for i in range(0, len(valid_symbols), batch_size):
                     symbol_batch = valid_symbols[i:i + batch_size]
-                    task = process_user_task.delay(user, credentials, since, limit, timeframe, symbol_batch, exchange_pool, detector)
-                    tasks.append(task)
+                    try:
+                        task = process_user_task.delay(user, credentials, since, limit, timeframe, symbol_batch, exchange_pool, detector)
+                        tasks.append(task)
+                    except Exception as e:
+                        logger.error(f"Failed to submit task for user {user}: {type(e).__name__}: {str(e)}")
+                        if "ConnectionError" in str(e) or "TimeoutError" in str(e):
+                            logger.warning("RabbitMQ connection issue detected, retrying in 60 seconds...")
+                            await asyncio.sleep(60)
+                            continue
 
             if tasks:
                 for task in tasks:
@@ -123,6 +130,9 @@ async def main():
                             logger.error(f"Task {task.id} failed: {task.get(propagate=False)}")
                     except Exception as e:
                         logger.error(f"Error waiting for task {task.id}: {type(e).__name__}: {str(e)}")
+                        if "ConnectionError" in str(e) or "TimeoutError" in str(e):
+                            logger.warning("RabbitMQ connection issue detected, retrying in 60 seconds...")
+                            await asyncio.sleep(60)
             else:
                 logger.warning("No tasks to process in this cycle")
 

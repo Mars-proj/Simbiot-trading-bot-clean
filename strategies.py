@@ -1,37 +1,56 @@
 import pandas as pd
-from logging_setup import logger_main
+import ccxt.async_support as ccxt
+from genetic_optimizer import GeneticOptimizer
 
-def recommend_strategy(data, short_period=20, long_period=50):
-    """Recommends a trading strategy based on moving averages."""
-    try:
-        if not isinstance(data, pd.DataFrame):
-            logger_main.error(f"Data must be a pandas DataFrame, got {type(data)}")
-            return None
-        if data.empty:
-            logger_main.error("DataFrame is empty")
-            return None
-        if 'close' not in data.columns:
-            logger_main.error("DataFrame must contain a 'close' column")
-            return None
+async def optimize_rsi_thresholds(exchange, symbol, timeframe, since, limit):
+    """
+    Optimize RSI thresholds using genetic algorithms.
 
-        # Calculate moving averages
-        short_ma = data['close'].rolling(window=short_period).mean()
-        long_ma = data['close'].rolling(window=long_period).mean()
+    Args:
+        exchange: Exchange instance.
+        symbol (str): Trading symbol.
+        timeframe (str): Timeframe for OHLCV data.
+        since (int): Timestamp to fetch from (in milliseconds).
+        limit (int): Number of candles to fetch.
 
-        # Determine strategy
-        latest_short_ma = short_ma.iloc[-1]
-        latest_long_ma = long_ma.iloc[-1]
-        if latest_short_ma > latest_long_ma:
-            strategy = 'buy'  # Trend-following: go long
-        elif latest_short_ma < latest_long_ma:
-            strategy = 'sell'  # Trend-following: go short
-        else:
-            strategy = 'hold'  # Neutral
+    Returns:
+        dict: Optimized RSI thresholds.
+    """
+    optimizer = GeneticOptimizer(exchange, symbol, timeframe, since, limit)
+    best_params = await optimizer.optimize()
+    return {
+        "buy_threshold": best_params[0] * 100,  # Преобразуем в диапазон 0-100
+        "sell_threshold": best_params[1] * 100
+    }
 
-        logger_main.info(f"Recommended strategy: {strategy} (short_ma={latest_short_ma:.2f}, long_ma={latest_long_ma:.2f})")
-        return strategy
-    except Exception as e:
-        logger_main.error(f"Error recommending strategy: {e}")
-        return None
+def sma_strategy(data):
+    """
+    Simple Moving Average trading strategy.
 
-__all__ = ['recommend_strategy']
+    Args:
+        data (pd.DataFrame): OHLCV data.
+
+    Returns:
+        str: Trading signal ('buy' or 'sell').
+    """
+    sma_20 = data['close'].rolling(window=20).mean()
+    return "buy" if data['close'].iloc[-1] > sma_20.iloc[-1] else "sell"
+
+def rsi_strategy(data, buy_threshold=30, sell_threshold=70):
+    """
+    RSI trading strategy with dynamic thresholds.
+
+    Args:
+        data (pd.DataFrame): OHLCV data.
+        buy_threshold (float): RSI buy threshold (default: 30).
+        sell_threshold (float): RSI sell threshold (default: 70).
+
+    Returns:
+        str: Trading signal ('buy', 'sell', or 'hold').
+    """
+    delta = data['close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    return "buy" if rsi.iloc[-1] < buy_threshold else "sell" if rsi.iloc[-1] > sell_threshold else "hold"
