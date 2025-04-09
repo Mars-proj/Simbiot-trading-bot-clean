@@ -1,112 +1,73 @@
-# strategy_manager.py
-import logging
-import pandas as pd
-import numpy as np
-import redis.asyncio as redis
-import json
+from strategies import sma_strategy, rsi_strategy
+from ab_testing import ABTesting
 
-logger = logging.getLogger("main")
+class StrategyManager:
+    """
+    Manage trading strategies with A/B testing.
+    """
 
-async def get_redis_client():
-    return await redis.from_url("redis://localhost:6379/0")
+    def __init__(self):
+        self.strategies = {
+            'sma': sma_strategy,
+            'rsi': rsi_strategy,
+        }
+        self.ab_testing = ABTesting(self.strategies)
 
-async def calculate_rsi(exchange, symbol, timeframe='4h', limit=100):
-    """Рассчитывает RSI с кэшированием."""
-    try:
-        redis_client = await get_redis_client()
-        rsi_key = f"rsi:{symbol}:{timeframe}"
-        cached_rsi = await redis_client.get(rsi_key)
-        if cached_rsi:
-            return float(cached_rsi.decode())
+    def add_strategy(self, name, strategy_func):
+        """
+        Add a trading strategy.
 
-        ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
-        if not ohlcv or len(ohlcv) < 14:
-            logger.warning(f"Insufficient data to calculate RSI for {symbol}")
-            return None
-        closes = [candle[4] for candle in ohlcv]
-        closes_series = pd.Series(closes)
-        delta = closes_series.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-        rs = gain / loss
-        rsi = 100 - (100 / (1 + rs))
-        rsi_value = rsi.iloc[-1]
+        Args:
+            name (str): Strategy name.
+            strategy_func: Strategy function.
+        """
+        self.strategies[name] = strategy_func
+        self.ab_testing = ABTesting(self.strategies)
 
-        await redis_client.set(rsi_key, str(rsi_value), ex=3600)  # Кэшируем на 1 час
-        return rsi_value
-    except Exception as e:
-        logger.error(f"Failed to calculate RSI for {symbol}: {type(e).__name__}: {str(e)}")
-        return None
-    finally:
-        await redis_client.close()
+    def execute_strategy(self, name, data):
+        """
+        Execute a trading strategy.
 
-async def get_dynamic_thresholds(redis_client, symbol, market_state, volatility, success_rate):
-    """Получает динамические пороговые значения RSI с учётом самообучения."""
-    try:
-        threshold_key = f"thresholds:{symbol}"
-        threshold_data = await redis_client.get(threshold_key)
-        if threshold_data:
-            threshold_data = json.loads(threshold_data.decode())
-            base_rsi_buy = threshold_data.get('rsi_buy', 30)
-            base_rsi_sell = threshold_data.get('rsi_sell', 70)
-        else:
-            base_rsi_buy = 30
-            base_rsi_sell = 70
+        Args:
+            name (str): Strategy name.
+            data (pd.DataFrame): OHLCV data.
 
-        # Корректируем пороги на основе волатильности и состояния рынка
-        if market_state == "bullish":
-            base_rsi_buy -= 5 * volatility  # Более агрессивная покупка
-            base_rsi_sell -= 5 * volatility  # Более ранняя продажа
-        elif market_state == "bearish":
-            base_rsi_buy += 5 * volatility  # Более осторожная покупка
-            base_rsi_sell += 5 * volatility  # Более поздняя продажа
+        Returns:
+            str: Trading signal.
+        """
+        if name not in self.strategies:
+            raise ValueError(f"Strategy {name} not found")
+        return self.strategies[name](data)
 
-        # Корректируем пороги на основе успешности сделок
-        if success_rate < 0.4:  # Если успешность низкая, делаем пороги более консервативными
-            base_rsi_buy += 5
-            base_rsi_sell -= 5
-        elif success_rate > 0.6:  # Если успешность высокая, делаем пороги более агрессивными
-            base_rsi_buy -= 5
-            base_rsi_sell += 5
+    def ab_test(self, data):
+        """
+        Run A/B testing on strategies.
 
-        # Ограничиваем пороги в разумных пределах
-        base_rsi_buy = max(20, min(40, base_rsi_buy))
-        base_rsi_sell = max(60, min(80, base_rsi_sell))
+        Args:
+            data (pd.DataFrame): OHLCV data.
 
-        # Сохраняем обновлённые пороги
-        threshold_data = {'rsi_buy': base_rsi_buy, 'rsi_sell': base_rsi_sell}
-        await redis_client.set(threshold_key, json.dumps(threshold_data), ex=86400 * 30)
-        return base_rsi_buy, base_rsi_sell
-    except Exception as e:
-        logger.error(f"Failed to fetch dynamic thresholds for {symbol}: {type(e).__name__}: {str(e)}")
-        return 30, 70
-    finally:
-        await redis_client.close()
+        Returns:
+            tuple: (strategy_name, signal)
+        """
+        strategy_name = self.ab_testing.select_strategy()
+        signal = self.execute_strategy(strategy_name, data)
+        return strategy_name, signal
 
-async def select_strategy(exchange, symbol, user, market_state, volatility):
-    redis_client = await get_redis_client()
-    try:
-        rsi = await calculate_rsi(exchange, symbol)
-        if rsi is None:
-            return None, None
+    def record_result(self, strategy_name, profit):
+        """
+        Record the result of a strategy for A/B testing.
 
-        # Получаем историческую прибыльность для корректировки порогов
-        profit_key = f"profitability:{symbol}"
-        profit_data = await redis_client.get(profit_key)
-        success_rate = 0.5
-        if profit_data:
-            profit_data = json.loads(profit_data.decode())
-            success_rate = profit_data.get('success_rate', 0.5)
+        Args:
+            strategy_name (str): Strategy name.
+            profit (float): Profit from the trade.
+        """
+        self.ab_testing.record_result(strategy_name, profit)
 
-        rsi_buy, rsi_sell = await get_dynamic_thresholds(redis_client, symbol, market_state, volatility, success_rate)
+    def analyze_ab_results(self):
+        """
+        Analyze A/B testing results.
 
-        if rsi < rsi_buy:
-            return "buy", f"RSI strategy (buy at RSI {rsi:.2f} < {rsi_buy:.2f})"
-        elif rsi > rsi_sell:
-            return "sell", f"RSI strategy (sell at RSI {rsi:.2f} > {rsi_sell:.2f})"
-        return None, None
-    except Exception as e:
-        logger.error(f"Failed to select strategy for {symbol}: {type(e).__name__}: {str(e)}")
-        return None, None
-    finally:
-        await redis_client.close()
+        Returns:
+            dict: Average profit for each strategy.
+        """
+        return self.ab_testing.analyze_results()

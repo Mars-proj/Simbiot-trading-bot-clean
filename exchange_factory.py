@@ -1,57 +1,50 @@
 import ccxt.async_support as ccxt
-from logging_setup import logger_main
-from config_keys import SUPPORTED_EXCHANGES, API_KEYS, validate_api_keys
-import os
 
-def create_exchange(exchange_id, user_id, testnet=False):
-    """Creates an exchange instance with user-specific API keys and configurations."""
-    try:
-        if exchange_id not in SUPPORTED_EXCHANGES:
-            logger_main.error(f"Exchange {exchange_id} not supported")
-            return None
+class ExchangeFactory:
+    """
+    Factory for creating exchange instances.
+    """
 
-        # Get user API keys
-        user_api_keys = API_KEYS.get(user_id, {}).get(exchange_id, {})
-        api_key = user_api_keys.get("api_key")
-        api_secret = user_api_keys.get("api_secret")
+    SUPPORTED_EXCHANGES = ['mexc', 'binance', 'bybit', 'kucoin']  # Список поддерживаемых бирж
 
-        if not validate_api_keys(api_key, api_secret):
-            logger_main.error(f"Invalid API keys for user {user_id} on {exchange_id}")
-            return None
+    @staticmethod
+    def create_exchange(exchange_name, credentials):
+        """
+        Create an exchange instance.
 
-        # Exchange configuration
-        exchange_config = {
-            'apiKey': api_key,
-            'secret': api_secret,
+        Args:
+            exchange_name (str): Name of the exchange (e.g., 'mexc').
+            credentials (dict): API credentials with 'api_key' and 'api_secret'.
+
+        Returns:
+            Exchange instance.
+
+        Raises:
+            ValueError: If the exchange is not supported.
+        """
+        if exchange_name not in ExchangeFactory.SUPPORTED_EXCHANGES:
+            raise ValueError(f"Exchange {exchange_name} is not supported. Supported exchanges: {ExchangeFactory.SUPPORTED_EXCHANGES}")
+        
+        exchange_class = getattr(ccxt, exchange_name)
+        return exchange_class({
+            'apiKey': credentials['api_key'],
+            'secret': credentials['api_secret'],
             'enableRateLimit': True,
-            'rateLimit': int(os.getenv("RATE_LIMIT", 2000)),  # Configurable rate limit
-        }
+        })
 
-        # Create exchange instance
-        exchange_class = getattr(ccxt, exchange_id)
-        exchange = exchange_class(exchange_config)
+    @staticmethod
+    async def validate_exchange(exchange):
+        """
+        Validate an exchange instance by checking API key validity.
 
-        # Set testnet if specified
-        if testnet:
-            if hasattr(exchange, 'urls') and 'test' in exchange.urls:
-                exchange.urls['api'] = exchange.urls['test']
-                logger_main.info(f"Using testnet for {exchange_id}")
-            else:
-                logger_main.warning(f"Testnet not supported for {exchange_id}, using live mode")
+        Args:
+            exchange: Exchange instance.
 
-        # Additional configuration for specific exchanges
-        if exchange_id == 'mexc':
-            exchange.options['defaultType'] = 'spot'
-            exchange.options['rateLimit'] = 1000  # MEXC-specific rate limit
-
-        # Store user_id and testnet status in the exchange object for later use
-        exchange.user_id = user_id
-        exchange.testnet = testnet
-
-        logger_main.info(f"Created exchange instance for {exchange_id} (user: {user_id}, testnet: {testnet}) with rateLimit: {exchange.rateLimit}")
-        return exchange
-    except Exception as e:
-        logger_main.error(f"Error creating exchange instance for {exchange_id}: {e}")
-        return None
-
-__all__ = ['create_exchange']
+        Returns:
+            bool: True if valid, False otherwise.
+        """
+        try:
+            await exchange.fetch_balance()
+            return True
+        except Exception:
+            return False

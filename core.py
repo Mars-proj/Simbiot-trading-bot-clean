@@ -1,4 +1,3 @@
-# core.py
 import logging
 import asyncio
 import sys
@@ -10,18 +9,30 @@ from market_state_analyzer import analyze_market_state
 from symbol_filter import filter_symbols
 from start_trading_all import start_trading_all
 from celery_app import process_user_task
-
-# Добавляем текущую директорию в sys.path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from exchange_pool import ExchangePool
+from exchange_factory import ExchangeFactory
+from exchange_detector import ExchangeDetector
+from monitoring import start_monitoring, record_trade, update_balance
 
 logger = logging.getLogger("main")
 
 async def check_user_balance(exchange, user, min_balance=10.0):
-    """Проверяет баланс пользователя и возвращает True, если достаточно средств."""
+    """
+    Check if the user has sufficient USDT balance for trading.
+
+    Args:
+        exchange: Exchange instance.
+        user: User identifier.
+        min_balance: Minimum required USDT balance (default: 10.0).
+
+    Returns:
+        bool: True if balance is sufficient, False otherwise.
+    """
     try:
         balance = await exchange.fetch_balance()
         usdt_balance = balance.get('USDT', {}).get('free', 0)
         logger.debug(f"User {user} balance: {usdt_balance} USDT")
+        update_balance(user, usdt_balance)  # Обновляем метрику в Prometheus
         if usdt_balance < min_balance:
             logger.warning(f"User {user} has insufficient balance ({usdt_balance} USDT), skipping trading...")
             return False
@@ -30,70 +41,80 @@ async def check_user_balance(exchange, user, min_balance=10.0):
         logger.error(f"Failed to check balance for {user}: {type(e).__name__}: {str(e)}")
         return False
 
-async def process_user(user, credentials, since, limit, timeframe, symbol_batch):
-    exchange = ccxt.mexc({
-        'apiKey': credentials['api_key'],
-        'secret': credentials['api_secret'],
-        'enableRateLimit': True,
-    })
+async def process_user(user, credentials, since, limit, timeframe, symbol_batch, exchange_pool, detector):
+    """
+    Process trading for a user with a batch of symbols.
+
+    Args:
+        user: User identifier.
+        credentials: User's API credentials (dict with 'api_key' and 'api_secret').
+        since: Timestamp to fetch OHLCV data from (in milliseconds).
+        limit: Number of OHLCV candles to fetch.
+        timeframe: Timeframe for OHLCV data (e.g., '1h').
+        symbol_batch: List of symbols to process.
+        exchange_pool: ExchangePool instance.
+        detector: ExchangeDetector instance.
+    """
     try:
-        # Проверяем баланс пользователя
+        exchange_name, exchange = await detector.detect_exchange(credentials['api_key'], credentials['api_secret'])
+        exchange = exchange_pool.get_exchange(exchange_name, credentials)
+    except Exception as e:
+        logger.error(f"Failed to detect exchange for user {user}: {type(e).__name__}: {str(e)}")
+        return
+
+    try:
         if not await check_user_balance(exchange, user):
             return
 
         await exchange.load_markets()
         market_state = await analyze_market_state(exchange, "BTC/USDT")
         signal_count = await start_trading_all(exchange, symbol_batch, user, market_state)
+        record_trade(user)  # Записываем торговлю в Prometheus
         logger.info(f"Processed {signal_count} signals for user {user} with batch {symbol_batch}")
     except Exception as e:
         logger.error(f"Failed to process user {user}: {type(e).__name__}: {str(e)}")
-    finally:
-        await exchange.close()
 
 async def main():
+    """
+    Main execution loop for the trading bot.
+
+    - Loads users from Redis.
+    - Filters symbols for each user.
+    - Distributes trading tasks to Celery workers.
+    - Runs in an infinite loop with a dynamic interval.
+    """
     logger.debug("Starting main execution")
+    start_monitoring()  # Запускаем Prometheus
+    exchange_pool = ExchangePool()
+    detector = ExchangeDetector()
     async with UserManager() as user_manager:
         cycle = 1
         since = int(time.time() * 1000) - 2_592_000_000  # 30 дней назад
-        limit = 50  # Уменьшаем до 50 свечей
+        limit = 50
         timeframe = '4h'
-        batch_size = 500  # Размер батча для фильтрации и торговли
+        batch_size = 500
         while True:
+            start_time = time.time()
             logger.info(f"Starting cycle {cycle}")
             users = await user_manager.get_users()
             logger.info(f"Loaded {len(users)} users from Redis: {users}")
             tasks = []
             for user, credentials in users.items():
-                exchange = None
                 try:
-                    # Загружаем все символы
-                    exchange = ccxt.mexc({
-                        'apiKey': credentials['api_key'],
-                        'secret': credentials['api_secret'],
-                        'enableRateLimit': True,
-                    })
-                    await exchange.load_markets()
-                    all_symbols = list(exchange.markets.keys())
-                    # Фильтруем символы по батчам
-                    valid_symbols = await filter_symbols(exchange, all_symbols, since, limit, timeframe, user=user, batch_size=batch_size)
+                    all_symbols = await exchange_pool.get_exchange("mexc", credentials).markets.keys()
+                    valid_symbols = await filter_symbols(exchange_pool.get_exchange("mexc", credentials), all_symbols, since, limit, timeframe, user=user, batch_size=batch_size)
                 except Exception as e:
                     logger.error(f"Failed to load symbols for user {user}: {type(e).__name__}: {str(e)}")
                     continue
-                finally:
-                    if exchange:
-                        await exchange.close()
 
-                # Разделяем валидные символы на батчи по 500 для торговли
                 for i in range(0, len(valid_symbols), batch_size):
                     symbol_batch = valid_symbols[i:i + batch_size]
-                    task = process_user_task.delay(user, credentials, since, limit, timeframe, symbol_batch)
+                    task = process_user_task.delay(user, credentials, since, limit, timeframe, symbol_batch, exchange_pool, detector)
                     tasks.append(task)
 
-            # Ждём завершения всех задач
-            if tasks:  # Проверяем, есть ли задачи
+            if tasks:
                 for task in tasks:
                     try:
-                        # Ждём, пока задача не завершится (или не произойдёт ошибка)
                         while not task.ready():
                             await asyncio.sleep(1)
                         if task.successful():
@@ -107,8 +128,14 @@ async def main():
 
             logger.info(f"Completed cycle {cycle}")
             cycle += 1
-            await asyncio.sleep(120)  # Цикл каждые 2 минуты
+            elapsed_time = time.time() - start_time
+            logger.info(f"Cycle {cycle-1} took {elapsed_time:.2f} seconds")
+            sleep_time = max(120 - elapsed_time, 0)  # Динамический интервал
+            await asyncio.sleep(sleep_time)
+
+    await exchange_pool.close_all()
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    from logging_setup import setup_logging
+    setup_logging()
     asyncio.run(main())
