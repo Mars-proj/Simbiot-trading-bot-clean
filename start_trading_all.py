@@ -1,6 +1,6 @@
 # start_trading_all.py
 import logging
-import time  # Добавляем импорт модуля time
+import time
 import ccxt.async_support as ccxt
 import pandas as pd
 import numpy as np
@@ -61,9 +61,19 @@ async def start_trading_all(exchange, symbols, user, market_state):
             sma_20 = df['sma_20'].iloc[-1]
             
             if current_price > sma_20:
+                # Проверяем, что цена не нулевая
+                if current_price <= 0:
+                    logger.warning(f"Skipping {symbol}: current price is zero or negative ({current_price})")
+                    continue
+                
                 # Рассчитываем сумму ордера (10% от баланса, но не менее 10 USDT)
                 amount_usd = max(10, usdt_balance * 0.1)
                 amount = amount_usd / current_price
+                
+                # Проверяем, что количество положительное и не равно нулю
+                if amount <= 0:
+                    logger.warning(f"Skipping {symbol}: calculated amount is zero or negative ({amount})")
+                    continue
                 
                 # Создаём ордер
                 trade = await exchange.create_market_buy_order(symbol, amount)
