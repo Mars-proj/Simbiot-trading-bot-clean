@@ -38,6 +38,13 @@ async def filter_symbols(exchange, symbols, since, limit, timeframe, user=None, 
                     problematic_symbols.append(symbol)
                     continue
                 try:
+                    # Проверяем, поддерживается ли символ API
+                    await exchange.fetch_ticker(symbol)
+                except Exception as e:
+                    logger.error(f"Symbol {symbol} not supported by API: {type(e).__name__}: {str(e)}")
+                    problematic_symbols.append(symbol)
+                    continue
+                try:
                     ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, since=since, limit=limit)
                     logger.debug(f"Fetched {len(ohlcv)} candles for {symbol}")
                     if len(ohlcv) < limit:
