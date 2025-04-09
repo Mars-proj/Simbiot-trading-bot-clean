@@ -61,7 +61,15 @@ async def get_all_positions(user):
         for key in keys:
             position_data = await redis_client.get(key)
             if position_data:
-                positions.append(json.loads(position_data.decode()))
+                position = json.loads(position_data.decode())
+                # Проверяем, что позиция содержит все необходимые поля
+                if 'amount' in position and position['amount'] is not None:
+                    positions.append(position)
+                else:
+                    # Удаляем повреждённую позицию
+                    symbol = key.decode().split(':')[-1]
+                    logger.warning(f"Removing invalid position for {symbol} for user {user}: missing or invalid amount")
+                    await redis_client.delete(key)
         return positions
     except Exception as e:
         logger.error(f"Failed to get all positions for user {user}: {type(e).__name__}: {str(e)}")
@@ -73,8 +81,12 @@ async def calculate_profit(exchange, trade):
     """Рассчитывает текущую прибыль/убыток по позиции."""
     try:
         symbol = trade['symbol']
-        amount = trade['amount']
-        buy_price = trade['price']
+        amount = trade.get('amount')
+        buy_price = trade.get('price')
+        
+        if amount is None or buy_price is None:
+            logger.error(f"Invalid trade data for {symbol}: amount={amount}, buy_price={buy_price}")
+            return 0
         
         ticker = await exchange.fetch_ticker(symbol)
         current_price = ticker['last']
@@ -104,13 +116,21 @@ async def evaluate_trade(exchange, trade, symbol, user, market_state):
         current_rsi = rsi.iloc[-1]
         
         # Логика оценки
-        profit = (current_price - trade['price']) * trade['amount']
+        amount = trade.get('amount')
+        buy_price = trade.get('price')
+        cost = trade.get('cost', 0)
+        
+        if amount is None or buy_price is None:
+            logger.error(f"Invalid trade data for {symbol}: amount={amount}, buy_price={buy_price}")
+            return False, 0
+        
+        profit = (current_price - buy_price) * amount
         holding_time = (time.time() * 1000 - trade['timestamp']) / (1000 * 60 * 60)  # Время в часах
         
         logger.debug(f"Evaluated trade for {symbol}: profit={profit:.2f}, RSI={current_rsi:.2f}, holding_time={holding_time:.2f} hours")
         
         # Простая логика закрытия позиции
-        if current_rsi > 70 or profit > 0.05 * trade['cost'] or holding_time > 24:
+        if current_rsi > 70 or profit > 0.05 * cost or holding_time > 24:
             logger.info(f"Closing position for {symbol}: profit={profit:.2f}, RSI={current_rsi:.2f}")
             return True, profit
         return False, profit
@@ -152,16 +172,36 @@ async def start_trading_all(exchange, symbols, user, market_state):
         should_close, profit = await evaluate_trade(exchange, position, position['symbol'], user, market_state)
         if should_close:
             try:
+                # Проверяем текущий баланс токенов перед продажей
+                symbol = position['symbol']
+                base_currency = symbol.split('/')[0]
+                balance = await exchange.fetch_balance()
+                available_amount = balance.get(base_currency, {}).get('free', 0)
+                
+                if available_amount <= 0:
+                    logger.warning(f"Cannot close position for {symbol}: no available {base_currency} to sell")
+                    await delete_position(user, symbol)  # Удаляем позицию из Redis
+                    continue
+                
+                amount_to_sell = min(position['amount'], available_amount)
+                if amount_to_sell <= 0:
+                    logger.warning(f"Cannot close position for {symbol}: amount to sell is zero or negative ({amount_to_sell})")
+                    await delete_position(user, symbol)
+                    continue
+                
                 # Закрываем позицию
-                sell_order = await exchange.create_market_sell_order(position['symbol'], position['amount'])
-                logger.info(f"Sell trade executed for {position['symbol']} on {exchange.id}: {sell_order}")
-                await delete_position(user, position['symbol'])
+                sell_order = await exchange.create_market_sell_order(symbol, amount_to_sell)
+                logger.info(f"Sell trade executed for {symbol} on {exchange.id}: {sell_order}")
+                await delete_position(user, symbol)
                 # Обновляем баланс на основе реальной суммы продажи
                 balance = await exchange.fetch_balance()
                 usdt_balance = balance.get('USDT', {}).get('free', 0)
-                logger.info(f"Updated USDT balance after selling {position['symbol']}: {usdt_balance}")
+                logger.info(f"Updated USDT balance after selling {symbol}: {usdt_balance}")
             except Exception as e:
-                logger.error(f"Failed to close position for {position['symbol']}: {type(e).__name__}: {str(e)}")
+                logger.error(f"Failed to close position for {symbol}: {type(e).__name__}: {str(e)}")
+                if "InsufficientFunds" in str(e):
+                    logger.warning(f"Removing position for {symbol} due to insufficient funds")
+                    await delete_position(user, symbol)
         else:
             positions_with_profit.append((position, profit))
     
@@ -190,16 +230,39 @@ async def start_trading_all(exchange, symbols, user, market_state):
                 if potential_profit > least_profit:
                     # Продаём менее прибыльную позицию
                     try:
-                        sell_order = await exchange.create_market_sell_order(least_profitable_position['symbol'], least_profitable_position['amount'])
-                        logger.info(f"Sell trade executed for {least_profitable_position['symbol']} to free up funds: {sell_order}")
-                        await delete_position(user, least_profitable_position['symbol'])
+                        # Проверяем текущий баланс токенов перед продажей
+                        least_symbol = least_profitable_position['symbol']
+                        base_currency = least_symbol.split('/')[0]
+                        balance = await exchange.fetch_balance()
+                        available_amount = balance.get(base_currency, {}).get('free', 0)
+                        
+                        if available_amount <= 0:
+                            logger.warning(f"Cannot close position for {least_symbol}: no available {base_currency} to sell")
+                            await delete_position(user, least_symbol)
+                            positions_with_profit.pop()
+                            continue
+                        
+                        amount_to_sell = min(least_profitable_position['amount'], available_amount)
+                        if amount_to_sell <= 0:
+                            logger.warning(f"Cannot close position for {least_symbol}: amount to sell is zero or negative ({amount_to_sell})")
+                            await delete_position(user, least_symbol)
+                            positions_with_profit.pop()
+                            continue
+                        
+                        sell_order = await exchange.create_market_sell_order(least_symbol, amount_to_sell)
+                        logger.info(f"Sell trade executed for {least_symbol} to free up funds: {sell_order}")
+                        await delete_position(user, least_symbol)
                         # Обновляем баланс после продажи
                         balance = await exchange.fetch_balance()
                         usdt_balance = balance.get('USDT', {}).get('free', 0)
-                        logger.info(f"Updated USDT balance after selling {least_profitable_position['symbol']}: {usdt_balance}")
+                        logger.info(f"Updated USDT balance after selling {least_symbol}: {usdt_balance}")
                         positions_with_profit.pop()
                     except Exception as e:
-                        logger.error(f"Failed to sell {least_profitable_position['symbol']}: {type(e).__name__}: {str(e)}")
+                        logger.error(f"Failed to sell {least_symbol}: {type(e).__name__}: {str(e)}")
+                        if "InsufficientFunds" in str(e):
+                            logger.warning(f"Removing position for {least_symbol} due to insufficient funds")
+                            await delete_position(user, least_symbol)
+                            positions_with_profit.pop()
                         continue
             else:
                 logger.warning(f"Insufficient USDT balance for {user}: {usdt_balance}, no positions to sell")
@@ -240,16 +303,39 @@ async def start_trading_all(exchange, symbols, user, market_state):
                         if potential_profit > least_profit:
                             # Продаём менее прибыльную позицию
                             try:
-                                sell_order = await exchange.create_market_sell_order(least_profitable_position['symbol'], least_profitable_position['amount'])
-                                logger.info(f"Sell trade executed for {least_profitable_position['symbol']} to free up funds: {sell_order}")
-                                await delete_position(user, least_profitable_position['symbol'])
+                                # Проверяем текущий баланс токенов перед продажей
+                                least_symbol = least_profitable_position['symbol']
+                                base_currency = least_symbol.split('/')[0]
+                                balance = await exchange.fetch_balance()
+                                available_amount = balance.get(base_currency, {}).get('free', 0)
+                                
+                                if available_amount <= 0:
+                                    logger.warning(f"Cannot close position for {least_symbol}: no available {base_currency} to sell")
+                                    await delete_position(user, least_symbol)
+                                    positions_with_profit.pop()
+                                    continue
+                                
+                                amount_to_sell = min(least_profitable_position['amount'], available_amount)
+                                if amount_to_sell <= 0:
+                                    logger.warning(f"Cannot close position for {least_symbol}: amount to sell is zero or negative ({amount_to_sell})")
+                                    await delete_position(user, least_symbol)
+                                    positions_with_profit.pop()
+                                    continue
+                                
+                                sell_order = await exchange.create_market_sell_order(least_symbol, amount_to_sell)
+                                logger.info(f"Sell trade executed for {least_symbol} to free up funds: {sell_order}")
+                                await delete_position(user, least_symbol)
                                 # Обновляем баланс после продажи
                                 balance = await exchange.fetch_balance()
                                 usdt_balance = balance.get('USDT', {}).get('free', 0)
-                                logger.info(f"Updated USDT balance after selling {least_profitable_position['symbol']}: {usdt_balance}")
+                                logger.info(f"Updated USDT balance after selling {least_symbol}: {usdt_balance}")
                                 positions_with_profit.pop()
                             except Exception as e:
-                                logger.error(f"Failed to sell {least_profitable_position['symbol']}: {type(e).__name__}: {str(e)}")
+                                logger.error(f"Failed to sell {least_symbol}: {type(e).__name__}: {str(e)}")
+                                if "InsufficientFunds" in str(e):
+                                    logger.warning(f"Removing position for {least_symbol} due to insufficient funds")
+                                    await delete_position(user, least_symbol)
+                                    positions_with_profit.pop()
                                 continue
                     else:
                         logger.warning(f"Insufficient USDT balance for {user}: {usdt_balance}, no positions to sell")
