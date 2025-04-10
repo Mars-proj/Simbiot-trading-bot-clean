@@ -7,7 +7,6 @@ from retraining_manager import RetrainingManager
 from queue_manager import QueueManager
 from notification_manager import NotificationManager
 from signal_blacklist import SignalBlacklist
-from market_state_analyzer import MarketStateAnalyzer
 from strategy_manager import StrategyManager
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,6 @@ async def start_trading_all(users, credentials, since, limit, timeframe, symbol_
     queue_manager = QueueManager()
     notification_manager = NotificationManager()
     signal_blacklist = SignalBlacklist()
-    market_state_analyzer = MarketStateAnalyzer()
     strategy_manager = StrategyManager()
 
     for user in users:
