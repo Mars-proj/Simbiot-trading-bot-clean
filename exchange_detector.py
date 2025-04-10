@@ -10,6 +10,7 @@ class ExchangeDetector:
     async def detect_exchange(self, api_key, api_secret):
         logger.info("Detecting exchange for API key")
         for exchange_id in ccxt.exchanges:
+            exchange = None
             try:
                 exchange_class = getattr(ccxt, exchange_id)
                 exchange = exchange_class({
@@ -30,8 +31,15 @@ class ExchangeDetector:
                     return exchange
                 else:
                     logger.debug(f"Exchange {exchange_id} returned empty tickers")
+                    await exchange.close()
             except Exception as e:
                 logger.debug(f"Exchange {exchange_id} not matched: {str(e)}")
+                if exchange:
+                    try:
+                        await exchange.close()
+                        logger.debug(f"Closed connection for {exchange_id} after failure")
+                    except Exception as close_err:
+                        logger.error(f"Failed to close connection for {exchange_id}: {str(close_err)}")
                 continue
         logger.error("No exchange detected for the provided API key")
         return None
