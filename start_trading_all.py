@@ -6,7 +6,6 @@ from ml_predictor import Predictor
 from retraining_manager import RetrainingManager
 from queue_manager import QueueManager
 from notification_manager import NotificationManager
-from risk_manager import RiskManager
 from signal_blacklist import SignalBlacklist
 from market_state_analyzer import MarketStateAnalyzer
 from strategy_manager import StrategyManager
@@ -31,7 +30,6 @@ async def start_trading_all(users, credentials, since, limit, timeframe, symbol_
     retraining_manager = RetrainingManager()
     queue_manager = QueueManager()
     notification_manager = NotificationManager()
-    risk_manager = RiskManager()
     signal_blacklist = SignalBlacklist()
     market_state_analyzer = MarketStateAnalyzer()
     strategy_manager = StrategyManager()
