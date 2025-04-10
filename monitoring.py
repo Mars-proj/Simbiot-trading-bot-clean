@@ -1,32 +1,20 @@
-from prometheus_client import Counter, Gauge, start_http_server
+from prometheus_client import Counter, Histogram, start_http_server
+import logging
 
-trades_total = Counter('trades_total', 'Total number of trades executed', ['user'])
-balance_gauge = Gauge('user_balance_usdt', 'Current USDT balance', ['user'])
+logger = logging.getLogger(__name__)
 
-def start_monitoring(port=8000):
+# Define Prometheus metrics
+trade_requests = Counter('trade_requests_total', 'Total number of trade requests')
+trade_latency = Histogram('trade_latency_seconds', 'Trade request latency in seconds')
+
+# Start Prometheus HTTP server
+start_http_server(8000)
+logger.info("Prometheus metrics server started on port 8000")
+
+def monitor_trade_request():
     """
-    Start Prometheus monitoring server.
-
-    Args:
-        port (int): Port to run the server on (default: 8000).
+    Monitor a trade request by incrementing the counter and observing latency.
     """
-    start_http_server(port)
-
-def record_trade(user):
-    """
-    Record a trade in Prometheus metrics.
-
-    Args:
-        user: User identifier.
-    """
-    trades_total.labels(user=user).inc()
-
-def update_balance(user, balance):
-    """
-    Update user balance in Prometheus metrics.
-
-    Args:
-        user: User identifier.
-        balance: Current balance in USDT.
-    """
-    balance_gauge.labels(user=user).set(balance)
+    trade_requests.inc()
+    with trade_latency.time():
+        logger.info("Monitoring trade request")

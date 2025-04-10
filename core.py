@@ -2,6 +2,7 @@ import asyncio
 import logging
 from user_manager import UserManager
 from start_trading_all import start_trading_all
+from exchange_pool import ExchangePool
 
 # Настройка логирования
 logging.basicConfig(
@@ -18,6 +19,9 @@ async def main():
     user_manager = UserManager()
     await user_manager.connect()  # Инициализация подключения к базе данных
     
+    # Инициализация пула бирж
+    exchange_pool = ExchangePool()
+    
     # Пример данных
     users = ['main_user']
     credentials = {
@@ -30,13 +34,14 @@ async def main():
     limit = 1000
     timeframe = '1h'
     symbol_batch = ['BTC/USDT', 'ETH/USDT']
-    exchange_pool = None  # Здесь должен быть объект ExchangePool, но для примера оставим None
     
-    # Запуск торгов для всех пользователей
-    await start_trading_all(users, credentials, since, limit, timeframe, symbol_batch, exchange_pool)
-    
-    # Закрытие подключения
-    await user_manager.close()
+    try:
+        # Запуск торгов для всех пользователей
+        await start_trading_all(users, credentials, since, limit, timeframe, symbol_batch, exchange_pool)
+    finally:
+        # Закрытие подключений
+        await user_manager.close()
+        await exchange_pool.close()
 
 if __name__ == "__main__":
     asyncio.run(main())

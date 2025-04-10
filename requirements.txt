@@ -10,6 +10,7 @@ fastapi==0.103.1
 numpy==1.24.3
 pandas==2.1.0
 prometheus-client==0.17.1
+redis==5.0.1
 river==0.13.0
 tensorflow==2.13.0
 uvicorn==0.23.2
