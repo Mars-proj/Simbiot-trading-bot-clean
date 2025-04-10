@@ -36,8 +36,16 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
         
         # Detect exchange
         exchange = await detector.detect_exchange(credentials['api_key'], credentials['api_secret'])
+        logger_main.info(f"Detected exchange: {exchange}")
         if not exchange:
             logger_main.error(f"Failed to detect exchange for user {user}")
+            await detector.close()
+            await exchange_pool.close()
+            return
+        if not hasattr(exchange, 'fetch_ohlcv'):
+            logger_main.error(f"Exchange object is invalid: {exchange}")
+            await detector.close()
+            await exchange_pool.close()
             return
         
         # Initialize components
