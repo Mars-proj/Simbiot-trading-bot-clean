@@ -34,7 +34,6 @@ async def main():
     since = 1609459200000  # Пример: 1 января 2021 года в миллисекундах
     limit = 1000
     timeframe = '1h'
-    symbol_batch = ['BTC/USDT', 'ETH/USDT']
     
     # SMTP credentials для Proton Mail
     smtp_user = "simbiotai@proton.me"
@@ -43,7 +42,7 @@ async def main():
     try:
         # Запуск торгов для всех пользователей
         await start_trading_all(
-            users, credentials, since, limit, timeframe, symbol_batch, exchange_pool, smtp_user, smtp_password
+            users, credentials, since, limit, timeframe, None, exchange_pool, smtp_user, smtp_password
         )
     finally:
         # Закрытие подключений

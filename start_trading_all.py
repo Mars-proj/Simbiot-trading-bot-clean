@@ -21,7 +21,7 @@ async def start_trading_all(users, credentials, since, limit, timeframe, symbol_
         since: Timestamp to fetch OHLCV data from (in milliseconds).
         limit: Number of OHLCV candles to fetch.
         timeframe: Timeframe for OHLCV data (e.g., '1h').
-        symbol_batch: List of symbols to process.
+        symbol_batch: List of symbols to process (or None to fetch all available symbols).
         exchange_pool: ExchangePool instance for managing exchange connections.
         smtp_user: SMTP username for email notifications.
         smtp_password: SMTP password for email notifications.

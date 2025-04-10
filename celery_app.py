@@ -9,12 +9,13 @@ from signal_blacklist import SignalBlacklist
 from strategy_manager import StrategyManager
 import ccxt.async_support as ccxt
 import pandas as pd
+import numpy as np
 
 app = Celery('trading_bot', broker='amqp://guest:guest@localhost/', backend='rpc://')
 app.conf.broker_connection_retry_on_startup = True
 
 @app.task
-def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
+def process_user_task(user, credentials, since, limit, timeframe, symbol_batch=None):
     """
     Process trading task for a user.
 
@@ -24,11 +25,10 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
         since: Timestamp to fetch OHLCV data from.
         limit: Number of OHLCV candles to fetch.
         timeframe: Timeframe for OHLCV data.
-        symbol_batch: List of symbols to process.
+        symbol_batch: List of symbols to process (optional, if None, fetch all available symbols).
     """
     logger_main.info(f"Processing task for user {user}")
     
-    # Создаём асинхронную функцию для обработки
     async def process_user_async():
         # Создаём ExchangePool и ExchangeDetector внутри задачи
         exchange_pool = ExchangePool()
@@ -59,6 +59,11 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
             await exchange_pool.close()
             return
 
+        # Если symbol_batch не указан, выбираем все доступные символы
+        if symbol_batch is None:
+            symbol_batch = available_symbols
+            logger_main.info(f"Fetched all available symbols: {len(symbol_batch)} symbols")
+
         # Адаптируем символы для биржи
         adapted_symbol_batch = []
         for symbol in symbol_batch:
@@ -81,7 +86,44 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
             await exchange_pool.close()
             return
 
-        logger_main.info(f"Adapted symbols for {exchange.id}: {adapted_symbol_batch}")
+        logger_main.info(f"Adapted symbols for {exchange.id}: {adapted_symbol_batch[:10]}... (first 10 shown)")
+
+        # Анализ и выбор токенов на основе объёма и волатильности
+        selected_symbols = []
+        for symbol in adapted_symbol_batch:
+            try:
+                # Получаем тикер для анализа объёма
+                ticker = await exchange.fetch_ticker(symbol)
+                volume = ticker.get('baseVolume', 0)
+                if volume < 1000:  # Пропускаем токены с низким объёмом
+                    logger_main.debug(f"Skipping {symbol} due to low volume: {volume}")
+                    continue
+
+                # Получаем OHLCV данные для анализа волатильности
+                ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, since=since, limit=limit)
+                df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+                
+                # Вычисляем волатильность (стандартное отклонение процентного изменения цены)
+                df['returns'] = df['close'].pct_change()
+                volatility = df['returns'].std() * np.sqrt(len(df))
+                if volatility < 0.01:  # Пропускаем токены с низкой волатильностью
+                    logger_main.debug(f"Skipping {symbol} due to low volatility: {volatility}")
+                    continue
+
+                selected_symbols.append(symbol)
+                logger_main.info(f"Selected {symbol} for trading: volume={volume}, volatility={volatility}")
+            except Exception as e:
+                logger_main.error(f"Error analyzing {symbol}: {str(e)}")
+                continue
+
+        if not selected_symbols:
+            logger_main.error(f"No symbols selected after analysis for {exchange.id}")
+            await detector.close()
+            await exchange_pool.close()
+            return
+
+        logger_main.info(f"Selected symbols for trading: {selected_symbols}")
 
         # Initialize components
         retraining_manager = RetrainingManager()
@@ -89,16 +131,18 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
         signal_blacklist = SignalBlacklist()
         strategy_manager = StrategyManager()
         
-        # Fetch OHLCV data for each symbol
-        for symbol in adapted_symbol_batch:
+        # Fetch OHLCV data for each selected symbol
+        for symbol in selected_symbols:
             if signal_blacklist.is_blacklisted(symbol):
                 logger_main.info(f"Skipping blacklisted symbol {symbol} for user {user}")
                 continue
             
             try:
+                logger_main.info(f"Fetching OHLCV data for {symbol}")
                 ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, since=since, limit=limit)
                 df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
                 df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+                logger_main.info(f"Fetched OHLCV data for {symbol}: {len(df)} candles")
                 
                 # Generate strategy parameters
                 strategy_type = 'sma'  # Example: use SMA strategy
@@ -107,6 +151,7 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
                 
                 # Apply strategy
                 signals = strategy_func(df, **params)
+                logger_main.info(f"Generated signals for {symbol}: {signals.tail()}")
                 
                 # Make prediction
                 prediction = predictor.predict(df)
@@ -125,6 +170,7 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
                 
                 # Retrain model with new data
                 retraining_manager.retrain(df)
+                logger_main.info(f"Retrained model with data for {symbol}")
                 
             except Exception as e:
                 logger_main.error(f"Error processing {symbol} for user {user}: {str(e)}")
