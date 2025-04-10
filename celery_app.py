@@ -107,16 +107,31 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch=N
         # Анализ и выбор токенов на основе объёма и волатильности
         symbol_volumes = []
         logger_main.info("Starting symbol analysis for volume and volatility")
+        try:
+            # Получаем тикеры для всех символов одним запросом
+            logger_main.info(f"Fetching tickers for {len(adapted_symbol_batch)} symbols")
+            tickers = await exchange.fetch_tickers(adapted_symbol_batch)
+            logger_main.info(f"Fetched tickers for {len(tickers)} symbols")
+        except Exception as e:
+            logger_main.error(f"Error fetching tickers: {str(e)}")
+            await detector.close()
+            await exchange_pool.close()
+            return
+
         for symbol in adapted_symbol_batch:
             try:
-                # Получаем тикер для анализа объёма
-                logger_main.debug(f"Fetching ticker for {symbol}")
-                ticker = await exchange.fetch_ticker(symbol)
+                if symbol not in tickers:
+                    logger_main.warning(f"No ticker data for {symbol}, skipping")
+                    continue
+                ticker = tickers[symbol]
                 volume = ticker.get('baseVolume', 0)
+                if volume < 1000:  # Пропускаем символы с низким объёмом
+                    logger_main.debug(f"Skipping {symbol} due to low volume: {volume}")
+                    continue
                 symbol_volumes.append((symbol, volume))
-                logger_main.debug(f"Fetched ticker for {symbol}: volume={volume}")
+                logger_main.debug(f"Processed ticker for {symbol}: volume={volume}")
             except Exception as e:
-                logger_main.error(f"Error fetching ticker for {symbol}: {str(e)}")
+                logger_main.error(f"Error processing ticker for {symbol}: {str(e)}")
                 continue
 
         # Сортируем по объёму и выбираем топ-100 символов
