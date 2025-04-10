@@ -1,66 +1,30 @@
-ncio as redis
+import redis
 import logging
 
-logger = logging.getLogger("main")
-
-async def get_redis_client():
-    return await redis.from_url("redis://localhost:6379/0")
+logger = logging.getLogger(__name__)
 
 class SignalBlacklist:
-    """
-    Manage a blacklist of signals with Redis storage.
-    """
+    def __init__(self, redis_host='localhost', redis_port=6379):
+        self.redis = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
 
-    def __init__(self):
-        self.redis_key = "signal_blacklist"
-
-    async def add_to_blacklist(self, signal):
+    def add_signal(self, signal_id):
         """
-        Add a signal to the blacklist in Redis.
+        Add a signal to the blacklist.
 
         Args:
-            signal (str): Signal to blacklist.
+            signal_id: ID of the signal to blacklist.
         """
-        redis_client = await get_redis_client()
-        try:
-            await redis_client.sadd(self.redis_key, signal)
-            logger.debug(f"Added signal {signal} to blacklist")
-        except Exception as e:
-            logger.error(f"Failed to add signal {signal} to blacklist: {type(e).__name__}: {str(e)}")
-        finally:
-            await redis_client.close()
+        self.redis.sadd('blacklist:signals', signal_id)
+        logger.info(f"Added signal {signal_id} to blacklist")
 
-    async def is_blacklisted(self, signal):
+    def is_blacklisted(self, signal_id):
         """
         Check if a signal is blacklisted.
 
         Args:
-            signal (str): Signal to check.
+            signal_id: ID of the signal to check.
 
         Returns:
             bool: True if blacklisted, False otherwise.
         """
-        redis_client = await get_redis_client()
-        try:
-            return await redis_client.sismember(self.redis_key, signal)
-        except Exception as e:
-            logger.error(f"Failed to check if signal {signal} is blacklisted: {type(e).__name__}: {str(e)}")
-            return False
-        finally:
-            await redis_client.close()
-
-    async def remove_from_blacklist(self, signal):
-        """
-        Remove a signal from the blacklist.
-
-        Args:
-            signal (str): Signal to remove.
-        """
-        redis_client = await get_redis_client()
-        try:
-            await redis_client.srem(self.redis_key, signal)
-            logger.debug(f"Removed signal {signal} from blacklist")
-        except Exception as e:
-            logger.error(f"Failed to remove signal {signal} from blacklist: {type(e).__name__}: {str(e)}")
-        finally:
-            await redis_client.close()
+        return self.redis.sismember('blacklist:signals', signal_id)
