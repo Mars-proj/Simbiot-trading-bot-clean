@@ -69,8 +69,18 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch=N
         if symbol_batch is None:
             symbol_batch = available_symbols
             logger_main.info(f"Fetched all available symbols: {len(symbol_batch)} symbols")
+        else:
+            logger_main.info(f"Using provided symbol batch: {len(symbol_batch)} symbols")
+
+        # Проверяем, что symbol_batch определён и не пуст
+        if not symbol_batch:
+            logger_main.error(f"Symbol batch is empty for {exchange.id}")
+            await detector.close()
+            await exchange_pool.close()
+            return
 
         # Адаптируем символы для биржи
+        logger_main.info("Adapting symbols for the exchange")
         adapted_symbol_batch = []
         for symbol in symbol_batch:
             # Преобразуем символ в формат биржи (например, BTC/USDT -> BTC_USDT для MEXC)
@@ -87,7 +97,7 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch=N
                     continue
 
         if not adapted_symbol_batch:
-            logger_main.error(f"No valid symbols found for {exchange.id}")
+            logger_main.error(f"No valid symbols found for {exchange.id} after adaptation")
             await detector.close()
             await exchange_pool.close()
             return
