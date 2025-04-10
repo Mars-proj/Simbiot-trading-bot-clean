@@ -17,10 +17,19 @@ class ExchangeDetector:
                     'secret': api_secret,
                     'enableRateLimit': True,
                 })
-                await exchange.load_markets()
-                self.exchanges[exchange_id] = exchange
-                logger.info(f"Detected exchange: {exchange_id}")
-                return exchange
+                # Проверяем, поддерживает ли биржа асинхронные методы
+                if not hasattr(exchange, 'fetch_tickers'):
+                    logger.debug(f"Exchange {exchange_id} does not support fetch_tickers")
+                    continue
+                
+                # Пробуем получить тикеры для проверки валидности API-ключей
+                tickers = await exchange.fetch_tickers()
+                if tickers:
+                    self.exchanges[exchange_id] = exchange
+                    logger.info(f"Detected exchange: {exchange_id}")
+                    return exchange
+                else:
+                    logger.debug(f"Exchange {exchange_id} returned empty tickers")
             except Exception as e:
                 logger.debug(f"Exchange {exchange_id} not matched: {str(e)}")
                 continue
