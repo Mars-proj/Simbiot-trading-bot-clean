@@ -35,6 +35,7 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch=N
         detector = ExchangeDetector()
         
         # Detect exchange
+        logger_main.info("Starting exchange detection")
         exchange = await detector.detect_exchange(credentials['api_key'], credentials['api_secret'])
         logger_main.info(f"Detected exchange: {exchange}")
         if not exchange:
@@ -48,11 +49,16 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch=N
             await exchange_pool.close()
             return
         
+        # Устанавливаем таймаут для сетевых запросов
+        exchange.timeout = 30000  # 30 секунд
+        exchange.aiohttp_timeout = 30  # 30 секунд для aiohttp
+
         # Загружаем доступные рынки для биржи
+        logger_main.info(f"Loading markets for {exchange.id}")
         try:
             markets = await exchange.load_markets()
             available_symbols = list(markets.keys())
-            logger_main.info(f"Available symbols on {exchange.id}: {available_symbols[:10]}... (first 10 shown)")
+            logger_main.info(f"Loaded {len(available_symbols)} symbols on {exchange.id}: {available_symbols[:10]}... (first 10 shown)")
         except Exception as e:
             logger_main.error(f"Failed to load markets for {exchange.id}: {str(e)}")
             await detector.close()
@@ -86,23 +92,37 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch=N
             await exchange_pool.close()
             return
 
-        logger_main.info(f"Adapted symbols for {exchange.id}: {adapted_symbol_batch[:10]}... (first 10 shown)")
+        logger_main.info(f"Adapted {len(adapted_symbol_batch)} symbols for {exchange.id}: {adapted_symbol_batch[:10]}... (first 10 shown)")
 
         # Анализ и выбор токенов на основе объёма и волатильности
-        selected_symbols = []
+        symbol_volumes = []
+        logger_main.info("Starting symbol analysis for volume and volatility")
         for symbol in adapted_symbol_batch:
             try:
                 # Получаем тикер для анализа объёма
+                logger_main.debug(f"Fetching ticker for {symbol}")
                 ticker = await exchange.fetch_ticker(symbol)
                 volume = ticker.get('baseVolume', 0)
-                if volume < 1000:  # Пропускаем токены с низким объёмом
-                    logger_main.debug(f"Skipping {symbol} due to low volume: {volume}")
-                    continue
+                symbol_volumes.append((symbol, volume))
+                logger_main.debug(f"Fetched ticker for {symbol}: volume={volume}")
+            except Exception as e:
+                logger_main.error(f"Error fetching ticker for {symbol}: {str(e)}")
+                continue
 
+        # Сортируем по объёму и выбираем топ-100 символов
+        symbol_volumes.sort(key=lambda x: x[1], reverse=True)
+        top_symbols = [symbol for symbol, volume in symbol_volumes[:100]]
+        logger_main.info(f"Selected top 100 symbols by volume: {top_symbols}")
+
+        selected_symbols = []
+        for symbol in top_symbols:
+            try:
                 # Получаем OHLCV данные для анализа волатильности
+                logger_main.debug(f"Fetching OHLCV data for {symbol} to calculate volatility")
                 ohlcv = await exchange.fetch_ohlcv(symbol, timeframe, since=since, limit=limit)
                 df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
                 df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+                logger_main.debug(f"Fetched {len(df)} OHLCV candles for {symbol}")
                 
                 # Вычисляем волатильность (стандартное отклонение процентного изменения цены)
                 df['returns'] = df['close'].pct_change()
@@ -112,7 +132,7 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch=N
                     continue
 
                 selected_symbols.append(symbol)
-                logger_main.info(f"Selected {symbol} for trading: volume={volume}, volatility={volatility}")
+                logger_main.info(f"Selected {symbol} for trading: volume={symbol_volumes[top_symbols.index(symbol)][1]}, volatility={volatility}")
             except Exception as e:
                 logger_main.error(f"Error analyzing {symbol}: {str(e)}")
                 continue
@@ -123,7 +143,7 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch=N
             await exchange_pool.close()
             return
 
-        logger_main.info(f"Selected symbols for trading: {selected_symbols}")
+        logger_main.info(f"Final selected symbols for trading: {selected_symbols}")
 
         # Initialize components
         retraining_manager = RetrainingManager()
