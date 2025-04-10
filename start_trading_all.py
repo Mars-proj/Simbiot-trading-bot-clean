@@ -11,7 +11,7 @@ from strategy_manager import StrategyManager
 
 logger = logging.getLogger(__name__)
 
-async def start_trading_all(users, credentials, since, limit, timeframe, symbol_batch, exchange_pool):
+async def start_trading_all(users, credentials, since, limit, timeframe, symbol_batch, exchange_pool, smtp_user, smtp_password):
     """
     Start trading for all users across multiple exchanges.
 
@@ -23,12 +23,14 @@ async def start_trading_all(users, credentials, since, limit, timeframe, symbol_
         timeframe: Timeframe for OHLCV data (e.g., '1h').
         symbol_batch: List of symbols to process.
         exchange_pool: ExchangePool instance for managing exchange connections.
+        smtp_user: SMTP username for email notifications.
+        smtp_password: SMTP password for email notifications.
     """
     detector = ExchangeDetector()
-    predictor = Predictor()
     retraining_manager = RetrainingManager()
+    predictor = Predictor(retraining_manager)
     queue_manager = QueueManager()
-    notification_manager = NotificationManager()
+    notification_manager = NotificationManager(smtp_user=smtp_user, smtp_password=smtp_password)
     signal_blacklist = SignalBlacklist()
     strategy_manager = StrategyManager()
 

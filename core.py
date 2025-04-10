@@ -35,9 +35,15 @@ async def main():
     timeframe = '1h'
     symbol_batch = ['BTC/USDT', 'ETH/USDT']
     
+    # SMTP credentials (в реальной системе брать из конфигурации или переменных окружения)
+    smtp_user = "your_email@example.com"
+    smtp_password = "your_smtp_password"
+    
     try:
         # Запуск торгов для всех пользователей
-        await start_trading_all(users, credentials, since, limit, timeframe, symbol_batch, exchange_pool)
+        await start_trading_all(
+            users, credentials, since, limit, timeframe, symbol_batch, exchange_pool, smtp_user, smtp_password
+        )
     finally:
         # Закрытие подключений
         await user_manager.close()
