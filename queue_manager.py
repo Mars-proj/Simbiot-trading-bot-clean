@@ -10,10 +10,10 @@ class QueueManager:
     def __init__(self):
         self.app = app
 
-    async def process_user(self, user, credentials, since, limit, timeframe, symbol_batch, exchange_pool, detector):
+    async def process_user(self, user, credentials, since, limit, timeframe, symbol_batch):
         logger.info(f"Queuing task for user {user}")
         self.app.send_task(
             'celery_app.process_user_task',
-            args=(user, credentials, since, limit, timeframe, symbol_batch, exchange_pool, detector),
+            args=(user, credentials, since, limit, timeframe, symbol_batch),
             queue='celery'
         )

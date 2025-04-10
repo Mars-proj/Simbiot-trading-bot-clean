@@ -2,6 +2,7 @@ import asyncio
 from celery import Celery
 from logging_setup import logger_main
 from exchange_detector import ExchangeDetector
+from exchange_pool import ExchangePool
 from ml_predictor import Predictor
 from retraining_manager import RetrainingManager
 from signal_blacklist import SignalBlacklist
@@ -10,9 +11,10 @@ import ccxt.async_support as ccxt
 import pandas as pd
 
 app = Celery('trading_bot', broker='amqp://guest:guest@localhost/', backend='rpc://')
+app.conf.broker_connection_retry_on_startup = True
 
 @app.task
-def process_user_task(user, credentials, since, limit, timeframe, symbol_batch, exchange_pool, detector):
+def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
     """
     Process trading task for a user.
 
@@ -23,13 +25,15 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch, 
         limit: Number of OHLCV candles to fetch.
         timeframe: Timeframe for OHLCV data.
         symbol_batch: List of symbols to process.
-        exchange_pool: ExchangePool instance (not used, replaced by detector).
-        detector: ExchangeDetector instance.
     """
     logger_main.info(f"Processing task for user {user}")
     
     # Создаём асинхронную функцию для обработки
     async def process_user_async():
+        # Создаём ExchangePool и ExchangeDetector внутри задачи
+        exchange_pool = ExchangePool()
+        detector = ExchangeDetector()
+        
         # Detect exchange
         exchange = await detector.detect_exchange(credentials['api_key'], credentials['api_secret'])
         if not exchange:
@@ -84,6 +88,7 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch, 
                 continue
         
         await detector.close()
+        await exchange_pool.close()
         logger_main.info(f"Completed task for user {user}")
     
     # Запускаем асинхронную функцию внутри синхронной задачи

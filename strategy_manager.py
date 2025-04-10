@@ -1,5 +1,5 @@
 from strategies import sma_crossover_strategy, rsi_divergence_strategy, macd_crossover_strategy, bollinger_breakout_strategy, volume_weighted_trend_strategy
-from strategy_generator import generate_strategy_params
+from strategy_param_generator import generate_strategy_params  # Обновляем имя модуля
 import logging
 
 logger = logging.getLogger(__name__)

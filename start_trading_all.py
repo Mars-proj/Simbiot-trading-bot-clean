@@ -36,7 +36,8 @@ async def start_trading_all(users, credentials, since, limit, timeframe, symbol_
 
     for user in users:
         logger.info(f"Starting trading for user {user}")
+        # Передаём только сериализуемые данные
         await queue_manager.process_user(
-            user, credentials[user], since, limit, timeframe, symbol_batch, exchange_pool, detector
+            user, credentials[user], since, limit, timeframe, symbol_batch
         )
         logger.info(f"Finished trading for user {user}")
