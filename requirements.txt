@@ -1,6 +1,7 @@
 aiohttp==3.8.5
 aiopg==1.4.0
 aio-pika==9.3.0
+aiosmtplib==2.0.2
 asyncpg==0.28.0
 ccxt==4.4.73
 celery==5.3.4
