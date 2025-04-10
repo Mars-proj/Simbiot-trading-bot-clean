@@ -1,118 +1,48 @@
 from strategies import sma_crossover_strategy, rsi_divergence_strategy, macd_crossover_strategy, bollinger_breakout_strategy, volume_weighted_trend_strategy
-from ab_testing import ABTesting
-from strategy_generator import StrategyGenerator
+from strategy_generator import generate_strategy_params
 import logging
 
-logger = logging.getLogger("main")
+logger = logging.getLogger(__name__)
 
 class StrategyManager:
-    """
-    Manage trading strategies with A/B testing and dynamic generation.
-    """
-
-    def __init__(self, exchange, symbol, timeframe, since, limit):
+    def __init__(self):
         self.strategies = {
-            'sma_crossover': sma_crossover_strategy,
-            'rsi_divergence': rsi_divergence_strategy,
-            'macd_crossover': macd_crossover_strategy,
-            'bollinger_breakout': bollinger_breakout_strategy,
-            'volume_weighted_trend': volume_weighted_trend_strategy
+            'sma': sma_crossover_strategy,
+            'rsi': rsi_divergence_strategy,
+            'macd': macd_crossover_strategy,
+            'bollinger': bollinger_breakout_strategy,
+            'volume': volume_weighted_trend_strategy
         }
-        self.strategy_params = {
-            'rsi_divergence': {'buy_threshold': 30, 'sell_threshold': 70},
-            'macd_crossover': {'fast_period': 12, 'slow_period': 26, 'signal_period': 9},
-            'bollinger_breakout': {'period': 20, 'std_dev': 2},
-            'volume_weighted_trend': {'volume_weight': 1.0}
+        self.param_ranges = {
+            'sma': {'short_window': (10, 30), 'long_window': (40, 60)},
+            'rsi': {'rsi_window': (10, 20), 'rsi_overbought': (60, 80), 'rsi_oversold': (20, 40)},
+            'macd': {'short_window': (10, 15), 'long_window': (20, 30), 'signal_window': (5, 10)},
+            'bollinger': {'window': (15, 25), 'num_std': (1, 3)},
+            'volume': {'volume_window': (10, 30)}
         }
-        self.ab_testing = ABTesting(self.strategies)
-        self.generator = StrategyGenerator(exchange, symbol, timeframe, since, limit)
-        self.generated_strategies = {}
 
-    async def optimize_strategy_params(self):
+    def get_strategy(self, strategy_type):
         """
-        Optimize parameters for all strategies.
-        """
-        for strategy_name in self.strategies:
-            if strategy_name == 'sma_crossover':
-                continue
-            params = await self.generator.optimize_thresholds(self.generator.exchange, self.generator.symbol, self.generator.timeframe, self.generator.since, self.generator.limit, strategy_name)
-            self.strategy_params[strategy_name] = params
-            logger.info(f"Optimized parameters for {strategy_name}: {params}")
-
-    async def generate_new_strategy(self, name):
-        """
-        Generate a new strategy and add it to the pool.
+        Get a strategy function by type.
 
         Args:
-            name (str): Name of the new strategy.
-        """
-        result = await self.generator.generate_strategy()
-        weights = result['weights']
-        params = result['params']
-        new_strategy = self.generator.create_strategy(weights, params)
-        self.strategies[name] = new_strategy
-        self.strategy_params[name] = params
-        self.ab_testing = ABTesting(self.strategies)
-        logger.info(f"Generated new strategy {name} with weights {weights} and params {params}")
-
-    def add_strategy(self, name, strategy_func, params=None):
-        """
-        Add a trading strategy.
-
-        Args:
-            name (str): Strategy name.
-            strategy_func: Strategy function.
-            params (dict): Parameters for the strategy (optional).
-        """
-        self.strategies[name] = strategy_func
-        if params:
-            self.strategy_params[name] = params
-        self.ab_testing = ABTesting(self.strategies)
-
-    def execute_strategy(self, name, data):
-        """
-        Execute a trading strategy.
-
-        Args:
-            name (str): Strategy name.
-            data (pd.DataFrame): OHLCV data.
+            strategy_type: Type of strategy ('sma', 'rsi', 'macd', 'bollinger', 'volume').
 
         Returns:
-            str: Trading signal.
+            function: Strategy function.
         """
-        if name not in self.strategies:
-            raise ValueError(f"Strategy {name} not found")
-        return self.strategies[name](data, **self.strategy_params.get(name, {}))
+        if strategy_type not in self.strategies:
+            raise ValueError(f"Unknown strategy type: {strategy_type}")
+        return self.strategies[strategy_type]
 
-    async def ab_test(self, data):
+    def generate_params(self, strategy_type):
         """
-        Run A/B testing on strategies.
-
-        Args:
-            data (pd.DataFrame): OHLCV data.
-
-        Returns:
-            tuple: (strategy_name, signal)
-        """
-        strategy_name = await self.ab_testing.select_strategy()
-        signal = self.execute_strategy(strategy_name, data)
-        return strategy_name, signal
-
-    async def record_result(self, strategy_name, profit):
-        """
-        Record the result of a strategy for A/B testing.
+        Generate parameters for a given strategy type.
 
         Args:
-            strategy_name (str): Strategy name.
-            profit (float): Profit from the trade.
-        """
-        await self.ab_testing.record_result(strategy_name, profit)
-
-    async def analyze_ab_results(self):
-        """
-        Analyze A/B testing results.
+            strategy_type: Type of strategy ('sma', 'rsi', 'macd', 'bollinger', 'volume').
 
         Returns:
-            dict: Average profit for each strategy.
+            dict: Generated parameters.
         """
-        return await self.ab_testing.analyze_results()
+        return generate_strategy_params(strategy_type, self.param_ranges)

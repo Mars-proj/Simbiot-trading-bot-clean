@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from user_manager import UserManager
 from start_trading_all import start_trading_all
 from exchange_pool import ExchangePool
@@ -35,9 +36,9 @@ async def main():
     timeframe = '1h'
     symbol_batch = ['BTC/USDT', 'ETH/USDT']
     
-    # SMTP credentials (в реальной системе брать из конфигурации или переменных окружения)
-    smtp_user = "your_email@example.com"
-    smtp_password = "your_smtp_password"
+    # SMTP credentials для Proton Mail
+    smtp_user = "simbiotai@proton.me"
+    smtp_password = "osoznanie_soznaniya"
     
     try:
         # Запуск торгов для всех пользователей

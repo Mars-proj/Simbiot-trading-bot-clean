@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class NotificationManager:
-    def __init__(self, smtp_host="smtp.gmail.com", smtp_port=587, smtp_user=None, smtp_password=None):
+    def __init__(self, smtp_host="smtp.protonmail.com", smtp_port=587, smtp_user=None, smtp_password=None):
         self.smtp_host = smtp_host
         self.smtp_port = smtp_port
         self.smtp_user = smtp_user
