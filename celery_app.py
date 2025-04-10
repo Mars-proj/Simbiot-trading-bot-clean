@@ -48,6 +48,41 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
             await exchange_pool.close()
             return
         
+        # Загружаем доступные рынки для биржи
+        try:
+            markets = await exchange.load_markets()
+            available_symbols = list(markets.keys())
+            logger_main.info(f"Available symbols on {exchange.id}: {available_symbols[:10]}... (first 10 shown)")
+        except Exception as e:
+            logger_main.error(f"Failed to load markets for {exchange.id}: {str(e)}")
+            await detector.close()
+            await exchange_pool.close()
+            return
+
+        # Адаптируем символы для биржи
+        adapted_symbol_batch = []
+        for symbol in symbol_batch:
+            # Преобразуем символ в формат биржи (например, BTC/USDT -> BTC_USDT для MEXC)
+            adapted_symbol = symbol.replace('/', '_')  # MEXC использует BTC_USDT
+            if adapted_symbol in available_symbols:
+                adapted_symbol_batch.append(adapted_symbol)
+            else:
+                # Пробуем обратный формат (например, BTC_USDT -> BTC/USDT)
+                alt_symbol = symbol.replace('_', '/')
+                if alt_symbol in available_symbols:
+                    adapted_symbol_batch.append(alt_symbol)
+                else:
+                    logger_main.warning(f"Symbol {symbol} not found on {exchange.id}, skipping")
+                    continue
+
+        if not adapted_symbol_batch:
+            logger_main.error(f"No valid symbols found for {exchange.id}")
+            await detector.close()
+            await exchange_pool.close()
+            return
+
+        logger_main.info(f"Adapted symbols for {exchange.id}: {adapted_symbol_batch}")
+
         # Initialize components
         retraining_manager = RetrainingManager()
         predictor = Predictor(retraining_manager)
@@ -55,7 +90,7 @@ def process_user_task(user, credentials, since, limit, timeframe, symbol_batch):
         strategy_manager = StrategyManager()
         
         # Fetch OHLCV data for each symbol
-        for symbol in symbol_batch:
+        for symbol in adapted_symbol_batch:
             if signal_blacklist.is_blacklisted(symbol):
                 logger_main.info(f"Skipping blacklisted symbol {symbol} for user {user}")
                 continue
